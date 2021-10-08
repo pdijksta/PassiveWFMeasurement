@@ -1,0 +1,93 @@
+&run_setup
+	lattice		= ./Aramis.lat,
+	use_beamline	= SARUN18_TO_END
+	rootname	= Aramis,
+	output		= %s.out,
+	centroid	= %s.out,
+	sigma		= %s.sig,
+	final		= %s.fin,
+	parameters	= %s.par,
+	magnets		= %s.mag,
+	combine_bunch_statistics = 0,
+	default_order	= 3,
+	concat_order	= 0,
+	print_statistics	= 0,
+	random_number_seed	= 9876543210,
+	p_central	= 10763.2,
+	tracking_updates	= 1
+&end
+
+&run_control
+	n_steps	= 1,
+&end
+
+&alter_elements
+	name = "SARUN18.MQUA080.Q[12]"
+	item = "K1"
+	value = 0
+&end
+
+&alter_elements
+	name = "SARUN19.MQUA080.Q[12]"
+	item = "K1"
+	value = 0
+&end
+
+&alter_elements
+	name = "SARUN20.MQUA080.Q[12]"
+	item = "K1"
+	value = 0
+&end
+
+&alter_elements
+	name = "SARBD01.MQUA020.Q[12]"
+	item = "K1"
+	value = 0
+&end
+
+&alter_elements
+	name = "SARBD02.MQUA030"
+	item = "K1"
+	value = 0
+&end
+
+! from Sven's OpticsServer (new version), 06.04.2020
+! location: SARUN18.START
+&twiss_output
+	filename	= %s.twi,
+	matched		= 0,
+	beta_x = 	4.968
+	alpha_x =  -0.563
+	beta_y =    16.807
+	alpha_y =   1.782
+&end
+
+&floor_coordinates
+    filename = %s.flo
+&end
+
+&bunched_beam
+	bunch = %s.bun,
+	n_particles_per_bunch = 1,
+	emit_nx = 200e-9,
+	emit_ny = 200e-9,
+	use_twiss_command_values = 1,
+	! 5.5 GeV as in lb paper,
+	Po = 10763.2,
+	sigma_dp = 0
+	sigma_s = 7.5e-6
+	momentum_chirp = 0,
+	distribution_type[0] = gaussian, gaussian, gaussian,
+	enforce_rms_values[0] = 1, 1, 1
+&end
+
+&matrix_output
+	SDDS_output = %s.mat,
+	SDDS_output_order = 1,
+	individual_matrices = 1,
+&end
+
+&track
+&end
+
+

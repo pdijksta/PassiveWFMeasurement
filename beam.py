@@ -24,10 +24,19 @@ def gen_twoD(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
 
 def gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, p_central, beamProfile, n_particles, cutoff_sigma=5, n_mesh=200):
     outp = np.zeros([6, int(n_particles)])
-    gen_twoD(outp[0:2,:], n_particles, nemitx/p_central, betax, alphax, p_central, cutoff_sigma, n_mesh)
-    gen_twoD(outp[2:4,:], n_particles, nemity/p_central, betay, alphay, p_central, cutoff_sigma, n_mesh)
+    gen_twoD(outp[0:2,:], n_particles, nemitx/p_central, betax, alphax, cutoff_sigma, n_mesh)
+    gen_twoD(outp[2:4,:], n_particles, nemity/p_central, betay, alphay, cutoff_sigma, n_mesh)
 
+    curr = beamProfile.current
+    tt = beamProfile.time
+    integrated_curr = np.cumsum(curr)
+    integrated_curr /= integrated_curr[-1]
+    randoms = np.random.rand(n_particles)
+    interp_tt = np.interp(randoms, integrated_curr, tt)
+    interp_tt -= interp_tt.min()
+    outp[4] = interp_tt
     outp[5] = p_central
+    return outp
 
 
 

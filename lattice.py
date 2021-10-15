@@ -1,8 +1,9 @@
+import os
 import itertools
 import scipy
 import numpy as np
 
-import h5_storage
+from . import h5_storage
 
 def transferMatrixDrift66(Ld):
     Md1 = [[1, Ld, 0, 0, 0, 0],
@@ -52,7 +53,13 @@ class Lattice:
         for n_element, (type_, name) in enumerate(zip(types, names)):
             if type_ == 'QUAD':
                 length = columns['R12'][n_element]
-                k1 = quad_k1l_dict[name]
+                if name.endswith('.Q1') or name.endswith('.Q2'):
+                    name2 = name[:-3]
+                    length2 = length*2
+                else:
+                    name2 = name
+                    length2 = length
+                k1 = quad_k1l_dict[name2]/length2
                 ele_matrix = transferMatrixQuad66(length, k1)
             else:
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):
@@ -68,6 +75,9 @@ class Lattice:
         r1 = self.matrix_dict[from_]
         r_tot = self.matrix_dict[to]
         return r_tot @ np.linalg.inv(r1)
+
+def aramis_lattice():
+    return Lattice(os.path.join(os.path.dirname(__file__), './elegant/Aramis.mat.h5'))
 
 
 #if __name__ == '__main__':

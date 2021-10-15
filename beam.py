@@ -1,6 +1,7 @@
 import numpy as np
 
 def gen_twoD(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
+    n_particles = int(n_particles)
     gamma = (1 + alpha**2)/beta
     sigma_x = np.sqrt(gemit*beta)
     sigma_xp = np.sqrt(gemit*gamma)
@@ -11,17 +12,16 @@ def gen_twoD(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
     xp_arr = xp_arr0[:,np.newaxis]
     rho = 1/(2*np.pi*gemit) * np.exp(-1/(2*gemit) * (gamma*x_arr**2 + 2*alpha * x_arr * xp_arr + beta*xp_arr**2))
     rho1 = np.reshape(rho, rho.size)
-    cum0 = np.cumsum(rho1) * xp_step * x_step
-    cum = cum0/cum0.max()
-    #import pdb; pdb.set_trace()
-    randoms = np.random.rand(int(n_particles))
+    cum0 = np.cumsum(rho1)
+    cum = cum0/cum0[-1]
+    randoms = np.random.rand(n_particles)
     indices = np.arange(len(cum))
     interp_indices = np.round(np.interp(randoms, cum, indices))
     xp_index = (interp_indices % n_mesh).astype(int)
     x_index = ((interp_indices - xp_index) / n_mesh).astype(int)
 
-    outp[0] = x_arr[x_index] + (np.random.rand(int(n_particles))-0.5) * x_step
-    outp[1] = xp_arr0[xp_index] + (np.random.rand(int(n_particles))-0.5) * xp_step
+    outp[0] = x_arr[x_index] + (np.random.rand(n_particles)-0.5) * x_step
+    outp[1] = xp_arr0[xp_index] + (np.random.rand(n_particles)-0.5) * xp_step
 
     outp[0] -= outp[0].mean()
     outp[1] -= outp[1].mean()

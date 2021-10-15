@@ -64,7 +64,7 @@ class Lattice:
             else:
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):
                     ele_matrix[n_col-1,n_row-1] = columns['R%i%i' % (n_col, n_row)][n_element]
-            matrix = matrix @ ele_matrix
+            matrix = ele_matrix @ matrix
             all_matrices.append(matrix)
 
         self.all_matrices = np.array(all_matrices)
@@ -76,8 +76,10 @@ class Lattice:
         r_tot = self.matrix_dict[to]
         return r_tot @ np.linalg.inv(r1)
 
-def aramis_lattice():
-    return Lattice(os.path.join(os.path.dirname(__file__), './elegant/Aramis.mat.h5'))
+def aramis_lattice(quad_k1l_dict):
+    lat = Lattice(os.path.join(os.path.dirname(__file__), './elegant/Aramis.mat.h5'))
+    lat.generate(quad_k1l_dict)
+    return lat
 
 
 #if __name__ == '__main__':

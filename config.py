@@ -12,10 +12,17 @@ streaker_names = {
             ]),
         }
 
-streaker_lengths = {
-        'SARUN18-UDCP010': 1.,
-        'SARUN18-UDCP020': 1.,
-        'SATMA02-UDCP045': 1.,
+aramis_streaker_parameters = {
+        'length': 1,
+        'p': 500e-6,
+        'g': 250e-6,
+        'w': 10e-3,
+        }
+
+streaker_parameters = {
+        'SARUN18-UDCP010': aramis_streaker_parameters,
+        'SARUN18-UDCP020': aramis_streaker_parameters,
+        'SATMA02-UDCP045': aramis_streaker_parameters,
         }
 
 beamline_quads = {

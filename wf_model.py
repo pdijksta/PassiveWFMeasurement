@@ -2,10 +2,12 @@ import numpy as np
 from scipy.constants import physical_constants, c
 from numpy import cos, sin, tan, exp, sqrt, pi
 
+from . import config
+
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
 t1 = Z0 * c / (4*pi)
 
-def PostAramisStreaker(a):
+def PostAramisStreaker():
     """
     CorrugatedStreaker with parameters specified by Paolo Craievich (personal communication)
     """
@@ -14,7 +16,12 @@ def PostAramisStreaker(a):
     p = 500e-6
     g = 250e-6
     w = 10e-3
-    return CorrugatedStreaker(a, p, g, w, Ls)
+    return CorrugatedStreaker(p, g, w, Ls)
+
+def get_streaker(streaker_name):
+    sp = config.streaker_parameters[streaker_name]
+
+    return CorrugatedStreaker(sp['g'], sp['g'], sp['w'], sp['length'])
 
 class CorrugatedStreaker:
     """

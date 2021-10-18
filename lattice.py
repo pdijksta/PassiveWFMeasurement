@@ -34,7 +34,7 @@ def transferMatrixQuad66(Lq, kini):
             [0, 0, 0, 0, 0, 1]]
 
     Mq10 = np.array(Mq10, dtype=complex)
-    assert np.all(np.imag(Mq10) == 0)
+    #assert np.all(np.imag(Mq10) == 0)
     return np.real(Mq10)
 
 class Lattice:

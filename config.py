@@ -44,16 +44,16 @@ gas_monitor_pvs = {
 
 default_optics = {
         'Aramis': {
-            'beta_x': 4.968,
-            'alpha_x': -0.563,
-            'beta_y': 16.807,
-            'alpha_y': 1.782,
+            'betax': 4.968,
+            'alphax': -0.563,
+            'betay': 16.807,
+            'alphay': 1.782,
             },
         'Athos': {
-            'beta_x': 30.9,
-            'alpha_x': 3.8,
-            'beta_y': 69.4,
-            'alpha_y': -14.3,
+            'betax': 30.9,
+            'alphax': 3.8,
+            'betay': 69.4,
+            'alphay': -14.3,
             },
         }
 

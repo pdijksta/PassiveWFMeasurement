@@ -1,4 +1,7 @@
+from scipy.constants import c, e, m_e
 import numpy as np
+
+electron_mass_eV = m_e * c**2 / e
 
 def gen_twoD(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
     n_particles = int(n_particles)
@@ -40,5 +43,11 @@ def gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, p_central, beamProf
     interp_tt -= interp_tt.min()
     outp[4] = interp_tt
     outp[5] = p_central
+    return outp
+
+def gen_beam4D(nemitx, nemity, betax, alphax, betay, alphay, p_central, n_particles, cutoff_sigma=5, n_mesh=500):
+    outp = np.zeros([4, int(n_particles)])
+    gen_twoD(outp[0:2,:], n_particles, nemitx/p_central, betax, alphax, cutoff_sigma, n_mesh)
+    gen_twoD(outp[2:4,:], n_particles, nemity/p_central, betay, alphay, cutoff_sigma, n_mesh)
     return outp
 

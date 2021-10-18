@@ -76,15 +76,20 @@ class Lattice:
         r_tot = self.matrix_dict[to]
         return r_tot @ np.linalg.inv(r1)
 
-def aramis_lattice(quad_k1l_dict):
-    lat = Lattice(os.path.join(os.path.dirname(__file__), './elegant/Aramis.mat.h5'))
+def generated_lattice(h5_file, quad_k1l_dict):
+    lat = Lattice(os.path.join(os.path.dirname(__file__), h5_file))
     lat.generate(quad_k1l_dict)
     return lat
 
+def aramis_lattice(quad_k1l_dict):
+    return generated_lattice('./elegant/Aramis.mat.h5', quad_k1l_dict)
 
-#if __name__ == '__main__':
-#    test_mat = './elegant/Aramis.mat.h5'
-#    lat = Lattice(test_mat)
-#    quad_k1l_dict = {x:1 for x in lat.quad_names}
-#    lat.generate(quad_k1l_dict)
+def athos_lattice(quad_k1l_dict):
+    return generated_lattice('./elegant/Athos.mat.h5', quad_k1l_dict)
+
+def get_beamline_lattice(beamline, quad_k1l_dict):
+    if beamline == 'Aramis':
+        return aramis_lattice(quad_k1l_dict)
+    elif beamline == 'Athos':
+        return athos_lattice(quad_k1l_dict)
 

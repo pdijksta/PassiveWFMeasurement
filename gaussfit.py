@@ -17,7 +17,7 @@ class GaussFit:
 
         if p0 is None:
             if fit_const:
-                const_0 = self.const_0 = (yy[0] + yy[-1])/2.
+                const_0 = self.const_0 = min(yy[0], yy[-1])
             else:
                 const_0 = self.const_0 = 0.
 
@@ -28,7 +28,7 @@ class GaussFit:
                 scale_0 = self.scale_0 = np.min(yy)-const_0
                 mean_0 = self.mean_0 = np.squeeze(xx[np.argmin(yy)])
 
-            mask_above_half = np.abs(yy-const_0) > scale_0/2
+            mask_above_half = yy-const_0 > scale_0/2
 
             if np.sum(mask_above_half) > 1:
                 sigma_0 = abs(xx[mask_above_half][-1] - xx[mask_above_half][0])/factor_fwhm
@@ -70,8 +70,6 @@ class GaussFit:
                 self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
                 print(e)
                 print('Fit did not converge. Using p0 instead!')
-
-        self.popt[2] = abs(self.popt[2])
 
         if fit_const:
             self.scale, self.mean, self.sigma, self.const = self.popt

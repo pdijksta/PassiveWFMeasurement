@@ -43,14 +43,14 @@ class CorrugatedStreaker:
     def s0r(self, a):
         return (a**2 * self.g) / (2*pi * self.alpha**2 * self.p**2)
 
-    def wxd_lin_dipole(self, s, a, x):
+    def wxd_lin_dipole(self, t, a, x):
         """
         Single particle wake, linear dipole approximation.
         Unit: V/m /m (offset)
         """
         t2 = pi**4 / (16*a**4)
         t3 = self.s0d
-        sqr = sqrt(s/t3)
+        sqr = sqrt(c*t/t3)
         t4 = 1 - (1 + sqr)*exp(-sqr)
         return t1*t2*t3*t4*x*self.Ls
 
@@ -58,13 +58,13 @@ class CorrugatedStreaker:
         arg = pi*x/a
         return 4*self.s0r(a) * (3/2 + arg/sin(arg) - arg/(2*tan(arg)))**(-2)
 
-    def wxd(self, s, a, x):
+    def wxd(self, t, a, x):
         t2 = pi**3 / (4*a**3)
         arg = pi*x/(2*a)
         t3 = 1./cos(arg)**2
         t4 = tan(arg)
         t5 = self.s0yd(x)
-        sqr = sqrt(s/t5)
+        sqr = sqrt(c*t/t5)
         t6 = 1 - (1 + sqr)*exp(-sqr)
         return t1 * t2 * t3 * t4 * t5 * t6 * self.Ls
 
@@ -76,13 +76,13 @@ class CorrugatedStreaker:
         t3 = 2*theta*tan(theta)
         return t0 * (t1 + t2 + t3)**(-2)
 
-    def wxq(self, s, a, x):
+    def wxq(self, t, a, x):
         arg = pi*x/a
         t2 = pi**4/(16*a**4)
         t3 = 2 - cos(arg)
         t4 = 1/cos(arg/2)**4
         t5 = self.s0yq(a, x)
-        sqr = sqrt(s/t5)
+        sqr = sqrt(c*t/t5)
         t6 = 1 - (1+sqr)*exp(-sqr)
         result = t1 * t2 * t3 * t4 * t5 * t6 * self.Ls
         return result
@@ -91,11 +91,11 @@ class CorrugatedStreaker:
         arg = (pi*x)/(2*a)
         return 4*self.s0r(a) * (1. + 1./3.*cos(arg)**2 + arg*tan(arg))**(-2)
 
-    def wld(self, s, a, x):
+    def wld(self, t, a, x):
         t2 = pi**2/(4*a**2)
         t3 = cos((pi*x)/(2*a))**(-2)
         s0l_ = self.s0l(a, x)
-        t4 = exp(-sqrt(s/s0l_))
+        t4 = exp(-sqrt(c*t/s0l_))
         return t1 * t2 * t3 * t4 * self.Ls
 
     def generate_elegant_wf(self, filename, xx, semigap, beam_offset):
@@ -113,46 +113,46 @@ class CorrugatedStreaker:
         comment_str = 'semigap %.5e m ; beam_offset %.5e m ; Length %.5e m' % (semigap, beam_offset, self.Ls)
         return write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str)
 
-def wf2d(s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 
-    beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
+    beam_hist, t_edges, x_edges = np.histogram2d(t_coords, x_coords, hist_bins)
     beam_hist *= charge / beam_hist.sum()
 
-    s_edges = s_edges[:-1] + (s_edges[1] - s_edges[0])*0.5
+    t_edges = t_edges[:-1] + (t_edges[1] - t_edges[0])*0.5
     x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5
 
-    wake2d = wf_func(s_edges[:, np.newaxis], semigap, x_edges)
-    wake = np.zeros_like(s_edges)
+    wake2d = wf_func(t_edges[:, np.newaxis], semigap, x_edges)
+    wake = np.zeros_like(t_edges)
 
     for n_output in range(len(wake)):
         for n2 in range(0, n_output+1):
             wake[n_output] += (beam_hist[n2,:] * wake2d[n_output-n2,:]).sum()
 
-    wake_on_particles = np.interp(s_coords, s_edges, wake) * np.sign(charge)
+    wake_on_particles = np.interp(t_coords, t_edges, wake) * np.sign(charge)
 
     output = {
             'wake': wake,
             'beam_hist': beam_hist,
-            's_bins': s_edges,
+            's_bins': t_edges,
             'x_bins': x_edges,
             'spw2d': wake2d,
             'wake_on_particles': wake_on_particles,
             }
     return output
 
-def wf2d_quad(self, s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+def wf2d_quad(self, t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
     """
     Respects sign of the charge
     """
 
-    beam_hist, s_edges, x_edges = np.histogram2d(s_coords, x_coords, hist_bins)
+    beam_hist, t_edges, x_edges = np.histogram2d(t_coords, x_coords, hist_bins)
     beam_hist *= charge / beam_hist.sum()
 
-    s_edges = s_edges[:-1] + (s_edges[1] - s_edges[0])*0.5
+    t_edges = t_edges[:-1] + (t_edges[1] - t_edges[0])*0.5
     x_edges = x_edges[:-1] + (x_edges[1] - x_edges[0])*0.5
 
-    wake2d = wf_func(s_edges[:, np.newaxis], semigap, x_edges)
-    wake = np.zeros([len(s_edges), len(x_edges)])
+    wake2d = wf_func(t_edges[:, np.newaxis], semigap, x_edges)
+    wake = np.zeros([len(t_edges), len(x_edges)])
 
     for n_output in range(wake.shape[0]):
         for n2 in range(0, n_output+1):
@@ -166,15 +166,15 @@ def wf2d_quad(self, s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int
     ## A much faster interpolation over the grid than from scipy.interpolate.interp2d
     indices = []
     indices_delta = []
-    delta_s = np.zeros_like(wake)
-    delta_x = delta_s.copy()
+    delta_t = np.zeros_like(wake)
+    delta_x = delta_t.copy()
 
     ## Derivative of wake in both directions
-    delta_s[:-1,:] = wake[1:,:] - wake[:-1,:]
+    delta_t[:-1,:] = wake[1:,:] - wake[:-1,:]
     delta_x[:,:-1] = wake[:,1:] - wake[:,:-1]
 
     ## Calculate the indices of the histogram for each point, then also add correction from first derivative
-    for grid_points, points in [(s_edges, s_coords), (x_edges, x_coords)]:
+    for grid_points, points in [(t_edges, t_coords), (x_edges, x_coords)]:
         index_float = (points - grid_points[0]) / (grid_points[1] - grid_points[0])
         index = index_float.astype(int)
         indices_delta.append(index_float-index)
@@ -183,14 +183,14 @@ def wf2d_quad(self, s_coords, x_coords, semigap, charge, wf_func, hist_bins=(int
 
     wake_on_particles = wake[indices[0], indices[1]]
     # Apply derivative
-    correction = delta_s[indices[0], indices[1]] * indices_delta[0] + delta_x[indices[0], indices[1]] * indices_delta[1]
+    correction = delta_t[indices[0], indices[1]] * indices_delta[0] + delta_x[indices[0], indices[1]] * indices_delta[1]
     wake_on_particles += correction
 
     output = {
             'wake': wake,
             'wake_on_particles': wake_on_particles,
             'beam_hist': beam_hist,
-            's_bins': s_edges,
+            't_bins': t_edges,
             'x_bins': x_edges,
             'spw2d': wake2d,
             }

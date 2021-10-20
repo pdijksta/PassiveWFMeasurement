@@ -23,7 +23,7 @@ structure_names = {
         }
 
 aramis_structure_parameters = {
-        'length': 1,
+        'Ls': 1,
         'p': 500e-6,
         'g': 250e-6,
         'w': 10e-3,

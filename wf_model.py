@@ -115,17 +115,31 @@ class CorrugatedStreaker:
 
 
 class Streaking:
-    def __init__(self, streaker, semigap, beam_position, time_grid, quad_wake):
-        self.streaker = streaker
+    def __init__(self, structure, structure_gap, beam_position, time_grid, quad_wake):
+        self.structure = structure
         self.time_grid = time_grid
-        self.semigap = semigap
+        self.semigap = structure_gap / 2.
         self.beam_position = beam_position
-        self.dipole_wake = streaker.wxd(self.time_grid, self.semigap, self.beam_position)
+        self.dipole_wake = structure.wxd(self.time_grid, self.semigap, self.beam_position)
+        if quad_wake:
+            self.quad_wake = structure.wxq(self.time_grid, self.semigap, self.beam_position)
+        else:
+            self.quad_wake = None
 
-    def convolve(self, beamProfile):
-        beam_time = beam.time
-        if 
-        outp = np.convolve(charge_profile, single_particle_wake)[:len(self.xx)]
+    def convolve(self, beamProfile, spw):
+        """
+        spw can be 'Dipole' or 'Quadrupole' or an array
+        """
+        if spw == 'Dipole':
+            spw = self.dipole_wake
+        elif spw == 'Quadrupole':
+            spw = self.quad_wake
+        beam_time = beamProfile.time
+        charge_profile = beamProfile.charge
+        if np.any(beam_time - self.time_grid):
+            raise ValueError('Beam time and time grid are not identical!')
+        outp = np.convolve(charge_profile, spw)[:len(self.time_grid)]
+        return outp
 
 def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 

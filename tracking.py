@@ -32,6 +32,13 @@ class Tracker2:
         self.structure_position = meta_data[structure_name+':CENTER']*1e-3
         #self.trans_beam = beam.gen_beam4D(**beam_parameters, p_central=self.energy/beam.electron_mass_eV)
 
-    def forward_propagate(self, beam, structure_gap, beam_position):
+    def forward_propagate(self, beam, streaking_obj, quad_wake):
+        wake_time = streaking_obj.time_grid
+        energy_eV = beam.energy_eV
+        delta_xp_dipole = streaking_obj.convolve(beam.beamProfile, 'Dipole')/energy_eV
+        if quad_wake:
+            delta_xp_quadrupole = streaking_obj.convolve(beam.beamProfile, 'Quadrupole')/energy_eV
+        else:
+            delta_xp_quadrupole = 0.
 
 

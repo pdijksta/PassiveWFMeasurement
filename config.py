@@ -2,7 +2,17 @@ import numpy as np
 import itertools
 import collections
 
-streaker_names = {
+"""
+Important naming convention
+    beam_position: Position of the beam relative to the middle of the structure
+    structure_position: Position of the structure as read by the :CENTER PV
+
+    The beam_position is calculated as follows:
+    -(structure_position - structure_center)
+    The sign is opposite to the structure_position!
+"""
+
+structure_names = {
         'Aramis': collections.OrderedDict([
             (0, 'SARUN18-UDCP010'),
             (1, 'SARUN18-UDCP020'),
@@ -12,17 +22,17 @@ streaker_names = {
             ]),
         }
 
-aramis_streaker_parameters = {
+aramis_structure_parameters = {
         'length': 1,
         'p': 500e-6,
         'g': 250e-6,
         'w': 10e-3,
         }
 
-streaker_parameters = {
-        'SARUN18-UDCP010': aramis_streaker_parameters,
-        'SARUN18-UDCP020': aramis_streaker_parameters,
-        'SATMA02-UDCP045': aramis_streaker_parameters,
+structure_parameters = {
+        'SARUN18-UDCP010': aramis_structure_parameters,
+        'SARUN18-UDCP020': aramis_structure_parameters,
+        'SATMA02-UDCP045': aramis_structure_parameters,
         }
 
 beamline_quads = {
@@ -76,9 +86,9 @@ beamline_charge_pvs_bsread = {
         'Aramis': ['SARBD01-DICT030:B1_CHARGE', 'SINEG01-DICT215:B1_CHARGE'],
         }
 
-all_streakers = []
-for beamline, beamline_dict in streaker_names.items():
-    all_streakers.extend([x for x in beamline_dict.values()])
+all_structures = []
+for beamline, beamline_dict in structure_names.items():
+    all_structures.extend([x for x in beamline_dict.values()])
 
 get_default_tracker_settings = lambda: {
         'magnet_file': None,

@@ -113,6 +113,20 @@ class CorrugatedStreaker:
         comment_str = 'semigap %.5e m ; beam_offset %.5e m ; Length %.5e m' % (semigap, beam_offset, self.Ls)
         return write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str)
 
+
+class Streaking:
+    def __init__(self, streaker, semigap, beam_position, time_grid, quad_wake):
+        self.streaker = streaker
+        self.time_grid = time_grid
+        self.semigap = semigap
+        self.beam_position = beam_position
+        self.dipole_wake = streaker.wxd(self.time_grid, self.semigap, self.beam_position)
+
+    def convolve(self, beamProfile):
+        beam_time = beam.time
+        if 
+        outp = np.convolve(charge_profile, single_particle_wake)[:len(self.xx)]
+
 def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 
     beam_hist, t_edges, x_edges = np.histogram2d(t_coords, x_coords, hist_bins)

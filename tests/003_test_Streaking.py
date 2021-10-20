@@ -32,7 +32,7 @@ tt, wake = streaking.convolve(bp, 'Dipole')
 
 xx = bp.time * c
 xx -= xx.min()
-charge_profile = bp.current
+charge_profile = bp.charge_dist
 calc = wf_model_old.WakeFieldCalculator(xx, charge_profile, energy_eV, 1)
 wf_dict = calc.calc_all(gap/2., 1, beam_position)
 

@@ -2,7 +2,7 @@
 from . import lattice
 from . import wf_model
 
-class Tracker2:
+class Tracker:
     """
     Parameters:
         beamline - Can be "Aramis" or "Athos".

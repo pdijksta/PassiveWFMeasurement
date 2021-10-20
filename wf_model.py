@@ -127,7 +127,7 @@ class Streaking:
         elif spw == 'Quadrupole':
             spw = self.quad_wake
         beam_time = beamProfile.time
-        charge_profile = beamProfile.charge
+        charge_profile = beamProfile.charge_dist
         outp = np.convolve(charge_profile, spw)[:len(self.time_grid)]
         return beam_time, outp
 

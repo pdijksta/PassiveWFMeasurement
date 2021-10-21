@@ -2,6 +2,7 @@ from scipy.constants import c, e, m_e
 import numpy as np
 
 from . import beam_profile
+from . import lattice
 
 electron_mass_eV = m_e * c**2 / e
 
@@ -32,7 +33,7 @@ def gen_beam2D(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
     outp[1] -= outp[1].mean()
 
 def gen_beamT(n_particles, beamProfile):
-    curr = beamProfile.current
+    curr = beamProfile.charge_dist
     tt = beamProfile.time
     integrated_curr = np.cumsum(curr)
     integrated_curr /= integrated_curr[-1]
@@ -57,11 +58,11 @@ def gen_beam4D(nemitx, nemity, betax, alphax, betay, alphay, energy_eV, n_partic
     gen_beam2D(outp[2:4,:], n_particles, nemity/gamma, betay, alphay, cutoff_sigma, n_mesh)
     return outp
 
-def particles_to_profile(time_coordinates, time_grid, charge, energy_eV):
+def particles_to_profile(time_coordinates, time_grid, total_charge, energy_eV):
     dt = time_grid[1] - time_grid[0]
     bins = np.concatenate(time_grid, [time_grid[-1]+dt]) - dt/2.
     hist, _ = np.histogram(time_coordinates, bins=bins)
-    return beam_profile.BeamProfile(time_grid, hist, energy_eV, charge)
+    return beam_profile.BeamProfile(time_grid, hist, energy_eV, total_charge)
 
 class Beam:
     """
@@ -69,48 +70,77 @@ class Beam:
     specifications: list or tuple of dictionaries with specifications for each dimension
         'x':
     """
-    def __init__(self, dimensions, specifications, n_particles, beamProfile, charge):
-        self.charge = charge
-        self.specifications = specifications
-        self.n_particles = n_particles
-        n_dim = 0
-        if 'x' in dimensions:
-            n_dim += 2
-        if 'y' in dimensions:
-            n_dim += 2
-        if 'p' in dimensions:
-            n_dim += 1
-        if 't' in dimensions:
-            n_dim += 1
-        self.arr = arr = np.empty([n_dim, n_particles])
-        n_dim = 0
-        dim_index = {}
-        s = specifications
-        ene = specifications['energy_eV']
-        gamma_rel = ene/electron_mass_eV
-        for t_dim in 'x', 'y':
-            if t_dim in dimensions:
-                gen_beam2D(arr[n_dim:n_dim+2], n_particles, s['nemit'+t_dim]/gamma_rel, s['beta'+t_dim], s['alpha'+t_dim], s['cutoff_sigma'], s['n_mesh'])
-                dim_index[t_dim] = n_dim
-                n_dim += 2
-        if 't' in dimensions:
-            dim_index['t'] = n_dim
-            self.gen_time(beamProfile)
-            n_dim += 1
-        if 'p' in dimensions:
-            arr[n_dim] = specifications['energy_eV']
-            dim_index['p'] = n_dim
-            n_dim += 1
-
+    def __init__(self, arr, dim_index, beamProfile, total_charge, energy_eV):
+        len_arr = len(arr)
+        len_dim = len(dim_index)
+        if len_arr != len_dim:
+            raise ValueError(len(arr), dim_index.keys())
+        self.arr = arr
         self.dim_index = dim_index
-
-    def gen_time(self, beamProfile):
-        self.arr[self.dim_index['t']] = gen_beamT(self.n_particles, beamProfile)
         self.beamProfile = beamProfile
+        self.total_charge = total_charge
+        self.n_particles = len(arr[0])
+        self.energy_eV = energy_eV
 
     def to_profile(self, time_grid):
-        return particles_to_profile(self.arr[self.dim_index['t']], time_grid, self.charge)
+        return particles_to_profile(self['t'], time_grid, self.total_charge)
+
+    def to_screen_dist(self, screen_bins):
+        return beam_profile.getScreenDistributionFromPoints(self['x'], screen_bins, total_charge=self.total_charge)
+
+    def __getitem__(self, dim):
+        return self.arr[self.dim_index[dim]]
+
+    def __setitem__(self, dim, value):
+        self.arr[self.dim_index[dim]] = value
+
+    def linear_propagate(self, matrix6D):
+        """
+        Gets a 6 dimensional matrix in elegant format (according to lattice.py).
+        Only takes the required entries according to which dimensions are in this beam.
+        """
+        matrix = np.zeros([len(self.dim_index)]*2, float)
+        lat_dim_index = lattice.Lattice.dim_index
+        for dim_row, index_row in self.dim_index.items():
+            for dim_col, index_col in self.dim_index.items():
+                matrix[index_row,index_col] = matrix6D[lat_dim_index[dim_row], lat_dim_index[dim_col]]
+        self.arr = matrix @ self.arr
+
+    def update_beamProfile(self):
+        self.beamProfile = particles_to_profile(self['t'], self.beamProfile.time, self.total_charge, self.beamProfile.energy_eV)
+        return self.beamProfile
 
 
+def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_charge, energy_eV):
 
+    n_dim = 0
+    if 'x' in dimensions:
+        n_dim += 2
+    if 'y' in dimensions:
+        n_dim += 2
+    if 'delta' in dimensions:
+        n_dim += 1
+    if 't' in dimensions:
+        n_dim += 1
+    arr = np.empty([n_dim, n_particles])
+    n_dim = 0
+    dim_index = {}
+    s = specifications
+    gamma_rel = energy_eV/electron_mass_eV
+    for t_dim in 'x', 'y':
+        if t_dim in dimensions:
+            gen_beam2D(arr[n_dim:n_dim+2], n_particles, s['nemit'+t_dim]/gamma_rel, s['beta'+t_dim], s['alpha'+t_dim], s['cutoff_sigma'], s['n_mesh'])
+            dim_index[t_dim] = n_dim
+            dim_index[t_dim+'p'] = n_dim+1
+            n_dim += 2
+    if 't' in dimensions:
+        dim_index['t'] = n_dim
+        arr[n_dim] = gen_beamT(n_particles, beamProfile)
+        n_dim += 1
+    if 'delta' in dimensions:
+        arr[n_dim] = 1
+        dim_index['delta'] = n_dim
+        n_dim += 1
+
+    return Beam(arr, dim_index, beamProfile, total_charge, energy_eV)
 

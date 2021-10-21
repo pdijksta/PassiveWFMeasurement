@@ -39,7 +39,7 @@ tt_points = 1000
 charge = -200e-12
 
 gauss_bp = beam_profile.get_gaussian_profile(sigma_t, tt_range, tt_points, charge, energy_eV)
-beam = beam.gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, p_central, gauss_bp, n_particles, cutoff_sigma, n_mesh)
+beam = beam.gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, energy_eV, gauss_bp, n_particles, cutoff_sigma, n_mesh)
 beam_old_w = elegant_matrix.gen_beam(nemitx, nemity, alphax, betax, alphay, betay, p_central, sigma_t, n_particles)[0]
 beam_old = np.zeros_like(beam)
 

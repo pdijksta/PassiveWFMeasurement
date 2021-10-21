@@ -1,7 +1,9 @@
+from collections import OrderedDict
 import os
 import itertools
 import scipy
 import numpy as np
+from scipy.constants import c
 
 from . import h5_storage
 
@@ -38,6 +40,19 @@ def transferMatrixQuad66(Lq, kini):
     return np.real(Mq10)
 
 class Lattice:
+    """
+    Reads elegant .mat file that has been converted from sdds to h5 format using the sdds2hdf command.
+    The convention is changed from s to t for the 5th coordinate.
+    """
+    dim_index = OrderedDict((
+            ('x',0),
+            ('xp', 1),
+            ('y', 2),
+            ('yp', 3),
+            ('t', 4),
+            ('delta', 5),
+            ))
+
     def __init__(self, math5_file):
         mat = h5_storage.loadH5Recursive(math5_file)['page1']
         self.columns = mat['columns']
@@ -63,7 +78,13 @@ class Lattice:
                 ele_matrix = transferMatrixQuad66(length, k1)
             else:
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):
-                    ele_matrix[n_col-1,n_row-1] = columns['R%i%i' % (n_col, n_row)][n_element]
+                    # elegant uses s for the 5th coordinate (S5). Here we transform the matrix to time.
+                    factor = 1
+                    if n_row == 5:
+                        factor /= c
+                    if n_col == 5:
+                        factor *= c
+                    ele_matrix[n_row-1,n_col-1] = columns['R%i%i' % (n_row, n_col)][n_element] * factor
             matrix = ele_matrix @ matrix
             all_matrices.append(matrix)
 

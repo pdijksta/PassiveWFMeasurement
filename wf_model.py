@@ -10,7 +10,7 @@ t1 = Z0 * c / (4*pi)
 def get_structure(structure_name):
     sp = config.structure_parameters[structure_name]
 
-    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['length'])
+    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['Ls'])
 
 class CorrugatedStructure:
     """

@@ -110,8 +110,23 @@ class Beam:
         self.beamProfile = particles_to_profile(self['t'], self.beamProfile.time, self.total_charge, self.beamProfile.energy_eV)
         return self.beamProfile
 
-
 def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_charge, energy_eV):
+    """
+    Generate a Gaussian beam from specifications.
+    Choose which dimensions the beam should include.
+    Possbible: x, y, t, delta
+    x and y generate two dimensions (x, xp or y, ypr.
+
+    Format:
+        - dimensions: for example ('x','y', 't')
+        - specifications: dictionary which can have the following keys:
+            - nemitx, nemity, betax, betay, alphax, alphay (no explaination needed)
+            - n_mesh, cutoff_sigma: for transverse gaussian coordinate generation. See other functions in this file.
+        - n_particles: integer
+        - beamProfile: look at beam_profile.py
+        - total_charge: in Coulomb
+        - energy_eV: enegy in eV
+    """
 
     n_dim = 0
     if 'x' in dimensions:
@@ -138,7 +153,7 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         arr[n_dim] = gen_beamT(n_particles, beamProfile)
         n_dim += 1
     if 'delta' in dimensions:
-        arr[n_dim] = 1
+        arr[n_dim] = 0
         dim_index['delta'] = n_dim
         n_dim += 1
 

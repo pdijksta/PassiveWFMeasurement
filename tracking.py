@@ -50,7 +50,7 @@ class Tracker:
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
         if quad_wake:
-            wake_dict_quadrupole = self.structure.convolve(beam.beamProfile, 'Quadrupole')/energy_eV
+            wake_dict_quadrupole = self.structure.convolve(beam.beamProfile, self.structure_gap/2., self.beam_position, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
             delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)
         else:
@@ -60,7 +60,8 @@ class Tracker:
         beam['xp'] += delta_xp_coords_dip + delta_xp_coords_quad
 
         beam.linear_propagate(self.matrix)
-        screen = beam.to_screen_dist(self.forward_options['screen_bins'], self.forward_options['screen_smoothen'])
+        screen = beam.to_screen_dist(self.forward_options['screen_bins'], 0)
+        screen.smoothen(self.forward_options['screen_smoothen'])
         outp_dict = {
                 'beam': beam,
                 'screen': screen,

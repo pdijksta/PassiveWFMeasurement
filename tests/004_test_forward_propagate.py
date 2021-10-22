@@ -9,6 +9,10 @@ import PassiveWFMeasurement.h5_storage as h5_storage
 import PassiveWFMeasurement.beam as beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
+import PassiveWFMeasurement.myplotstyle as ms
+
+ms.closeall()
+
 
 
 beamline = 'Aramis'
@@ -37,5 +41,22 @@ bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, total_charge,
 beam_obj = beam.beam_from_spec(['x', 't'], beam_spec, n_particles, bp, total_charge, tracker.energy_eV)
 
 forward_dict = tracker.forward_propagate(beam_obj)
+
+screen = forward_dict['screen']
+
+ms.figure('Test forward')
+subplot = ms.subplot_factory(2,2)
+sp_ctr = 1
+
+sp_screen = subplot(sp_ctr, title='Screen', xlabel='x (mm)', ylabel=config.rho_label)
+sp_ctr += 1
+
+screen.plot_standard(sp_screen)
+
+
+
+
+ms.show()
+
 
 

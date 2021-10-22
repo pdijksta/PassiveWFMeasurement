@@ -30,8 +30,10 @@ class Tracker2:
         self.delta_gap = delta_gap
         self.structure = wf_model.get_structure(structure_name)
         self.structure_position = meta_data[structure_name+':CENTER']*1e-3
+        self.structure_gap = meta_data[structure_name+':GAP']*1e-3
         #self.trans_beam = beam.gen_beam4D(**beam_parameters, p_central=self.energy/beam.electron_mass_eV)
 
-    def forward_propagate(self, beam, structure_gap, beam_position):
-
+    def forward_propagate(self, beam):
+        gap = self.structure_gap + self.delta_gap
+        beam_position = -(self.structure_position - 
 

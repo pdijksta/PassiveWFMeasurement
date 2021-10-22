@@ -114,6 +114,14 @@ for beamline, beamline_dict in structure_names.items():
 #        'delta_gap': (0., 0.)
 #        }
 
+
+def get_default_forward_options():
+    return {
+            'screen_bins': 500,
+            'screen_smoothen': 20e-6,
+            'quad_wake': False,
+            }
+
 def get_default_beam_spec(beamline):
     outp = {
             'nemitx': 300e-9,

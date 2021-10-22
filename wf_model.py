@@ -27,6 +27,40 @@ class CorrugatedStructure:
         self.w = w
         self.Ls = Ls
         self.alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
+        self.spw_dict = {
+                'Dipole': {},
+                'Quadrupole': {},
+                }
+
+    def dict_key(self, semigap, beam_position, time_grid):
+        return (semigap, beam_position, time_grid[0], time_grid[-1], len(time_grid))
+
+    def update_spw_dict(self, semigap, beam_position, time_grid, spw_type):
+
+        dict_key = self.dict_key(semigap, beam_position, time_grid)
+        time_grid0 = time_grid - time_grid.min()
+
+        if spw_type == 'Quadrupole':
+            func = self.wxq
+        elif spw_type == 'Dipole':
+            func = self.wxd
+        self.spw_dict[spw_type][dict_key] = func(time_grid0, semigap, beam_position)
+
+    def convolve(self, beamProfile, semigap, beam_position, spw_type):
+        beam_time = beamProfile.time
+        dict_key = self.dict_key(semigap, beam_position, beam_time)
+        if dict_key not in self.spw_dict[spw_type]:
+            self.update_spw_dict(semigap, beam_position, beam_time, spw_type)
+
+        spw = self.spw_dict[spw_type][dict_key]
+        charge_profile = beamProfile.charge_dist
+        wake_potential = np.convolve(charge_profile, spw)[:len(beam_time)]
+        return {
+                'time': beam_time,
+                'spw': spw,
+                'charge_profile': charge_profile,
+                'wake_potential': wake_potential,
+                }
 
     def s0d(self, a):
         return self.s0r(a) * (15/14)**2
@@ -104,34 +138,6 @@ class CorrugatedStructure:
         comment_str = 'semigap %.5e m ; beam_offset %.5e m ; Length %.5e m' % (semigap, beam_offset, self.Ls)
         return write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str)
 
-
-class Streaking:
-    def __init__(self, structure, structure_gap, beam_position, time_grid, quad_wake):
-        self.structure = structure
-        self.time_grid = time_grid
-        self.time_grid0 = time_grid - time_grid.min()
-        self.semigap = structure_gap / 2.
-        self.beam_position = beam_position
-        self.dipole_wake = structure.wxd(self.time_grid0, self.semigap, self.beam_position)
-        if quad_wake:
-            self.quad_wake = structure.wxq(self.time_grid0, self.semigap, self.beam_position)
-        else:
-            self.quad_wake = None
-
-    def convolve(self, beamProfile, spw):
-        """
-        spw can be 'Dipole' or 'Quadrupole' or an array
-        """
-        if spw == 'Dipole':
-            spw = self.dipole_wake
-        elif spw == 'Quadrupole':
-            if not self.quad_wake:
-                raise ValueError('Quad wake was not specified earlier!')
-            spw = self.quad_wake
-        beam_time = beamProfile.time
-        charge_profile = beamProfile.charge_dist
-        outp = np.convolve(charge_profile, spw)[:len(self.time_grid)]
-        return beam_time, outp
 
 def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 

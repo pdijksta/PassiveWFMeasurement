@@ -25,9 +25,12 @@ energy_eV = 6e9
 bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, charge, energy_eV)
 
 structure = wf_model.CorrugatedStructure(**config.aramis_structure_parameters)
-streaking = wf_model.Streaking(structure, gap, beam_position, bp.time, True)
 
-tt, wake = streaking.convolve(bp, 'Dipole')
+wake_dict = structure.convolve(bp, gap/2., beam_position, 'Dipole')
+
+tt = wake_dict['time']
+wake = wake_dict['wake_potential']
+spw = wake_dict['spw']
 
 
 xx = bp.time * c
@@ -58,7 +61,7 @@ sp_w = subplot(sp_ctr, title='wake potential', xlabel='t (fs)', ylabel='W (V/m)'
 sp_ctr += 1
 
 
-for label, spw, wake_potential in [('New', streaking.dipole_wake, wake), ('Old', spw_old, wake_old)]:
+for label, spw, wake_potential in [('New', spw, wake), ('Old', spw_old, wake_old)]:
     sp_spw.plot(tt, spw, label=label)
     sp_w.plot(tt, wake_potential, label=label)
 

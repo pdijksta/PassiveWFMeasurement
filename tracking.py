@@ -17,7 +17,7 @@ class Tracker:
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, delta_gap, structure_center, screen_center, forward_options, backward_options):
         self.forward_options = forward_options
-        self.backward_options = self.backward_options
+        self.backward_options = backward_options
         self.meta_data = meta_data
         self.structure_name = structure_name
         self.screen_name = screen_name
@@ -36,7 +36,6 @@ class Tracker:
         self.structure_gap = self.structure_gap0 + self.delta_gap
         self.beam_position = -(self.structure_position - self.structure_center)
         self.structure = wf_model.get_structure(structure_name)
-        self.streaking = wf_model.Streaking(self.structure, self.structure_gap, self.beam_position, )
 
     def forward_propagate(self, beam):
         """
@@ -46,11 +45,13 @@ class Tracker:
         beam.linear_propagate(mat)
         wake_time = beam.beamProfile.time
         energy_eV = beam.energy_eV
-        delta_xp_dipole = self.structure.convolve(beam.beamProfile, 'Dipole')/energy_eV
+        wake_dict_dipole = self.structure.convolve(beam.beamProfile, self.structure_gap/2., self.beam_position, 'Dipole')
+        delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
         if quad_wake:
-            delta_xp_quadrupole = self.structure.convolve(beam.beamProfile, 'Quadrupole')/energy_eV
+            wake_dict_quadrupole = self.structure.convolve(beam.beamProfile, 'Quadrupole')/energy_eV
+            delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
             delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)
         else:
             delta_xp_quadrupole = 0.
@@ -66,6 +67,6 @@ class Tracker:
                 }
         return outp_dict
 
-    def backward_propagate(self):
+    def backward_propagate(self, screenDist):
         pass
 

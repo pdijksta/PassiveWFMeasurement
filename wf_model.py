@@ -7,30 +7,19 @@ from . import config
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
 t1 = Z0 * c / (4*pi)
 
-def PostAramisStreaker():
-    """
-    CorrugatedStreaker with parameters specified by Paolo Craievich (personal communication)
-    """
-    Ls = 1.
-    #delta = 250e-6 # Irrelevant
-    p = 500e-6
-    g = 250e-6
-    w = 10e-3
-    return CorrugatedStreaker(p, g, w, Ls)
+def get_structure(structure_name):
+    sp = config.structure_parameters[structure_name]
 
-def get_streaker(streaker_name):
-    sp = config.streaker_parameters[streaker_name]
+    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['Ls'])
 
-    return CorrugatedStreaker(sp['g'], sp['g'], sp['w'], sp['length'])
-
-class CorrugatedStreaker:
+class CorrugatedStructure:
     """
     Following Bane, Stupakov, Zagorodnov, Analytical formulas for short bunch wakes in a flat dechirper, PRAB 19, 084401 (2016)
     DOI: 10.1103/PhysRevAccelBeams.19.084401
     p         period
     g         longitudinal gap
     w         plate width
-    Ls        Length of streaker
+    Ls        Length of structure
     """
     def __init__(self, p, g, w, Ls):
         self.p = p
@@ -38,7 +27,9 @@ class CorrugatedStreaker:
         self.w = w
         self.Ls = Ls
         self.alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
-        self.s0d = self.s0r * (15/14)**2
+
+    def s0d(self, a):
+        return self.s0r(a) * (15/14)**2
 
     def s0r(self, a):
         return (a**2 * self.g) / (2*pi * self.alpha**2 * self.p**2)
@@ -49,7 +40,7 @@ class CorrugatedStreaker:
         Unit: V/m /m (offset)
         """
         t2 = pi**4 / (16*a**4)
-        t3 = self.s0d
+        t3 = self.s0d(a)
         sqr = sqrt(c*t/t3)
         t4 = 1 - (1 + sqr)*exp(-sqr)
         return t1*t2*t3*t4*x*self.Ls
@@ -63,7 +54,7 @@ class CorrugatedStreaker:
         arg = pi*x/(2*a)
         t3 = 1./cos(arg)**2
         t4 = tan(arg)
-        t5 = self.s0yd(x)
+        t5 = self.s0yd(a, x)
         sqr = sqrt(c*t/t5)
         t6 = 1 - (1 + sqr)*exp(-sqr)
         return t1 * t2 * t3 * t4 * t5 * t6 * self.Ls
@@ -115,17 +106,32 @@ class CorrugatedStreaker:
 
 
 class Streaking:
-    def __init__(self, streaker, semigap, beam_position, time_grid, quad_wake):
-        self.streaker = streaker
+    def __init__(self, structure, structure_gap, beam_position, time_grid, quad_wake):
+        self.structure = structure
         self.time_grid = time_grid
-        self.semigap = semigap
+        self.time_grid0 = time_grid - time_grid.min()
+        self.semigap = structure_gap / 2.
         self.beam_position = beam_position
-        self.dipole_wake = streaker.wxd(self.time_grid, self.semigap, self.beam_position)
+        self.dipole_wake = structure.wxd(self.time_grid0, self.semigap, self.beam_position)
+        if quad_wake:
+            self.quad_wake = structure.wxq(self.time_grid0, self.semigap, self.beam_position)
+        else:
+            self.quad_wake = None
 
-    def convolve(self, beamProfile):
-        beam_time = beam.time
-        if 
-        outp = np.convolve(charge_profile, single_particle_wake)[:len(self.xx)]
+    def convolve(self, beamProfile, spw):
+        """
+        spw can be 'Dipole' or 'Quadrupole' or an array
+        """
+        if spw == 'Dipole':
+            spw = self.dipole_wake
+        elif spw == 'Quadrupole':
+            if not self.quad_wake:
+                raise ValueError('Quad wake was not specified earlier!')
+            spw = self.quad_wake
+        beam_time = beamProfile.time
+        charge_profile = beamProfile.charge_dist
+        outp = np.convolve(charge_profile, spw)[:len(self.time_grid)]
+        return beam_time, outp
 
 def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
 

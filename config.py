@@ -1,16 +1,14 @@
-import numpy as np
+#import numpy as np
 import itertools
 import collections
 
-"""
-Important naming convention
-    beam_position: Position of the beam relative to the middle of the structure
-    structure_position: Position of the structure as read by the :CENTER PV
-
-    The beam_position is calculated as follows:
-    -(structure_position - structure_center)
-    The sign is opposite to the structure_position!
-"""
+#Important naming convention
+#    beam_position: Position of the beam relative to the middle of the structure
+#    structure_position: Position of the structure as read by the :CENTER PV
+#
+#    The beam_position is calculated as follows:
+#    -(structure_position - structure_center)
+#    The sign is opposite to the structure_position!
 
 structure_names = {
         'Aramis': collections.OrderedDict([
@@ -23,7 +21,7 @@ structure_names = {
         }
 
 aramis_structure_parameters = {
-        'length': 1,
+        'Ls': 1,
         'p': 500e-6,
         'g': 250e-6,
         'w': 10e-3,
@@ -90,31 +88,44 @@ all_structures = []
 for beamline, beamline_dict in structure_names.items():
     all_structures.extend([x for x in beamline_dict.values()])
 
-get_default_tracker_settings = lambda: {
-        'magnet_file': None,
-        'timestamp': None,
-        'struct_lengths': np.array([1., 1.]),
-        'n_particles': int(100e3),
-        'n_emittances': np.array([755, 755])*1e-9,
-        'screen_bins': 500,
-        'screen_cutoff': 2e-2,
-        'smoothen': 20e-6,
-        'profile_cutoff': 1e-2,
-        'len_screen': 2000,
-        'quad_wake': False,
-        'bp_smoothen': 1e-15,
-        'override_quad_beamsize': False,
-        'quad_x_beamsize': np.array([10., 10.])*1e-6,
-        }
+#get_default_tracker_settings = lambda: {
+#        'magnet_file': None,
+#        'timestamp': None,
+#        'struct_lengths': np.array([1., 1.]),
+#        'n_particles': int(100e3),
+#        'n_emittances': np.array([755, 755])*1e-9,
+#        'screen_bins': 500,
+#        'screen_cutoff': 2e-2,
+#        'smoothen': 20e-6,
+#        'profile_cutoff': 1e-2,
+#        'len_screen': 2000,
+#        'quad_wake': False,
+#        'bp_smoothen': 1e-15,
+#        'override_quad_beamsize': False,
+#        'quad_x_beamsize': np.array([10., 10.])*1e-6,
+#        }
+#
+#get_default_gauss_recon_settings = lambda: {
+#        'self_consistent': True,
+#        'sig_t_range': np.exp(np.linspace(np.log(7), np.log(100), 15))*1e-15,
+#        'tt_halfrange': 200e-15,
+#        'charge': 200e-12,
+#        'method': 'centroid',
+#        'delta_gap': (0., 0.)
+#        }
 
-get_default_gauss_recon_settings = lambda: {
-        'self_consistent': True,
-        'sig_t_range': np.exp(np.linspace(np.log(7), np.log(100), 15))*1e-15,
-        'tt_halfrange': 200e-15,
-        'charge': 200e-12,
-        'method': 'centroid',
-        'delta_gap': (0., 0.)
-        }
+def get_default_beam_spec(beamline):
+    outp = {
+            'nemitx': 300e-9,
+            'nemity': 300e-9,
+            'n_mesh': 500,
+            'cutoff_sigma': 3,
+            }
+    outp.update(default_optics[beamline])
+    return outp
+
+default_n_particles = int(1e5)
+
 
 tmp_elegant_dir = '~/tmp_elegant'
 

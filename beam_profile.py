@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
-from gaussfit import GaussFit
+from .gaussfit import GaussFit
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -219,7 +219,7 @@ class Profile:
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6, charge=1):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6, total_charge=1):
         super().__init__()
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
@@ -228,7 +228,7 @@ class ScreenDistribution(Profile):
             self._yy = self._yy - np.min(self._yy)
         self.real_x = real_x
         self.ignore_range = ignore_range
-        self.charge = charge
+        self.total_charge = total_charge
         self.normalize()
 
     @property
@@ -241,7 +241,7 @@ class ScreenDistribution(Profile):
 
     def normalize(self, norm=None):
         if norm is None:
-            norm = abs(self.charge)
+            norm = abs(self.total_charge)
         self._yy = self._yy / self.integral * norm
 
     def plot_standard(self, sp, **kwargs):
@@ -257,10 +257,10 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        factor = np.abs(self.charge /np.trapz(y, x))
+        factor = np.abs(self.total_charge /np.trapz(y, x))
         #try:
         #    integral = np.trapz(y*factor, x)
-        #    print('charge', self.charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
+        #    print('total_charge', self.total_charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
         #except:
         #    pass
         return sp.plot(x*1e3, y*1e9*factor, **kwargs)
@@ -269,12 +269,12 @@ class ScreenDistribution(Profile):
         return {'x': self.x,
                 'intensity': self.intensity,
                 'real_x': self.real_x,
-                'charge': self.charge,
+                'total_charge': self.total_charge,
                 }
 
     @staticmethod
     def from_dict(dict_):
-        return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'], charge=dict_['charge'])
+        return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'], total_charge=dict_['total_charge'])
 
 class AnyProfile(Profile):
     def __init__(self, xx, yy):
@@ -283,7 +283,7 @@ class AnyProfile(Profile):
         self.yy = self._yy = yy
 
 
-def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, charge=1):
+def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_charge=1):
     """
     Smoothening by applying changes to coordinate.
     Does not actually smoothen the output, just broadens it.
@@ -298,53 +298,53 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, charge=1)
     screen_hist, bin_edges0 = np.histogram(x_points2, bins=screen_bins, density=True)
     screen_xx = (bin_edges0[1:] + bin_edges0[:-1])/2
 
-    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points, charge=charge)
+    return ScreenDistribution(screen_xx, screen_hist, real_x=x_points, total_charge=total_charge)
 
 class BeamProfile(Profile):
-    def __init__(self, time, current, energy_eV, charge):
+    def __init__(self, time, charge_dist, energy_eV, total_charge):
         super().__init__()
 
         if np.any(np.isnan(time)):
             raise ValueError('nans in time')
-        if np.any(np.isnan(current)):
-            raise ValueError('nans in current')
+        if np.any(np.isnan(charge_dist)):
+            raise ValueError('nans in charge_dist')
 
         self.ignore_range = None
         self._xx = time
         assert np.all(np.diff(self._xx)>=0)
-        self._yy = current / current.sum() * charge
+        self._yy = charge_dist / charge_dist.sum() * total_charge
         self.energy_eV = energy_eV
-        self.charge = charge
+        self.total_charge = total_charge
         self.wake_dict = {}
 
     def to_dict(self):
         return {'time': self.time,
-                'current': self.current,
+                'charge_dist': self.charge_dist,
                 'energy_eV': self.energy_eV,
-                'charge': self.charge,
+                'total_charge': self.total_charge,
                 }
 
     @staticmethod
     def from_dict(dict_):
-        return BeamProfile(dict_['time'], dict_['current'], dict_['energy_eV'], dict_['charge'])
+        return BeamProfile(dict_['time'], dict_['charge_dist'], dict_['energy_eV'], dict_['total_charge'])
 
     @property
     def time(self):
         return self._xx
 
     @property
-    def current(self):
+    def charge_dist(self):
         return self._yy
 
     def scale_yy(self, scale_factor):
-        self.charge *= scale_factor
+        self.total_charge *= scale_factor
         super().scale_yy(scale_factor)
 
     def wake_effect_on_screen(self, wf_dict, r12):
         wake = wf_dict['dipole']['wake_potential']
         quad = wf_dict['quadrupole']['wake_potential']
-        wake_effect = wake/self.energy_eV*r12*np.sign(self.charge)
-        quad_effect = quad/self.energy_eV*r12*np.sign(self.charge)
+        wake_effect = wake/self.energy_eV*r12*np.sign(self.total_charge)
+        quad_effect = quad/self.energy_eV*r12*np.sign(self.total_charge)
         if np.any(np.isnan(wake_effect)):
             raise ValueError('Nan in wake_effect!')
         if np.any(np.isnan(quad_effect)):
@@ -353,17 +353,17 @@ class BeamProfile(Profile):
                 't': self.time,
                 'x': wake_effect,
                 'quad': quad_effect,
-                'charge': self.charge,
+                'total_charge': self.total_charge,
                 }
         return output
 
     def shift(self, center):
         if center == 'Max':
-            center_index = np.argmax(np.abs(self.current))
+            center_index = np.argmax(np.abs(self.charge_dist))
         elif center == 'Left':
-            center_index = find_rising_flank(np.abs(self.current))
+            center_index = find_rising_flank(np.abs(self.charge_dist))
         elif center == 'Right':
-            center_index = len(self.current) - find_rising_flank(np.abs(self.current[::-1]))
+            center_index = len(self.charge_dist) - find_rising_flank(np.abs(self.charge_dist[::-1]))
         else:
             raise ValueError(center)
 
@@ -378,19 +378,19 @@ class BeamProfile(Profile):
         if center_max:
             center='Max'
 
-        factor = np.sign(self.charge)
+        factor = np.sign(self.total_charge)
         if norm:
-            factor *= self.charge/self.integral
+            factor *= self.total_charge/self.integral
 
         center_index = None
         if center is None:
             pass
         elif center == 'Max':
-            center_index = np.argmax(np.abs(self.current))
+            center_index = np.argmax(np.abs(self.charge_dist))
         elif center == 'Left':
-            center_index = find_rising_flank(self.current)
+            center_index = find_rising_flank(self.charge_dist)
         elif center == 'Right':
-            center_index = len(self.current) - find_rising_flank(self.current[::-1])
+            center_index = len(self.charge_dist) - find_rising_flank(self.charge_dist[::-1])
         elif center == 'Gauss':
             center_index = np.argmin((self._xx - self.gaussfit.mean)**2)
         elif center == 'Mean':
@@ -421,10 +421,10 @@ class BeamProfile(Profile):
 
         return sp.plot(x, y*factor/1e3, **kwargs)
 
-#def profile_from_blmeas(file_, tt_halfrange, charge, energy_eV, subtract_min=False, zero_crossing=1):
+#def profile_from_blmeas(file_, tt_halfrange, total_charge, energy_eV, subtract_min=False, zero_crossing=1):
 #    bl_meas = data_loader.load_blmeas(file_)
 #    time_meas0 = bl_meas['time_profile%i' % zero_crossing]
-#    current_meas0 = bl_meas['current%i' % zero_crossing]
+#    current_meas0 = bl_meas['charge_dist%i' % zero_crossing]
 #
 #    if subtract_min:
 #        current_meas0 = current_meas0 - current_meas0.min()
@@ -432,7 +432,7 @@ class BeamProfile(Profile):
 #    if tt_halfrange is None:
 #        tt, cc = time_meas0, current_meas0
 #    else:
-#        current_meas0 *= charge/current_meas0.sum()
+#        current_meas0 *= total_charge/current_meas0.sum()
 #        gf_blmeas = GaussFit(time_meas0, current_meas0)
 #        time_meas0 -= gf_blmeas.mean
 #
@@ -442,11 +442,11 @@ class BeamProfile(Profile):
 #        current_meas = np.concatenate([np.zeros_like(time_meas1), current_meas0, np.zeros_like(time_meas2)])
 #
 #        tt, cc = time_meas, current_meas
-#    return BeamProfile(tt, cc, energy_eV, charge)
+#    return BeamProfile(tt, cc, energy_eV, total_charge)
 
 
 #@functools.lru_cache(100)
-def get_gaussian_profile(sig_t, tt_range, tt_points, charge, energy_eV, cutoff=1e-3):
+def get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cutoff=1e-3):
     """
     cutoff can be None
     """
@@ -457,7 +457,7 @@ def get_gaussian_profile(sig_t, tt_range, tt_points, charge, energy_eV, cutoff=1
         abs_c = np.abs(current_gauss)
         current_gauss[abs_c<cutoff*abs_c.max()] = 0
 
-    return BeamProfile(time_arr, current_gauss, energy_eV, charge)
+    return BeamProfile(time_arr, current_gauss, energy_eV, total_charge)
 
 def get_average_profile(p_list):
     len_profile = max(len(p) for p in p_list)

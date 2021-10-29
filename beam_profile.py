@@ -92,7 +92,7 @@ class Profile:
         yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
         self._yy = yy / np.sum(yy) * old_sum
 
-    def cutoff2(self, cutoff_factor):
+    def aggressive_cutoff(self, cutoff_factor):
         """
         Cutoff based on max value of the y array.
         Also sets to 0 all values before and after the first 0 value (from the perspective of the maximum).
@@ -294,6 +294,17 @@ class BeamProfile(Profile):
         self.energy_eV = energy_eV
         self.total_charge = total_charge
         self.wake_dict = {}
+
+    def calc_wake(self, structure, gap, beam_position, wake_type):
+        #print('calc_wake gap beam_offset %.2e %.2e' % (gap, beam_offset))
+        if abs(beam_position) > gap/2.:
+            raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_position))
+        dict_key = gap, beam_position, structure, wake_type
+        if dict_key in self.wake_dict:
+            return self.wake_dict[dict_key]
+        wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)
+        self.wake_dict[dict_key] = wf_dict
+        return wf_dict
 
     def to_dict(self):
         return {'time': self.time,

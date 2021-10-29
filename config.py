@@ -34,8 +34,23 @@ structure_parameters = {
         }
 
 beamline_quads = {
-        'Aramis': ['SARUN18.MQUA080', 'SARUN19.MQUA080', 'SARUN20.MQUA080', 'SARBD01.MQUA020', 'SARBD02.MQUA030'],
-        'Athos': ['SATMA02.MQUA050', 'SATMA02.MQUA070', 'SATBD01.MQUA010', 'SATBD01.MQUA030', 'SATBD01.MQUA050', 'SATBD01.MQUA070', 'SATBD01.MQUA090', 'SATBD02.MQUA030'],
+        'Aramis': [
+            'SARUN18.MQUA080',
+            'SARUN19.MQUA080',
+            'SARUN20.MQUA080',
+            'SARBD01.MQUA020',
+            'SARBD02.MQUA030',
+            ],
+        'Athos': [
+            'SATMA02.MQUA050',
+            'SATMA02.MQUA070',
+            'SATBD01.MQUA010',
+            'SATBD01.MQUA030',
+            'SATBD01.MQUA050',
+            'SATBD01.MQUA070',
+            'SATBD01.MQUA090',
+            'SATBD02.MQUA030',
+            ],
         }
 
 beamline_chargepv = {
@@ -120,7 +135,17 @@ def get_default_forward_options():
             'screen_bins': 500,
             'screen_smoothen': 20e-6,
             'quad_wake': False,
+            'len_screen': 2000,
+            'screen_cutoff': 2e-2,
             }
+
+def get_default_backward_options():
+    return {
+            'compensate_negative_screen': True,
+            'len_profile': 2000,
+            'profile_cutoff': 0.
+            }
+
 
 def get_default_beam_spec(beamline):
     outp = {

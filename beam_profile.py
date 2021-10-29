@@ -39,29 +39,6 @@ class Profile:
         self._gf_xx = None
         self._gf_yy = None
 
-    def compare(self, other):
-        xx_min = min(self._xx.min(), other._xx.min())
-        xx_max = max(self._xx.max(), other._xx.max())
-        xx = np.linspace(xx_min, xx_max, max(len(self._xx), len(other._xx)))
-        yy1 = np.interp(xx, self._xx, self._yy, left=0, right=0)
-        yy2 = np.interp(xx, other._xx, other._yy, left=0, right=0)
-        yy1 = yy1 / np.nanmean(yy1)
-        yy2 = yy2 / np.nanmean(yy2)
-
-        # modify least squares else large values dominate
-        #weight = yy1 + yy2
-        #np.clip(weight, weight.max()/2., None, out=weight)
-        weight = 1
-
-        diff = ((yy1-yy2)/weight)**2
-
-        if self.ignore_range is not None:
-            diff[np.abs(xx)<self.ignore_range] = 0
-
-        #outp = np.nanmean(diff[np.nonzero(weight)])
-        #import pdb; pdb.set_trace()
-        return np.mean(diff)
-
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
         old_sum = np.sum(self._yy)
@@ -219,7 +196,7 @@ class Profile:
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True, ignore_range=100e-6, total_charge=1):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True, total_charge=1, meta_data=None):
         super().__init__()
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
@@ -227,8 +204,8 @@ class ScreenDistribution(Profile):
         if subtract_min:
             self._yy = self._yy - np.min(self._yy)
         self.real_x = real_x
-        self.ignore_range = ignore_range
         self.total_charge = total_charge
+        self.meta_data = meta_data
         self.normalize()
 
     @property
@@ -270,6 +247,7 @@ class ScreenDistribution(Profile):
                 'intensity': self.intensity,
                 'real_x': self.real_x,
                 'total_charge': self.total_charge,
+                'meta_data': self.meta_data
                 }
 
     @staticmethod
@@ -421,31 +399,6 @@ class BeamProfile(Profile):
 
         return sp.plot(x, y*factor/1e3, **kwargs)
 
-#def profile_from_blmeas(file_, tt_halfrange, total_charge, energy_eV, subtract_min=False, zero_crossing=1):
-#    bl_meas = data_loader.load_blmeas(file_)
-#    time_meas0 = bl_meas['time_profile%i' % zero_crossing]
-#    current_meas0 = bl_meas['charge_dist%i' % zero_crossing]
-#
-#    if subtract_min:
-#        current_meas0 = current_meas0 - current_meas0.min()
-#
-#    if tt_halfrange is None:
-#        tt, cc = time_meas0, current_meas0
-#    else:
-#        current_meas0 *= total_charge/current_meas0.sum()
-#        gf_blmeas = GaussFit(time_meas0, current_meas0)
-#        time_meas0 -= gf_blmeas.mean
-#
-#        time_meas1 = np.arange(-tt_halfrange, time_meas0.min(), np.diff(time_meas0).mean())
-#        time_meas2 = np.arange(time_meas0.max(), tt_halfrange, np.diff(time_meas0).mean())
-#        time_meas = np.concatenate([time_meas1, time_meas0, time_meas2])
-#        current_meas = np.concatenate([np.zeros_like(time_meas1), current_meas0, np.zeros_like(time_meas2)])
-#
-#        tt, cc = time_meas, current_meas
-#    return BeamProfile(tt, cc, energy_eV, total_charge)
-
-
-#@functools.lru_cache(100)
 def get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cutoff=1e-3):
     """
     cutoff can be None

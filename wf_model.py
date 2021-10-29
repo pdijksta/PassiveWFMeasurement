@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from scipy.constants import physical_constants, c
 from numpy import cos, sin, tan, exp, sqrt, pi
@@ -31,6 +32,19 @@ class CorrugatedStructure:
                 'Dipole': {},
                 'Quadrupole': {},
                 }
+
+    # __hash__ and __eq__ are implemented so that this class can be used as keys in dictionaries
+    def __eq__(self, other):
+        conditions = (
+                self.p == other.p,
+                self.g == other.g,
+                self.w == other.w,
+                self.Ls == other.Ls,
+                )
+        return all(conditions)
+
+    def __hash__(self):
+        return math.prod(hash(x) for x in (self.p, self.g, self.w, self.Ls))
 
     def dict_key(self, semigap, beam_position, time_grid):
         return (semigap, beam_position, time_grid[0], time_grid[-1], len(time_grid))

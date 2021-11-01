@@ -24,16 +24,17 @@ dict_ = h5_storage.loadH5Recursive(file_)
 meta_data = dict_['meta_data_begin']
 forward_options = config.get_default_forward_options()
 backward_options = config.get_default_backward_options()
+reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()
+beam_options = config.get_default_beam_spec()
+beam_optics = config.default_optics[beamline]
 
 delta_gap = -70e-6
 structure_center = 360e-6
 screen_center = -600e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_center)
 
-tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options)
+tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics)
 
-beam_spec = config.get_default_beam_spec('Aramis')
-n_particles = int(1e5)
 sig_t = 20e-15
 tt_range = 10*sig_t
 tt_points = int(1e4)

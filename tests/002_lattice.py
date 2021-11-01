@@ -34,8 +34,6 @@ file_ = './data/2021_09_23-16_28_16_Screen_data_SATBD02-DSCR050.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
 meta_data = dict_['meta_data_begin']
 
-
-
 simulator = elegant_matrix.get_simulator(meta_data)
 mat_elegant_athos = simulator.get_streaker_matrices(None, 'Athos')['s1_to_screen']
 
@@ -46,10 +44,9 @@ mat_python_athos = lat_athos.get_matrix('MIDDLE_STREAKER_%i' % 1, 'SATBD02.DSCR0
 dim1 = ('x', 't')
 dim2 = ('x', 'y', 't')
 
-
-
 for n_d, dimensions in enumerate([dim1, dim2]):
-    spec = config.get_default_beam_spec('Athos')
+    spec = config.get_default_beam_spec()
+    spec.update(config.default_optics['Athos'])
     n_particles = config.default_n_particles
     sig_t = 20e-15
     tt_range = 200e-15
@@ -76,14 +73,5 @@ for n_d, dimensions in enumerate([dim1, dim2]):
             print('Case', n_d, 'Beam', n_b, dim, b[dim].std())
 
 
-
-
-
-
-
 ms.show()
-
-
-
-
 

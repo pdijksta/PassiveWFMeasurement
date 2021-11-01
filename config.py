@@ -135,7 +135,6 @@ def get_default_forward_options():
             'screen_bins': 500,
             'screen_smoothen': 20e-6,
             'quad_wake': False,
-            'len_screen': 2000,
             'screen_cutoff': 2e-2,
             }
 
@@ -143,22 +142,28 @@ def get_default_backward_options():
     return {
             'compensate_negative_screen': True,
             'len_profile': 2000,
-            'profile_cutoff': 0.
+            'profile_cutoff': 0.5e-2,
+            'profile_smoothen': 1e-15,
             }
 
+def get_default_reconstruct_gauss_options():
+    return {
+            'gauss_profile_t_range': 400e-15,
+            'precision': 0.1e-15,
+            'method': 'centroid',
+            'sig_t_range': [7e-15, 100e-15],
+            }
 
-def get_default_beam_spec(beamline):
+def get_default_beam_spec():
     outp = {
             'nemitx': 300e-9,
             'nemity': 300e-9,
             'n_mesh': 500,
             'cutoff_sigma': 3,
             }
-    outp.update(default_optics[beamline])
     return outp
 
 default_n_particles = int(1e5)
-
 
 tmp_elegant_dir = '~/tmp_elegant'
 

@@ -30,9 +30,10 @@ structure_center = 360e-6
 screen_center = 1044e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_center)
 
-tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options)
+tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, None, None, None)
 
-beam_spec = config.get_default_beam_spec('Aramis')
+beam_spec = config.get_default_beam_spec()
+beam_spec.update(config.default_optics['Aramis'])
 n_particles = int(1e5)
 sig_t = 20e-15
 tt_range = 10*sig_t

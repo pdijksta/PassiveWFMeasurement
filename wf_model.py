@@ -62,6 +62,7 @@ class CorrugatedStructure:
 
     def convolve(self, beamProfile, semigap, beam_position, spw_type):
         beam_time = beamProfile.time
+        beam_time -= beam_time[0]
         dict_key = self.dict_key(semigap, beam_position, beam_time)
         if dict_key not in self.spw_dict[spw_type]:
             self.update_spw_dict(semigap, beam_position, beam_time, spw_type)

@@ -1,3 +1,4 @@
+import time
 import copy
 import numpy as np
 import bisect
@@ -8,6 +9,7 @@ from . import wf_model
 from . import beam_profile
 from . import beam as beam_module
 from . import myplotstyle as ms
+from .logMsg import logMsg
 
 class Tracker:
     """
@@ -21,13 +23,14 @@ class Tracker:
         structure_center - Structure position for which the beam is centered inside.
         screen_center - Position of the unstreaked beam on the screen.
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
 
         self.forward_options = forward_options
         self.backward_options = backward_options
         self.reconstruct_gauss_options = reconstruct_gauss_options
         self.beam_options = beam_options
         self.beam_optics = beam_optics
+        self.logger = logger
 
         self.meta_data = meta_data
         self.structure_name = structure_name
@@ -53,7 +56,12 @@ class Tracker:
         self.structure_gap0 = calib_dict['gap0']
         self.structure_gap = calib_dict['gap']
         self.beam_position = calib_dict['beam_position']
-        self.structure = wf_model.get_structure(structure_name)
+        self.structure = wf_model.get_structure(structure_name, self.logger)
+
+        self.logMsg('Tracker initialized')
+
+    def logMsg(self, msg, style='I'):
+        return logMsg(msg, self.logger, style)
 
     def forward_propagate(self, beam, plot_details=False):
         """
@@ -62,7 +70,6 @@ class Tracker:
         mat = self.lat.get_matrix(self.lat.element_names[0].replace('-', '.'), self.structure_name.replace('-', '.'))
         beam.linear_propagate(mat)
         wake_time = beam.beamProfile.time
-        wake_time = wake_time - wake_time[0]
         energy_eV = beam.energy_eV
         wake_dict_dipole = self.structure.convolve(beam.beamProfile, self.structure_gap/2., self.beam_position, 'Dipole')
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
@@ -104,6 +111,8 @@ class Tracker:
             sp_wake.plot(wake_time, delta_xp_dipole)
 
             ms.plt.figure(fig_number)
+
+        self.logMsg('Forward propagated profile with rms %.1f fs to screen with %.1f um mean' % (beam.beamProfile.rms()*1e15, screen.mean()*1e6))
         return outp_dict
 
     def prepare_screen(self, screen):
@@ -133,7 +142,8 @@ class Tracker:
 
         screen.crop()
         screen.reshape(self.n_particles)
-        #screen.reshape(self)
+
+        self.logMsg('Prepared screen', 'I')
 
         return screen
 
@@ -148,10 +158,10 @@ class Tracker:
 
         t_interp0 = np.interp(screen.x, wake_x, wake_time)
 
-        print('Backward propagate')
-        print('Screen min max (um)', int(screen.x.min()*1e6), int(screen.x.max()*1e6))
-        print('Wake min max (um)', int(wake_x.min()*1e6), int(wake_x.max()*1e6))
-        print('Beam profile time (fs)', int(beamProfile.time.min()*1e15), int(beamProfile.time.max()*1e15))
+        #print('Backward propagate')
+        #print('Screen min max (um)', int(screen.x.min()*1e6), int(screen.x.max()*1e6))
+        #print('Wake min max (um)', int(wake_x.min()*1e6), int(wake_x.max()*1e6))
+        #print('Beam profile time (fs)', int(beamProfile.time.min()*1e15), int(beamProfile.time.max()*1e15))
 
         #charge_interp, hist_edges = np.histogram(t_interp0, bins=self.n_particles//100, weights=screen.intensity, density=True)
         bins2 = np.concatenate([beamProfile.time, [beamProfile.time[-1] + beamProfile.time[1] - beamProfile.time[0]]])
@@ -205,9 +215,11 @@ class Tracker:
                 'wake_time': wake_time,
                 'wake_x': wake_x,
                 }
+        self.logMsg('Backward propagated screen with mean %i um and profile with rms %.1f fs to profile with rms %.1f fs' % (screen.mean()*1e6, beamProfile.rms()*1e15, bp.rms()*1e15))
         return outp_dict
 
     def reconstruct_profile_Gauss(self, meas_screen, output_details=False, plot_details=False):
+        t0 = time.time()
         prec = self.reconstruct_gauss_options['precision']
         tt_range = self.reconstruct_gauss_options['gauss_profile_t_range']
         method = self.reconstruct_gauss_options['method']
@@ -237,6 +249,7 @@ class Tracker:
             sp_profile = subplot(3, title='Interpolated profile', xlabel='t [fs]', ylabel='Current [kA]')
 
         n_iter = 0
+
 
         def gaussian_baf(sig_t0):
             sig_t = np.round(sig_t0/prec)*prec
@@ -317,7 +330,9 @@ class Tracker:
         best_gauss = gauss_profiles[index_min]
 
         distance = self.structure_gap/2. - abs(self.beam_position)
-        print('iterations, duration, charge, gaps, beam_offsets, distance', n_iter, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap, self.beam_position, '%i' % (distance*1e6))
+        self.logMsg('iterations %i, duration %i fs, charge %i pC, gap %2f mm, beam pos %.2f mm, distance %.2f um' % (n_iter, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap*1e3, self.beam_position*1e3, distance*1e6))
+        time_needed = time.time() - t0
+        self.logMsg('Needed %.3f seconds for Gaussian reconstruction' % time_needed)
 
         output = {
                'gauss_sigma': best_sig_t,

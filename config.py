@@ -136,13 +136,14 @@ def get_default_forward_options():
             'screen_smoothen': 20e-6,
             'quad_wake': False,
             'screen_cutoff': 2e-2,
+            'len_screen': 2000,
             }
 
 def get_default_backward_options():
     return {
             'compensate_negative_screen': True,
             'len_profile': 2000,
-            'profile_cutoff': 0.5e-2,
+            'profile_cutoff': 0.1e-2,
             'profile_smoothen': 1e-15,
             }
 

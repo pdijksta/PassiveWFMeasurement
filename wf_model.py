@@ -4,14 +4,15 @@ from scipy.constants import physical_constants, c
 from numpy import cos, sin, tan, exp, sqrt, pi
 
 from . import config
+from .logMsg import logMsg
 
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
 t1 = Z0 * c / (4*pi)
 
-def get_structure(structure_name):
+def get_structure(structure_name, logger=None):
     sp = config.structure_parameters[structure_name]
 
-    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['Ls'])
+    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['Ls'], logger)
 
 class CorrugatedStructure:
     """
@@ -22,7 +23,8 @@ class CorrugatedStructure:
     w         plate width
     Ls        Length of structure
     """
-    def __init__(self, p, g, w, Ls):
+    def __init__(self, p, g, w, Ls, logger=None):
+        self.logger = logger
         self.p = p
         self.g = g
         self.w = w
@@ -46,6 +48,9 @@ class CorrugatedStructure:
     def __hash__(self):
         return math.prod(hash(x) for x in (self.p, self.g, self.w, self.Ls))
 
+    def logMsg(self, msg, style='I'):
+        return logMsg(msg, self.logger, style)
+
     def dict_key(self, semigap, beam_position, time_grid):
         return (semigap, beam_position, time_grid[0], time_grid[-1], len(time_grid))
 
@@ -59,6 +64,7 @@ class CorrugatedStructure:
         elif spw_type == 'Dipole':
             func = self.wxd
         self.spw_dict[spw_type][dict_key] = func(time_grid0, semigap, beam_position)
+        self.logMsg('spw calculated for semigap %.2f mm and beam position %.2f mm' % (semigap*1e3, beam_position*1e3))
 
     def convolve(self, beamProfile, semigap, beam_position, spw_type):
         beam_time = beamProfile.time

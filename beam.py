@@ -39,7 +39,7 @@ def gen_beamT(n_particles, beamProfile):
     integrated_curr /= integrated_curr[-1]
     randoms = np.random.rand(n_particles)
     interp_tt = np.interp(randoms, integrated_curr, tt)
-    #interp_tt -= interp_tt.min()
+    #interp_tt -= interp_tt.min() # This messes up everything!
     return interp_tt
 
 def gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, energy_eV, beamProfile, n_particles, cutoff_sigma=5, n_mesh=500):

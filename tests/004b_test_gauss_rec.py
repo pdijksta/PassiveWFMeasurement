@@ -22,6 +22,7 @@ elegant_matrix.set_tmp_dir('~/tmp_elegant/')
 
 ms.closeall()
 
+plot_details = True
 
 
 beamline = 'Aramis'
@@ -63,7 +64,7 @@ tracker_old.set_simulator(meta_data)
 screen_raw = beam_profile.ScreenDistribution(x_axis-screen_center, projx, total_charge=total_charge)
 meas_screen = tracker.prepare_screen(screen_raw)
 
-gauss_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True, plot_details=False)
+gauss_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True, plot_details=plot_details)
 
 gauss_kwargs = config_old.get_default_gauss_recon_settings()
 gauss_kwargs['meas_screen'] = screen_raw
@@ -71,7 +72,7 @@ gauss_kwargs['gaps'] = [0., tracker.structure_gap]
 gauss_kwargs['beam_offsets'] = [0., tracker.beam_position]
 gauss_kwargs['n_streaker'] = 1
 gauss_kwargs['charge'] = tracker.total_charge
-gauss_dict_old = tracker_old.find_best_gauss2(**gauss_kwargs, plot_details=False)
+gauss_dict_old = tracker_old.find_best_gauss2(**gauss_kwargs, plot_details=plot_details)
 
 
 ms.figure('Test Gauss')

@@ -144,12 +144,14 @@ class Profile:
         self._gf_yy = (self._yy.min(), self._yy.max(), self._yy.sum())
         return self._gf
 
-
     @property
     def integral(self):
         return np.trapz(self._yy, self._xx)
 
     def smoothen(self, gauss_sigma, extend=True):
+        if gauss_sigma is None or gauss_sigma == 0:
+            return
+
         diff = self._xx[1] - self._xx[0]
         if extend:
             n_extend = int(gauss_sigma // diff * 2)
@@ -161,9 +163,6 @@ class Profile:
             self._xx = np.concatenate([extend0, self._xx, extend1])
             self._yy = np.concatenate([zeros0, self._yy, zeros1])
 
-
-        if gauss_sigma is None or gauss_sigma == 0:
-            return
         real_sigma = gauss_sigma/diff
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy

@@ -85,7 +85,7 @@ class Beam:
 
     def child(self, new_arr=None):
         if new_arr is None:
-            new_arr = self.arr
+            new_arr = self.arr.copy()
         return Beam(new_arr, self.dim_index, self.beamProfile, self.total_charge, self.energy_eV)
 
     def to_profile(self, time_grid):

@@ -49,11 +49,11 @@ screen_raw = beam_profile.ScreenDistribution(x_axis-screen_center, projx, total_
 
 screen = tracker.prepare_screen(screen_raw)
 
-backward_dict = tracker.backward_propagate(screen, bp)
+backward_dict = tracker.backward_propagate(screen, bp, plot_details=True)
 
 bp_new = backward_dict['profile']
 
-ms.figure('Test forward')
+ms.figure('Test backward')
 subplot = ms.subplot_factory(2,2)
 sp_ctr = 1
 

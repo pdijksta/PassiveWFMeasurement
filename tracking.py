@@ -72,7 +72,7 @@ class Tracker:
         beam_before_streaker = beam.linear_propagate(mat)
         wake_time = beam_init.beamProfile.time
         energy_eV = beam_init.energy_eV
-        wake_dict_dipole = self.structure.convolve(beam_init.beamProfile, self.structure_gap/2., self.beam_position, 'Dipole')
+        wake_dict_dipole = beam_init.beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
@@ -170,7 +170,7 @@ class Tracker:
             raise ValueError('Charges are unequal (pC):', self.total_charge*1e12, beamProfile.total_charge*1e12)
 
         wf_dict = beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
-        wake_time = wf_dict['time']
+        wake_time = wf_dict['wake_time']
         wake_deltaE = wf_dict['wake_potential']
         wake_x = wake_deltaE/self.energy_eV * self.r12
 

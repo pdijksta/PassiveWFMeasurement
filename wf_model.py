@@ -70,16 +70,17 @@ class CorrugatedStructure:
 
     def convolve(self, beamProfile, semigap, beam_position, spw_type):
         beam_time = beamProfile.time
-        beam_time = beam_time - beam_time[0]
-        dict_key = self.dict_key(semigap, beam_position, beam_time)
+        spw_time = beam_time - beam_time[0]
+        dict_key = self.dict_key(semigap, beam_position, spw_time)
         if dict_key not in self.spw_dict[spw_type]:
-            self.update_spw_dict(semigap, beam_position, beam_time, spw_type)
+            self.update_spw_dict(semigap, beam_position, spw_time, spw_type)
 
         spw = self.spw_dict[spw_type][dict_key]
         charge_profile = beamProfile.charge_dist
         wake_potential = np.convolve(charge_profile, spw)[:len(beam_time)]
         return {
-                'time': beam_time,
+                'wake_time': beam_time,
+                'spw_time': spw_time,
                 'spw': spw,
                 'charge_profile': charge_profile,
                 'wake_potential': wake_potential,

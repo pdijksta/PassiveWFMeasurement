@@ -48,6 +48,7 @@ total_charge = 200e-12
 bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, tracker.energy_eV)
 
 beam_obj = beam.beam_from_spec(['x', 't'], beam_spec, n_particles, bp, total_charge, tracker.energy_eV)
+
 beam_obj0 = copy.deepcopy(beam_obj)
 beam_obj0.linear_propagate(tracker.lat.get_matrix(tracker.lat.element_names[0].replace('-', '.'), tracker.structure_name.replace('-', '.')))
 betax = beam_obj.get_beta_from_beam('x')
@@ -72,7 +73,7 @@ sp_ctr += 1
 sp_wake = subplot(sp_ctr, title='Wake', xlabel='t (fs)', ylabel='$\Delta$ x')
 sp_ctr += 1
 
-wake_time = forward_dict['wake_dict_dipole']['time']
+wake_time = forward_dict['wake_dict_dipole']['wake_time']
 wake_xp = forward_dict['wake_dict_dipole']['wake_potential']/tracker.energy_eV
 sp_wake.plot(wake_time, wake_xp, label='New')
 
@@ -100,24 +101,24 @@ beta, alpha, gamma = beam_obj.get_beta_from_beam('x'), beam_obj.get_alpha_from_b
 # --> Works
 
 
-#beam_start = forward_dict_old['beam_start']
-#del forward_dict_old['streaker_matrices']['mat_dict']
-#streaker_matrices2 = {x: y[:4,:4] for x, y in forward_dict_old['streaker_matrices'].items()}
-#s1 = streaker_matrices2['start_to_s1']
-#beam_after_s1 = np.matmul(s1, beam_start)
-#beam_before_s2 = np.matmul(streaker_matrices2['s1_to_s2'], beam_after_s1)
-#beam_after_s2 = forward_dict_old['beam_after_s2']
-#beam_at_screen = forward_dict_old['beam_at_screen']
-#
-#for beam_old, key_new in [
-#        (beam_start, 'beam_init'),
-#        (beam_before_s2, 'beam_before_streaker'),
-#        (beam_after_s2, 'beam_after_streaker'),
-#        (beam_at_screen, 'beam_at_screen'),
-#        ]:
-#    beam_new = forward_dict[key_new]
-#    print(key_new, beam_old[0,:].std(), beam_new['x'].std())
-#    print(beam_new.get_beta_from_beam('x'))
+beam_start = forward_dict_old['beam_start']
+del forward_dict_old['streaker_matrices']['mat_dict']
+streaker_matrices2 = {x: y[:4,:4] for x, y in forward_dict_old['streaker_matrices'].items()}
+s1 = streaker_matrices2['start_to_s1']
+beam_after_s1 = np.matmul(s1, beam_start)
+beam_before_s2 = np.matmul(streaker_matrices2['s1_to_s2'], beam_after_s1)
+beam_after_s2 = forward_dict_old['beam_after_s2']
+beam_at_screen = forward_dict_old['beam_at_screen']
+
+for beam_old, key_new in [
+        (beam_start, 'beam_init'),
+        (beam_before_s2, 'beam_before_streaker'),
+        (beam_after_s2, 'beam_after_streaker'),
+        (beam_at_screen, 'beam_at_screen'),
+        ]:
+    beam_new = forward_dict[key_new]
+    print(key_new, beam_old[0,:].std(), beam_new['x'].std())
+    print(beam_new.get_beta_from_beam('x'))
 # -> Works now
 
 
@@ -129,6 +130,23 @@ sp_wake.plot(wake_time_old, wake_xp_old, label='Old')
 
 sp_screen.legend()
 sp_wake.legend()
+
+ms.figure('Test quadrupole')
+subplot = ms.subplot_factory(2, 2)
+sp_ctr = 1
+
+sp_screen = subplot(sp_ctr, title='Screen', xlabel='x (mm)', ylabel=config.rho_label)
+sp_ctr += 1
+
+for use_quad, label in zip([False, True], ['Dipole', '+Quadrupole']):
+    tracker.forward_options['quad_wake'] = use_quad
+    forward_dict = tracker.forward_propagate(beam_obj0, plot_details=True, output_details=True)
+    screen = forward_dict['screen']
+    screen.plot_standard(sp_screen, label=label)
+
+sp_screen.legend()
+
+
 
 ms.show()
 

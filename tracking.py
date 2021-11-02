@@ -68,8 +68,8 @@ class Tracker:
         beam: must be beam corresponding to beginning of self.lat
         """
         beam_init = beam
-        mat = self.lat.get_matrix(self.lat.element_names[0].replace('-', '.'), self.structure_name.replace('-', '.'))
-        beam_before_streaker = beam.linear_propagate(mat)
+        mat0 = self.lat.get_matrix(self.lat.element_names[0].replace('-', '.'), self.structure_name.replace('-', '.'))
+        beam_before_streaker = beam.linear_propagate(mat0)
         wake_time = beam_init.beamProfile.time
         energy_eV = beam_init.energy_eV
         wake_dict_dipole = beam_init.beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
@@ -78,9 +78,9 @@ class Tracker:
         quad_wake = self.forward_options['quad_wake']
 
         if quad_wake:
-            wake_dict_quadrupole = self.structure.convolve(beam_init.beamProfile, self.structure_gap/2., self.beam_position, 'Quadrupole')
+            wake_dict_quadrupole = beam_init.beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
-            delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)
+            delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam['x']-beam['x'].mean())
         else:
             delta_xp_quadrupole = 0.
             delta_xp_coords_quad = 0.
@@ -95,8 +95,6 @@ class Tracker:
         screen.reshape(self.forward_options['len_screen'])
         outp_dict = {
                 'screen': screen,
-                'transport_matrix0': mat,
-                'transport_matrix': self.matrix,
                 }
         if output_details:
             outp_dict.update({
@@ -105,6 +103,8 @@ class Tracker:
                 'beam_after_streaker': beam_after_streaker,
                 'beam_at_screen': beam_at_screen,
                 'wake_dict_dipole': wake_dict_dipole,
+                'transport_matrix0': mat0,
+                'transport_matrix': self.matrix,
                 })
 
         if plot_details:

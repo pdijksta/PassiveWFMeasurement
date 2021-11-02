@@ -7,6 +7,10 @@ from . import lattice
 electron_mass_eV = m_e * c**2 / e
 
 def gen_beam2D(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
+    if gemit == 0:
+        outp[0] = 0
+        outp[1] = 0
+        return
     n_particles = int(n_particles)
     gamma = (1 + alpha**2)/beta
     sigma_x = np.sqrt(gemit*beta)
@@ -204,7 +208,7 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
     dim_index = {}
     s = specifications
     gamma_rel = energy_eV/electron_mass_eV
-    for t_dim in 'x', 'y':
+    for t_dim in ('x', 'y'):
         if t_dim in dimensions:
             gen_beam2D(arr[n_dim:n_dim+2], n_particles, s['nemit'+t_dim]/gamma_rel, s['beta'+t_dim], s['alpha'+t_dim], s['cutoff_sigma'], s['n_mesh'])
             dim_index[t_dim] = n_dim

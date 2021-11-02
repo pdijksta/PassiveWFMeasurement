@@ -1,5 +1,4 @@
 import functools
-import math
 import numpy as np
 from scipy.constants import physical_constants, c
 from numpy import cos, sin, tan, exp, sqrt, pi
@@ -48,7 +47,7 @@ class CorrugatedStructure:
         return all(conditions)
 
     def __hash__(self):
-        return math.prod(hash(x) for x in (self.p, self.g, self.w, self.Ls))
+        return functools.reduce(lambda x, y: x*hash(y), (self.p, self.g, self.w, self.Ls), 1)
 
     def logMsg(self, msg, style='I'):
         return logMsg(msg, self.logger, style)

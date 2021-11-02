@@ -137,7 +137,7 @@ def get_default_forward_options():
             'quad_wake': False,
             'screen_cutoff': 2e-2,
             'len_screen': 5000,
-            }
+            }.copy()
 
 def get_default_backward_options():
     return {
@@ -145,7 +145,7 @@ def get_default_backward_options():
             'len_profile': 5000,
             'profile_cutoff': 0.1e-2,
             'profile_smoothen': 1e-15,
-            }
+            }.copy()
 
 def get_default_reconstruct_gauss_options():
     return {
@@ -153,7 +153,7 @@ def get_default_reconstruct_gauss_options():
             'precision': 0.1e-15,
             'method': 'centroid',
             'sig_t_range': [7e-15, 100e-15],
-            }
+            }.copy()
 
 def get_default_beam_spec():
     outp = {
@@ -161,7 +161,7 @@ def get_default_beam_spec():
             'nemity': 755e-9,
             'n_mesh': 500,
             'cutoff_sigma': 5,
-            }
+            }.copy()
     return outp
 
 default_n_particles = int(1e5)

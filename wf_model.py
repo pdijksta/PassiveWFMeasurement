@@ -1,3 +1,4 @@
+import functools
 import math
 import numpy as np
 from scipy.constants import physical_constants, c
@@ -9,10 +10,11 @@ from .logMsg import logMsg
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
 t1 = Z0 * c / (4*pi)
 
+@functools.lru_cache(5)
 def get_structure(structure_name, logger=None):
     sp = config.structure_parameters[structure_name]
 
-    return CorrugatedStructure(sp['g'], sp['g'], sp['w'], sp['Ls'], logger)
+    return CorrugatedStructure(**sp, logger=logger)
 
 class CorrugatedStructure:
     """
@@ -68,7 +70,7 @@ class CorrugatedStructure:
 
     def convolve(self, beamProfile, semigap, beam_position, spw_type):
         beam_time = beamProfile.time
-        beam_time -= beam_time[0]
+        beam_time = beam_time - beam_time[0]
         dict_key = self.dict_key(semigap, beam_position, beam_time)
         if dict_key not in self.spw_dict[spw_type]:
             self.update_spw_dict(semigap, beam_position, beam_time, spw_type)

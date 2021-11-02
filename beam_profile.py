@@ -2,6 +2,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
 from .gaussfit import GaussFit
+from .logMsg import logMsg
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -38,6 +39,10 @@ class Profile:
         self._gf = None
         self._gf_xx = None
         self._gf_yy = None
+        self.logger = None
+
+    def logMsg(self, msg, style='I'):
+        return logMsg(msg, self.logger, style)
 
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
@@ -303,6 +308,7 @@ class BeamProfile(Profile):
             return self.wake_dict[dict_key]
         wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)
         self.wake_dict[dict_key] = wf_dict
+        self.logMsg('wake_dict calculated for gap %.2f mm and beam position %.2f mm' % (gap*1e3, beam_position*1e3))
         return wf_dict
 
     def to_dict(self):

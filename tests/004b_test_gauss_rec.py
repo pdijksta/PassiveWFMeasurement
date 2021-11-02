@@ -64,7 +64,7 @@ tracker_old.set_simulator(meta_data)
 screen_raw = beam_profile.ScreenDistribution(x_axis-screen_center, projx, total_charge=total_charge)
 meas_screen = tracker.prepare_screen(screen_raw)
 
-gauss_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True, plot_details=plot_details)
+gauss_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True, plot_details=plot_details, centroid_meas=screen_raw.mean())
 
 gauss_kwargs = config_old.get_default_gauss_recon_settings()
 gauss_kwargs['meas_screen'] = screen_raw

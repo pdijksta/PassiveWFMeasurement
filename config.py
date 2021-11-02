@@ -132,17 +132,17 @@ for beamline, beamline_dict in structure_names.items():
 
 def get_default_forward_options():
     return {
-            'screen_bins': 500,
+            'screen_bins': 1000,
             'screen_smoothen': 20e-6,
             'quad_wake': False,
             'screen_cutoff': 2e-2,
-            'len_screen': 2000,
+            'len_screen': 5000,
             }
 
 def get_default_backward_options():
     return {
             'compensate_negative_screen': True,
-            'len_profile': 2000,
+            'len_profile': 5000,
             'profile_cutoff': 0.1e-2,
             'profile_smoothen': 1e-15,
             }
@@ -157,10 +157,10 @@ def get_default_reconstruct_gauss_options():
 
 def get_default_beam_spec():
     outp = {
-            'nemitx': 300e-9,
-            'nemity': 300e-9,
+            'nemitx': 755e-9,
+            'nemity': 755e-9,
             'n_mesh': 500,
-            'cutoff_sigma': 3,
+            'cutoff_sigma': 5,
             }
     return outp
 

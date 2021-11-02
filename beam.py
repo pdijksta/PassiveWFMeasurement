@@ -81,6 +81,12 @@ class Beam:
         self.total_charge = total_charge
         self.n_particles = len(arr[0])
         self.energy_eV = energy_eV
+        self.ignore_time = True
+
+    def child(self, new_arr=None):
+        if new_arr is None:
+            new_arr = self.arr
+        return Beam(new_arr, self.dim_index, self.beamProfile, self.total_charge, self.energy_eV)
 
     def to_profile(self, time_grid):
         return particles_to_profile(self['t'], time_grid, self.total_charge)
@@ -94,6 +100,7 @@ class Beam:
     def __setitem__(self, dim, value):
         self.arr[self.dim_index[dim]] = value
 
+
     def linear_propagate(self, matrix6D):
         """
         Gets a 6 dimensional matrix in elegant format (according to lattice.py).
@@ -103,12 +110,67 @@ class Beam:
         lat_dim_index = lattice.Lattice.dim_index
         for dim_row, index_row in self.dim_index.items():
             for dim_col, index_col in self.dim_index.items():
-                matrix[index_row,index_col] = matrix6D[lat_dim_index[dim_row], lat_dim_index[dim_col]]
-        self.arr = matrix @ self.arr
+                value = matrix6D[lat_dim_index[dim_row], lat_dim_index[dim_col]]
+                matrix[index_row,index_col] = value
+        if 't' in self.dim_index and self.ignore_time:
+            t_index = self.dim_index['t']
+            matrix[t_index,:] = 0
+            matrix[:, t_index] = 0
+            matrix[t_index, t_index] = 1
+        arr = matrix @ self.arr
+        return self.child(arr)
 
     def update_beamProfile(self):
         self.beamProfile = particles_to_profile(self['t'], self.beamProfile.time, self.total_charge, self.beamProfile.energy_eV)
         return self.beamProfile
+
+    def set_beamProfile(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def get_emittance_from_points(x, xp):
+        x = x - np.mean(x)
+        xp = xp - np.mean(xp)
+        return np.sqrt(np.mean(x**2)*np.mean(xp**2) - np.mean(x*xp)**2)
+
+    def get_beamsize(self, dimension):
+        assert dimension in ('x', 'y', 'xp', 'yp', 't')
+        arr = self['%s' % dimension]-np.mean(self['%s' % dimension])
+        return np.sqrt(np.mean(arr**2))
+
+    def get_emittance_from_beam(self, dimension, normalized=False):
+        assert dimension in ('x', 'y')
+
+        space = self['%s' % dimension]
+        angle = self['%sp' % dimension]
+        if normalized:
+            norm_factor = np.mean(self['p'])
+        else:
+            norm_factor = 1
+        return self.get_emittance_from_points(space, angle)*norm_factor
+
+    def get_beta_from_beam(self, dimension):
+        assert dimension in ('x', 'y')
+        e = self.get_emittance_from_beam(dimension)
+        beamsize_squared = self.get_beamsize(dimension)**2
+        return beamsize_squared/e
+
+    def get_gamma_from_beam(self, dimension):
+        assert dimension in ('x', 'y')
+        e = self.get_emittance_from_beam(dimension)
+        beamsize_squared = self.get_beamsize(dimension+'p')**2
+        return beamsize_squared/e
+
+    def get_alpha_from_beam(self, dimension):
+        assert dimension in ('x', 'y')
+        e = self.get_emittance_from_beam(dimension)
+        arr_x0 = self[dimension]
+        arr_xp0 = self[dimension+'p']
+
+        arr_x = arr_x0 - arr_x0.mean()
+        arr_xp = arr_xp0 - arr_xp0.mean()
+
+        return -np.mean(arr_x*arr_xp)/e
 
 def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_charge, energy_eV):
     """

@@ -101,7 +101,6 @@ beam_obj2.linear_propagate(tracker.matrix)
 beta, alpha, gamma = beam_obj.get_beta_from_beam('x'), beam_obj.get_alpha_from_beam('x'), beam_obj.get_gamma_from_beam('x')
 # --> Works
 
-
 beam_start = forward_dict_old['beam_start']
 del forward_dict_old['streaker_matrices']['mat_dict']
 streaker_matrices2 = {x: y[:4,:4] for x, y in forward_dict_old['streaker_matrices'].items()}
@@ -121,7 +120,6 @@ for beam_old, key_new in [
     print(key_new, beam_old[0,:].std(), beam_new['x'].std())
     print(beam_new.get_beta_from_beam('x'))
 # -> Works now
-
 
 wake_dict_old = forward_dict_old['wake_dict']
 wake_time_old = wake_dict_old[1]['wake_t']
@@ -160,8 +158,6 @@ for use_quad, label in zip([False, True], ['Dipole', '+Quadrupole']):
     screen.plot_standard(sp_screen, label=label, show_mean=True)
 
 sp_screen.legend()
-
-
 
 ms.show()
 

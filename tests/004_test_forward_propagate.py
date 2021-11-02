@@ -12,6 +12,7 @@ import PassiveWFMeasurement.beam as beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.calibration as calibration
+import PassiveWFMeasurement.blmeas as blmeas
 import PassiveWFMeasurement.myplotstyle as ms
 import WakefieldAnalysis.tracking as tracking_old
 import WakefieldAnalysis.config as config_old
@@ -70,12 +71,12 @@ bp.plot_standard(sp_profile)
 sp_screen = subplot(sp_ctr, title='Screen', xlabel='x (mm)', ylabel=config.rho_label)
 sp_ctr += 1
 
-sp_wake = subplot(sp_ctr, title='Wake', xlabel='t (fs)', ylabel='$\Delta$ x')
+sp_wake = subplot(sp_ctr, title='Wake', xlabel='t (fs)', ylabel='$\Delta$ x\'')
 sp_ctr += 1
 
 wake_time = forward_dict['wake_dict_dipole']['wake_time']
 wake_xp = forward_dict['wake_dict_dipole']['wake_potential']/tracker.energy_eV
-sp_wake.plot(wake_time, wake_xp, label='New')
+sp_wake.plot(wake_time*1e15, wake_xp, label='New')
 
 screen.plot_standard(sp_screen, label='New %i %i' % (screen.mean()*1e6, screen.rms()*1e6))
 
@@ -126,10 +127,24 @@ wake_dict_old = forward_dict_old['wake_dict']
 wake_time_old = wake_dict_old[1]['wake_t']
 wake_xp_old = wake_dict_old[1]['wake']/tracker.energy_eV
 
-sp_wake.plot(wake_time_old, wake_xp_old, label='Old')
+sp_wake.plot(wake_time_old*1e15, wake_xp_old, label='Old')
 
 sp_screen.legend()
 sp_wake.legend()
+
+# Test quadrupole
+
+blmeas_file = './data/119325494_bunch_length_meas.h5'
+blmeas_dict = blmeas.load_avg_blmeas(blmeas_file)
+
+xx = blmeas_dict[1]['time']
+yy = blmeas_dict[1]['current']
+yy = yy - yy.min()
+blmeas_profile = beam_profile.BeamProfile(xx, yy, tracker.energy_eV, tracker.total_charge)
+
+blmeas_beam = beam.beam_from_spec(['x', 't'], beam_spec, n_particles, blmeas_profile, total_charge, tracker.energy_eV)
+
+
 
 ms.figure('Test quadrupole')
 subplot = ms.subplot_factory(2, 2)
@@ -140,9 +155,9 @@ sp_ctr += 1
 
 for use_quad, label in zip([False, True], ['Dipole', '+Quadrupole']):
     tracker.forward_options['quad_wake'] = use_quad
-    forward_dict = tracker.forward_propagate(beam_obj0, plot_details=True, output_details=True)
+    forward_dict = tracker.forward_propagate(blmeas_beam, plot_details=True, output_details=True)
     screen = forward_dict['screen']
-    screen.plot_standard(sp_screen, label=label)
+    screen.plot_standard(sp_screen, label=label, show_mean=True)
 
 sp_screen.legend()
 

@@ -175,8 +175,13 @@ class Profile:
         #if gauss_sigma < 5e-15:
         #    import pdb; pdb.set_trace()
 
-    def center(self):
-        self._xx = self._xx - self.gaussfit.mean
+    def center(self, type_='Gauss'):
+        if type_ == 'Gauss':
+            self._xx = self._xx - self.gaussfit.mean
+        elif type_ == 'Mean':
+            self._xx = self._xx - self.mean()
+        else:
+            raise ValueError(type_)
 
     def scale_xx(self, scale_factor, keep_range=False):
         new_xx = self._xx * scale_factor
@@ -225,7 +230,7 @@ class ScreenDistribution(Profile):
             norm = abs(self.total_charge)
         self._yy = self._yy / self.integral * norm
 
-    def plot_standard(self, sp, **kwargs):
+    def plot_standard(self, sp, show_mean=False, **kwargs):
         if self._yy[0] != 0:
             diff = self._xx[1] - self._xx[0]
             x = np.concatenate([[self._xx[0] - diff], self._xx])
@@ -244,7 +249,11 @@ class ScreenDistribution(Profile):
         #    print('total_charge', self.total_charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
         #except:
         #    pass
-        return sp.plot(x*1e3, y*1e9*factor, **kwargs)
+        outp = sp.plot(x*1e3, y*1e9*factor, **kwargs)
+        if show_mean:
+            color = outp[0].get_color()
+            sp.axvline(self.mean()*1e3, ls='--', color=color)
+        return outp
 
     def to_dict(self):
         return {'x': self.x,
@@ -263,7 +272,6 @@ class AnyProfile(Profile):
         super().__init__()
         self.xx = self._xx = xx
         self.yy = self._yy = yy
-
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_charge=1):
     """

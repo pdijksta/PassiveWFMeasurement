@@ -86,7 +86,9 @@ class Tracker:
             delta_xp_coords_quad = 0.
 
         beam_after_streaker = beam_before_streaker.child()
-        beam_after_streaker['xp'] += delta_xp_coords_dip + delta_xp_coords_quad
+        beam_after_streaker['xp'] += delta_xp_coords_dip
+        beam_after_streaker['xp'] += delta_xp_coords_quad
+
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = beam_at_screen.to_screen_dist(self.forward_options['screen_bins'], 0)
         screen.smoothen(self.forward_options['screen_smoothen'])

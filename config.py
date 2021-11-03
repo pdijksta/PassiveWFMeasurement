@@ -166,6 +166,16 @@ def get_default_beam_spec():
             }.copy()
     return outp
 
+def get_default_structure_calibrator_options():
+    return {
+            'order_centroid': 2.75,
+            'order_rms': 2.75,
+            'fit_gap': True,
+            'fit_order': False,
+            'proj_cutoff': 3e-2,
+            'gap_recon_precision': 1e-6,
+            }.copy()
+
 default_n_particles = int(1e5)
 
 tmp_elegant_dir = '~/tmp_elegant'

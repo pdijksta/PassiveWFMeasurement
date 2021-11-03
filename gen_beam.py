@@ -36,15 +36,17 @@ def gen_beam2D(outp, n_particles, gemit, beta, alpha, cutoff_sigma, n_mesh):
     outp[0] -= outp[0].mean()
     outp[1] -= outp[1].mean()
 
+def random_gen1D(x_axis, pdf, n_particles):
+    cdf = np.cumsum(pdf)
+    cdf /= cdf[-1]
+    randoms = np.random.rand(n_particles)
+    x = np.interp(randoms, cdf, x_axis)
+    return x
+
 def gen_beamT(n_particles, beamProfile):
     curr = beamProfile.charge_dist
     tt = beamProfile.time
-    integrated_curr = np.cumsum(curr)
-    integrated_curr /= integrated_curr[-1]
-    randoms = np.random.rand(n_particles)
-    interp_tt = np.interp(randoms, integrated_curr, tt)
-    #interp_tt -= interp_tt.min() # This messes up everything!
-    return interp_tt
+    return random_gen1D(tt, curr, n_particles)
 
 def gen_beam6D(nemitx, nemity, betax, alphax, betay, alphay, energy_eV, beamProfile, n_particles, cutoff_sigma=5, n_mesh=500):
     outp = np.zeros([6, int(n_particles)])

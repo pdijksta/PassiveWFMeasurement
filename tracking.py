@@ -7,7 +7,7 @@ from . import config
 from . import lattice
 from . import wf_model
 from . import beam_profile
-from . import beam as beam_module
+from . import gen_beam
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
@@ -66,7 +66,6 @@ class Tracker(LogMsgBase):
         self.structure_gap0 = calib_dict['gap0']
         self.structure_gap = calib_dict['gap']
         self.beam_position = calib_dict['beam_position']
-
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
@@ -294,7 +293,7 @@ class Tracker(LogMsgBase):
             back_dict1 = self.backward_propagate(meas_screen, bp_back0)
             bp_back1 = back_dict1['profile']
 
-            beam = beam_module.beam_from_spec(['x', 't'], beam_options, self.n_particles, bp_back1, self.total_charge, self.energy_eV)
+            beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, bp_back1, self.total_charge, self.energy_eV)
             screen = self.forward_propagate(beam, plot_details=False)['screen']
 
             index = bisect.bisect(sig_t_list, sig_t)

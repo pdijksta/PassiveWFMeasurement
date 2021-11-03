@@ -28,7 +28,7 @@ structure = wf_model.CorrugatedStructure(**config.aramis_structure_parameters)
 
 wake_dict = structure.convolve(bp, gap/2., beam_position, 'Dipole')
 
-tt = wake_dict['time']
+tt = wake_dict['wake_time']
 wake = wake_dict['wake_potential']
 spw = wake_dict['spw']
 

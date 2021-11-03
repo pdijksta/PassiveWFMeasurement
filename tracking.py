@@ -9,9 +9,9 @@ from . import wf_model
 from . import beam_profile
 from . import beam as beam_module
 from . import myplotstyle as ms
-from .logMsg import logMsg
+from .logMsg import LogMsgBase
 
-class Tracker:
+class Tracker(LogMsgBase):
     """
     Parameters:
         beamline - Can be "Aramis" or "Athos".
@@ -59,9 +59,6 @@ class Tracker:
         self.structure = wf_model.get_structure(structure_name, self.logger)
 
         self.logMsg('Tracker initialized')
-
-    def logMsg(self, msg, style='I'):
-        return logMsg(msg, self.logger, style)
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """

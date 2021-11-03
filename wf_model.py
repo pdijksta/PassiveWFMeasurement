@@ -7,12 +7,11 @@ from . import config
 from .logMsg import logMsg
 
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
-t1 = Z0 * c / (4*pi)
+t1 = Z0*c/(4*pi)
 
 @functools.lru_cache(5)
 def get_structure(structure_name, logger=None):
     sp = config.structure_parameters[structure_name]
-
     return CorrugatedStructure(**sp, logger=logger)
 
 class CorrugatedStructure:

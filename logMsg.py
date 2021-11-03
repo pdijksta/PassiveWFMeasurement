@@ -52,3 +52,7 @@ def logMsg(msg='', logger=None, style='I'):
         else:
             print('%s %s' % (time_str, msg))
 
+class LogMsgBase:
+    def logMsg(self, msg, style='I'):
+        return logMsg(msg, self.logger, style)
+

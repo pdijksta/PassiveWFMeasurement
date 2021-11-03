@@ -7,8 +7,10 @@ import collections
 #    structure_position: Position of the structure as read by the :CENTER PV
 #
 #    The beam_position is calculated as follows:
-#    -(structure_position - structure_center)
+#    -(structure_position - structure_position0)
 #    The sign is opposite to the structure_position!
+#
+#    structure_position0: calibration
 
 structure_names = {
         'Aramis': collections.OrderedDict([

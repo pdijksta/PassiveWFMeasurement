@@ -34,9 +34,9 @@ dict_ = h5_storage.loadH5Recursive(file_)['raw_data']
 
 #outp = sc.analyze_streaker_calibration(dict_, do_plot=False)
 #screen_center = outp['meta_data']['fit_dict_centroid']['screen_x0']
-#structure_center = outp['meta_data']['fit_dict_centroid']['streaker_offset']
+#structure_position0 = outp['meta_data']['fit_dict_centroid']['streaker_offset']
 screen_center = 898e-6
-structure_center = 364e-6
+structure_position0 = 364e-6
 delta_gap = -70e-6
 
 offset_index = 0
@@ -50,7 +50,7 @@ gauss_options = config.get_default_reconstruct_gauss_options()
 beam_options = config.get_default_beam_spec()
 beam_optics = config.default_optics['Aramis']
 
-calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_center)
+calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
 tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, gauss_options, beam_options, beam_optics, force_charge=total_charge)
 

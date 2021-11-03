@@ -20,7 +20,7 @@ class Tracker(LogMsgBase):
         meta_data - Look at daq.py for format.
         beam_parameters - Look at config.py for format.
         delta_gap - Calibrated gap.
-        structure_center - Structure position for which the beam is centered inside.
+        structure_position0 - Structure position for which the beam is centered inside.
         screen_center - Position of the unstreaked beam on the screen.
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
@@ -32,33 +32,41 @@ class Tracker(LogMsgBase):
         self.beam_optics = beam_optics
         self.logger = logger
 
-        self.meta_data = meta_data
         self.structure_name = structure_name
-        self.screen_name = screen_name
         self.beamline = beamline
+        self.screen_name = screen_name
         self.calib = calib
-        self.structure_center = calib.structure_center
+        self.structure_position0 = calib.structure_position0
         self.screen_center = calib.screen_center
         self.delta_gap = calib.delta_gap
-        self.lat = lattice.get_beamline_lattice(beamline, meta_data)
         self.n_particles = n_particles
         if force_charge is None:
             self.total_charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
         else:
             self.total_charge = force_charge
 
-        self.matrix = self.lat.get_matrix(structure_name.replace('-', '.'), screen_name.replace('-', '.'))
+        self.structure = wf_model.get_structure(structure_name, self.logger)
+        self.meta_data = meta_data
+        self.logMsg('Tracker initialized')
+
+    @property
+    def meta_data(self):
+        return self._meta_data
+
+    @meta_data.setter
+    def meta_data(self, meta_data):
+        self._meta_data = meta_data
+        self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
+        self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
         self.r12 = self.matrix[0,1]
         self.disp = self.matrix[2,5]
-        self.energy_eV = meta_data[screen_name+':ENERGY-OP']*1e6
-        calib_dict = calib.gap_and_beam_position_from_meta(meta_data)
-        self.structure_center = calib_dict['structure_center']
+        self.energy_eV = meta_data[self.screen_name+':ENERGY-OP']*1e6
+        calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
+        self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
         self.structure_gap = calib_dict['gap']
         self.beam_position = calib_dict['beam_position']
-        self.structure = wf_model.get_structure(structure_name, self.logger)
 
-        self.logMsg('Tracker initialized')
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """

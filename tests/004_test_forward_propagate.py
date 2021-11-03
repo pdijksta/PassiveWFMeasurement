@@ -33,9 +33,9 @@ forward_options = config.get_default_forward_options()
 backward_options = None
 
 delta_gap = -70e-6
-structure_center = 360e-6
+structure_position0 = 360e-6
 screen_center = 1044e-6
-calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_center)
+calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
 tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, None, None, None)
 

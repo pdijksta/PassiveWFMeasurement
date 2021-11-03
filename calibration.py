@@ -1,9 +1,9 @@
 import bisect
-import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+from . import data_loader
 from . import beam_profile
 from . import config
 from . import h5_storage
@@ -11,17 +11,17 @@ from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
 class StructureCalibration:
-    def __init__(self, structure_name, screen_center, delta_gap, structure_center):
+    def __init__(self, structure_name, screen_center, delta_gap, structure_position0):
         self.structure_name = structure_name
         self.screen_center = screen_center,
         self.delta_gap = delta_gap
-        self.structure_center = structure_center
+        self.structure_position0 = structure_position0
 
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
         gap = gap0 + self.delta_gap
-        structure_center = meta_data[self.structure_name+':CENTER']*1e-3
-        beam_position = -(structure_center - self.structure_center)
+        structure_position0 = meta_data[self.structure_name+':CENTER']*1e-3
+        beam_position = -(structure_position0 - self.structure_position0)
         distance = gap/2. - abs(beam_position)
         if distance < 0:
             raise ValueError('Distance between beam and gap is negative')
@@ -29,7 +29,7 @@ class StructureCalibration:
         return {
                 'gap0': gap0,
                 'gap': gap,
-                'structure_center': structure_center,
+                'structure_position0': structure_position0,
                 'beam_position': beam_position,
                 'distance': distance,
                 }
@@ -39,7 +39,8 @@ class StreakerCalibration(LogMsgBase):
     order0_centroid = 2.75
     order0_rms = 2.75
 
-    def __init__(self, beamline, n_streaker, gap0, charge, file_or_dict=None, offsets_range=None, images=None, x_axis=None, y_axis=None, fit_gap=True, fit_order=False, order_centroid=None, order_rms=None, proj_cutoff=0.03):
+    def __init__(self, beamline, n_streaker, gap0, charge, file_or_dict=None, offsets_range=None, images=None, x_axis=None, y_axis=None, fit_gap=True, fit_order=False, order_centroid=None, order_rms=None, proj_cutoff=0.03, logger=None):
+        self.logger = logger
         self.order_rms = self.order0_rms if order_rms is None else order_rms
         self.order_centroid = self.order0_centroid if order_centroid is None else order_centroid
         self.fit_gap = fit_gap
@@ -69,34 +70,12 @@ class StreakerCalibration(LogMsgBase):
         self.raw_data = None
         self.meas_screens = None
 
-        self.fit_dicts_gap_order = {
-                'beamsize':{
-                    True: {
-                        True: None,
-                        False: None,
-                    },
-                    False: {
-                        True: None,
-                        False: None,
-                    },
-                },
-                'centroid':{
-                    True: {
-                        True: None,
-                        False: None,
-                    },
-                    False: {
-                        True: None,
-                        False: None,
-                    },
-                },
-                }
-        self.gauss_dicts_gap_order = copy.deepcopy(self.fit_dicts_gap_order)
-
         if offsets_range is not None:
             self.add_data(offsets_range, images, x_axis, y_axis)
         if file_or_dict is not None:
             self.add_file(file_or_dict)
+
+        self.fit_dicts = {}
 
     def get_meas_screens(self, type_='centroid', cutoff=3e-2, shape=int(5e3)):
         streaking_factors = []
@@ -118,8 +97,8 @@ class StreakerCalibration(LogMsgBase):
         return meas_screens
 
     def get_result_dict(self):
-        fit_dict_centroid = self.fit_dicts_gap_order['centroid'][self.fit_gap][self.fit_order]
-        fit_dict_rms = self.fit_dicts_gap_order['beamsize'][self.fit_gap][self.fit_order]
+        fit_dict_centroid = self.fit_dicts_gap_order['centroid']
+        fit_dict_rms = self.fit_dicts_gap_order['beamsize']
         meta_data = {
                  'centroid_mean': self.centroids,
                  'centroid_std': self.centroids_std,
@@ -162,7 +141,7 @@ class StreakerCalibration(LogMsgBase):
                 proj[proj<proj.max()*self.proj_cutoff] = 0
                 centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
                 rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-            median_proj_index = misc.get_median(proj_x[n_o,:], method='mean', output='index')
+            median_proj_index = data_loader.get_median(proj_x[n_o,:], method='mean', output='index')
             median_proj = proj_x[n_o, median_proj_index]
             plot_list_image.append(images[n_o, median_proj_index])
             plot_list_y.append(median_proj)
@@ -345,7 +324,7 @@ class StreakerCalibration(LogMsgBase):
                 'screen_x0_arr': self.screen_x0_arr,
                 'screen_x0': np.mean(self.screen_x0_arr),
                 }
-        self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order] = fit_dict
+        self.fit_dicts[type_] = fit_dict
         return fit_dict
 
     def fit(self):
@@ -356,7 +335,7 @@ class StreakerCalibration(LogMsgBase):
     def forward_propagate(self, blmeas_profile, tt_halfrange, tracker, type_='centroid', blmeas_cutoff=None, force_gap=None, force_streaker_offset=None):
         tracker.set_simulator(self.meta_data)
         if force_streaker_offset is None:
-            streaker_offset = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]['streaker_offset']
+            streaker_offset = self.fit_dicts[type_]['streaker_offset']
         else:
             streaker_offset = force_streaker_offset
         if force_gap is None:
@@ -489,68 +468,68 @@ class StreakerCalibration(LogMsgBase):
             sp1.legend()
             sp2.legend()
 
-    def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid', plot_details=False, force_gap=None, force_streaker_offset=None, use_offsets=None):
-        fit_dict = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]
-
-        if force_gap is not None:
-            gap = force_gap
-        else:
-            gap = fit_dict['gap_fit']
-        if force_streaker_offset is not None:
-            streaker_offset = force_streaker_offset
-        else:
-            streaker_offset = fit_dict['streaker_offset']
-        #print('Streaker offset', '%i' % (streaker_offset*1e6))
-
-        gaps = [10e-3, 10e-3]
-        gaps[self.n_streaker] = gap
-        gauss_dicts = []
-        offset_list = []
-
-        if use_offsets is None:
-            n_offsets = range(len(self.offsets))
-        else:
-            n_offsets = use_offsets
-
-        for n_offset in n_offsets:
-            offset = self.offsets[n_offset]
-            if offset == 0:
-                continue
-            beam_offsets = [0., 0.]
-            beam_offsets[self.n_streaker] = -(offset-streaker_offset)
-            #print(beam_offsets[self.n_streaker])
-            offset_list.append(beam_offsets[self.n_streaker])
-
-            projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
-            median_proj = misc.get_median(projx)
-            x_axis = self.plot_list_x[n_offset]
-            if x_axis[1] < x_axis[0]:
-                x_axis = x_axis[::-1]
-                median_proj = median_proj[::-1]
-            meas_screen = beam_profile.ScreenDistribution(x_axis, median_proj, subtract_min=True, charge=self.charge)
-            meas_screen.cutoff2(tracker.screen_cutoff)
-            meas_screen.crop()
-            meas_screen.reshape(tracker.len_screen)
-
-            gauss_kwargs = gauss_kwargs.copy()
-            gauss_kwargs['gaps'] = gaps
-            gauss_kwargs['beam_offsets'] = beam_offsets
-            gauss_kwargs['n_streaker'] = self.n_streaker
-            gauss_kwargs['meas_screen'] = meas_screen
-
-            #plt.figure()
-            #plt.plot(meas_screen._xx, meas_screen._yy)
-            #plt.show()
-            #import pdb; pdb.set_trace()
-
-            #gauss_dict = tracker.find_best_gauss(**gauss_kwargs)
-            gauss_dict = analysis.current_profile_rec_gauss(tracker, gauss_kwargs, do_plot=False)
-            if plot_details:
-                analysis.plot_rec_gauss(tracker, gauss_kwargs, gauss_dict)
-            gauss_dicts.append(gauss_dict)
-
-        self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order] = gauss_dicts
-        return np.array(offset_list), gauss_dicts
+#    def reconstruct_current(self, tracker, gauss_kwargs, type_='centroid', plot_details=False, force_gap=None, force_streaker_offset=None, use_offsets=None):
+#        fit_dict = self.fit_dicts_gap_order[type_][self.fit_gap][self.fit_order]
+#
+#        if force_gap is not None:
+#            gap = force_gap
+#        else:
+#            gap = fit_dict['gap_fit']
+#        if force_streaker_offset is not None:
+#            streaker_offset = force_streaker_offset
+#        else:
+#            streaker_offset = fit_dict['streaker_offset']
+#        #print('Streaker offset', '%i' % (streaker_offset*1e6))
+#
+#        gaps = [10e-3, 10e-3]
+#        gaps[self.n_streaker] = gap
+#        gauss_dicts = []
+#        offset_list = []
+#
+#        if use_offsets is None:
+#            n_offsets = range(len(self.offsets))
+#        else:
+#            n_offsets = use_offsets
+#
+#        for n_offset in n_offsets:
+#            offset = self.offsets[n_offset]
+#            if offset == 0:
+#                continue
+#            beam_offsets = [0., 0.]
+#            beam_offsets[self.n_streaker] = -(offset-streaker_offset)
+#            #print(beam_offsets[self.n_streaker])
+#            offset_list.append(beam_offsets[self.n_streaker])
+#
+#            projx = self.images[n_offset].astype(np.float64).sum(axis=-2)
+#            median_proj = data_loader.get_median(projx)
+#            x_axis = self.plot_list_x[n_offset]
+#            if x_axis[1] < x_axis[0]:
+#                x_axis = x_axis[::-1]
+#                median_proj = median_proj[::-1]
+#            meas_screen = beam_profile.ScreenDistribution(x_axis, median_proj, subtract_min=True, charge=self.charge)
+#            meas_screen.cutoff2(tracker.screen_cutoff)
+#            meas_screen.crop()
+#            meas_screen.reshape(tracker.len_screen)
+#
+#            gauss_kwargs = gauss_kwargs.copy()
+#            gauss_kwargs['gaps'] = gaps
+#            gauss_kwargs['beam_offsets'] = beam_offsets
+#            gauss_kwargs['n_streaker'] = self.n_streaker
+#            gauss_kwargs['meas_screen'] = meas_screen
+#
+#            #plt.figure()
+#            #plt.plot(meas_screen._xx, meas_screen._yy)
+#            #plt.show()
+#            #import pdb; pdb.set_trace()
+#
+#            #gauss_dict = tracker.find_best_gauss(**gauss_kwargs)
+#            gauss_dict = analysis.current_profile_rec_gauss(tracker, gauss_kwargs, do_plot=False)
+#            if plot_details:
+#                analysis.plot_rec_gauss(tracker, gauss_kwargs, gauss_dict)
+#            gauss_dicts.append(gauss_dict)
+#
+#        self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order] = gauss_dicts
+#        return np.array(offset_list), gauss_dicts
 
     def plot_reconstruction(self, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
         center = 'Mean'

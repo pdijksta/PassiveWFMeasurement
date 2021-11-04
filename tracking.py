@@ -25,6 +25,8 @@ class Tracker(LogMsgBase):
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
 
+        self.force_gap = None
+
         self.forward_options = forward_options
         self.backward_options = backward_options
         self.reconstruct_gauss_options = reconstruct_gauss_options
@@ -50,6 +52,13 @@ class Tracker(LogMsgBase):
         self.logMsg('Tracker initialized')
 
     @property
+    def structure_gap(self):
+        if self.force_gap is None:
+            return self._structure_gap
+        else:
+            return self.force_gap
+
+    @property
     def meta_data(self):
         return self._meta_data
 
@@ -64,7 +73,7 @@ class Tracker(LogMsgBase):
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
         self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
-        self.structure_gap = calib_dict['gap']
+        self._structure_gap = calib_dict['gap']
         self.beam_position = calib_dict['beam_position']
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):

@@ -53,11 +53,12 @@ class StructureCalibrator(LogMsgBase):
         self.logger = logger
         self.tracker = tracker
         self.structure_name = tracker.structure_name
-        self.order_rms = structure_calib_options['order_rms']
-        self.order_centroid = structure_calib_options['order_centroid']
-        self.fit_gap = structure_calib_options['fit_gap']
-        self.fit_order = structure_calib_options['fit_order']
-        self.proj_cutoff = structure_calib_options['proj_cutoff']
+        self.structure_calib_options = structure_calib_options
+        #self.order_rms = structure_calib_options['order_rms']
+        #self.order_centroid = structure_calib_options['order_centroid']
+        #self.fit_gap = structure_calib_options['fit_gap']
+        #self.fit_order = structure_calib_options['fit_order']
+        #self.proj_cutoff = structure_calib_options['proj_cutoff']
         self.gap0 = tracker.structure_gap
         self.beamline = tracker.beamline
         self.total_charge = tracker.total_charge
@@ -519,45 +520,47 @@ class StructureCalibrator(LogMsgBase):
         else:
             gap = self.fit_dicts['centroid']['gap_fit']
 
-        if force_streaker_offset is not None:
-            structure_position0 = force_streaker_offset
-        else:
-            structure_position0 = self.fit_dicts['centroid']['structure_position0']
+        force_gap0 = self.tracker.force_gap
+        try:
+            self.tracker.force_gap = gap
 
-        gauss_dicts = []
-        beam_position_list = []
+            if force_streaker_offset is not None:
+                structure_position0 = force_streaker_offset
+            else:
+                structure_position0 = self.fit_dicts['centroid']['structure_position0']
 
-        if use_positions is None:
-            n_positions = range(len(self.raw_struct_positions))
-        else:
-            n_positions = use_positions
+            gauss_dicts = []
+            beam_position_list = []
 
-        for n_position in n_positions:
-            position = self.raw_struct_positions[n_position]
-            if position == 0:
-                continue
-            beam_position = -(position-structure_position0)
-            #print(beam_offsets[self.n_streaker])
-            beam_position_list.append(beam_position)
+            if use_positions is None:
+                n_positions = range(len(self.raw_struct_positions))
+            else:
+                n_positions = use_positions
 
-            projx = self.images[n_position].astype(np.float64).sum(axis=-2)
-            median_proj = data_loader.get_median(projx)
-            x_axis = self.plot_list_x[n_position]
-            if x_axis[1] < x_axis[0]:
-                x_axis = x_axis[::-1]
-                median_proj = median_proj[::-1]
-            meas_screen = beam_profile.ScreenDistribution(x_axis, median_proj, subtract_min=True, total_charge=self.total_charge)
-            meas_screen.cutoff2(tracker.screen_cutoff)
-            meas_screen.crop()
-            meas_screen.reshape(tracker.len_screen)
+            for n_position in n_positions:
+                position = self.raw_struct_positions[n_position]
+                if position == 0:
+                    continue
+                beam_position = -(position-structure_position0)
+                #print(beam_offsets[self.n_streaker])
+                beam_position_list.append(beam_position)
 
-            gauss_dict = analysis.current_profile_rec_gauss(tracker, gauss_kwargs, do_plot=False)
-            if plot_details:
-                analysis.plot_rec_gauss(tracker, gauss_kwargs, gauss_dict)
-            gauss_dicts.append(gauss_dict)
+                projx = self.images[n_position].astype(np.float64).sum(axis=-2)
+                median_proj = data_loader.get_median(projx)
+                x_axis = self.plot_list_x[n_position]
+                if x_axis[1] < x_axis[0]:
+                    x_axis = x_axis[::-1]
+                    median_proj = median_proj[::-1]
+                meas_screen0 = beam_profile.ScreenDistribution(x_axis, median_proj, subtract_min=True, total_charge=self.total_charge)
 
-        self.gauss_dicts_gap_order[type_][self.fit_gap][self.fit_order] = gauss_dicts
-        return np.array(beam_position_list), gauss_dicts
+                meas_screen = self.tracker.prepare_screen(meas_screen0)
+                gauss_dict = self.tracker.reconstruct_profile_Gauss(meas_screen, plot_details=plot_details)
+                gauss_dicts.append(gauss_dict)
+
+            self.gauss_dicts = gauss_dicts
+            return np.array(beam_position_list), gauss_dicts
+        finally:
+            self.tracker.force_gap = force_gap0
 
     def plot_reconstruction(self, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
         center = 'Mean'
@@ -603,10 +606,11 @@ class StructureCalibrator(LogMsgBase):
             _sp.legend(title='rms (fs)')
 
     #def reconstruct_gap(self, gap_arr, tracker, gauss_kwargs, structure_position0, precision=1e-6, gap0=0, use_positions=None):
-    def reconstruct_gap(self, use_n_offsets=None):
+    def reconstruct_gap(self, use_n_positions=None):
 
         precision = self.structure_calib_options['gap_recon_precision']
-        tracker = self.tracker
+        structure_position0 = self.fit_dicts['centroid']['structure_position0']
+        gap_arr = self.tracker.gap0 + np.array(self.structure_calib_options['gap_recon_delta'])
 
         gaps = []
         rms = []
@@ -618,7 +622,7 @@ class StructureCalibrator(LogMsgBase):
                 gap = np.round(gap/precision)*precision
                 if gap in gaps:
                     return
-            beam_position_list, gauss_dicts = self.reconstruct_current(tracker, gauss_kwargs, plot_details=False, force_gap=gap, force_streaker_offset=structure_position0, use_positions=use_positions)
+            beam_position_list, gauss_dicts = self.reconstruct_curren(force_gap=gap, force_streaker_offset=structure_position0, use_n_positions=use_n_positions)
             distance_arr = gap/2. - np.abs(beam_position_list)
 
             rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
@@ -680,20 +684,15 @@ class StructureCalibrator(LogMsgBase):
         assumed_bunch_duration = np.interp(gap, gap_arr[sort], rms_mean[sort])
         output = {
                 'gap': gap,
-                'gap0': gap0,
-                'delta_gap': gap - gap0,
+                'gap0': self.tracker.gap0,
+                'delta_gap': gap - self.tracker.gap0,
                 'beamsize_rms': assumed_rms,
                 'beamsize': assumed_bunch_duration,
                 'gap_arr': np.array(gaps),
                 'lin_fit': np.array(lin_fit),
                 'lin_fit_const': np.array(lin_fit_const),
                 'all_rms': rms_arr,
-                'input': {
-                    'gap_arr': gap_arr,
-                    'gauss_kwargs': gauss_kwargs,
-                    'structure_position0': structure_position0,
-                    },
-                'use_positions': use_positions,
+                'use_n_positions': use_n_positions,
                 'final_gauss_dicts': gauss_dicts,
                 'final_offset_list': beam_position_list,
                 }

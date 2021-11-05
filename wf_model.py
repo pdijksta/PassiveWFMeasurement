@@ -75,6 +75,8 @@ class CorrugatedStructure:
 
         spw = self.spw_dict[spw_type][dict_key]
         charge_profile = beamProfile.charge_dist
+        if np.any(np.isnan(charge_profile)):
+            raise ValueError
         wake_potential = np.convolve(charge_profile, spw)[:len(beam_time)]
         return {
                 'wake_time': beam_time,

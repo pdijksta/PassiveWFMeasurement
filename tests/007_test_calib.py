@@ -41,8 +41,8 @@ tracker.calib = new_calib
 meas_screens = calibrator.get_meas_screens()
 meas_screens.plot()
 
-#gap_recon_dict = calibrator.reconstruct_gap()
-#calibration.plot_gap_reconstruction(gap_recon_dict)
+gap_recon_dict = calibrator.reconstruct_gap()
+calibration.plot_gap_reconstruction(gap_recon_dict)
 
 
 ms.show()

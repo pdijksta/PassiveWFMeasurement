@@ -155,7 +155,7 @@ class Tracker(LogMsgBase):
         screen.aggressive_cutoff(self.forward_options['screen_cutoff'])
         screen.crop()
 
-        if screen.mean():
+        if screen.mean() > 0:
             mask_negative = screen.x < 0
         else:
             mask_negative = screen.x > 0
@@ -189,6 +189,10 @@ class Tracker(LogMsgBase):
         wake_deltaE = wf_dict['wake_potential']
         wake_x = wake_deltaE/self.energy_eV * self.r12
 
+        if np.any(np.diff(wake_x) < 0):
+            wake_x = wake_x[::-1]
+            wake_time = wake_time[::-1]
+        assert np.all(np.diff(wake_x) >= 0)
         t_interp0 = np.interp(screen.x, wake_x, wake_time)
 
         #print('Backward propagate')
@@ -200,8 +204,8 @@ class Tracker(LogMsgBase):
         bins2 = np.concatenate([beamProfile.time, [beamProfile.time[-1] + beamProfile.time[1] - beamProfile.time[0]]])
         charge_interp, hist_edges = np.histogram(t_interp0, bins=bins2, weights=screen.intensity, density=True)
         # UNSURE
-        #charge_interp[0] = 0
-        #charge_interp[-1] = 0
+        charge_interp[0] = 0
+        charge_interp[-1] = 0
         t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
 
         try:
@@ -212,12 +216,14 @@ class Tracker(LogMsgBase):
             bp = beam_profile.BeamProfile(t_interp, charge_interp, self.energy_eV, self.total_charge)
             bp.aggressive_cutoff(self.backward_options['profile_cutoff'])
             bp.smoothen(self.backward_options['profile_smoothen'])
+            if np.any(np.isnan(bp.charge_dist)):
+                raise ValueError
             #bp.crop()
             #bp.reshape(self.backward_options['len_profile'])
         except (ValueError, AssertionError) as e:
             print(e)
             ms.figure('')
-            self.set_bs_at_streaker()
+            #self.set_bs_at_streaker()
             subplot = ms.subplot_factory(2,2)
             sp = subplot(1, title='Wake', xlabel='t', ylabel='$\Delta$ x')
             sp.plot(wake_time, wake_x, label='Dipole')
@@ -412,9 +418,6 @@ class Tracker(LogMsgBase):
             sp_profile.legend()
             sp_screen.legend()
             ms.plt.figure(fig_number)
-
-        if '%i' % int(best_profile.rms()*1e15) == '0':
-            import pdb; pdb.set_trace()
 
         return output
 

@@ -1,4 +1,3 @@
-import copy
 import bisect
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,17 +48,10 @@ class StructureCalibration:
 
 
 class MeasScreens:
-    def __init__(self, meas_screens0, beam_positions, streaking_factors):
-        self.meas_screens0 = meas_screens0
-        self.meas_screens = copy.deepcopy(meas_screens0)
+    def __init__(self, meas_screens, beam_positions, streaking_factors):
+        self.meas_screens = meas_screens
         self.beam_positions = beam_positions
         self.streaking_factors = streaking_factors
-
-    def shift_by_screen_x0(self, screen_center):
-        self.meas_screens = []
-        for meas_screen in self.meas_screens0:
-            meas_screen._xx = meas_screen._xx - screen_center
-            self.meas_screens.append(meas_screen)
 
     def plot(self, plot_handles=None):
         if plot_handles is None:
@@ -147,9 +139,6 @@ class StructureCalibrator(LogMsgBase):
     def get_meas_screens(self):
         if self.meas_screens is None:
             self.init_meas_screens()
-        if screen_center is None:
-            screen_center = self.tracker.screen_center
-        self.meas_screens.shift_by_screen_x0(screen_center)
         return self.meas_screens
 
     def get_result_dict(self):
@@ -205,7 +194,6 @@ class StructureCalibrator(LogMsgBase):
             plot_list_y.append(median_proj)
         centroid_mean = np.mean(centroids, axis=1)
         screen_center = centroid_mean[where0]
-        import pdb; pdb.set_trace()
         centroid_mean -= screen_center
         centroids -= screen_center
         screen_x0_arr = np.array([screen_center]*len(raw_struct_positions), float)
@@ -470,7 +458,7 @@ class StructureCalibrator(LogMsgBase):
         forward_propagate_blmeas = (blmeas_profile is not None)
         screen_center = self.tracker.screen_center
 
-        meas_screens = self.get_meas_screens(screen_center)
+        meas_screens = self.get_meas_screens()
         rms_sim = np.zeros(len(raw_struct_positions))
         centroid_sim = np.zeros(len(raw_struct_positions))
         if self.sim_screens is not None:
@@ -571,8 +559,7 @@ class StructureCalibrator(LogMsgBase):
 
 
             meas_screen0 = meas_screens0[n_position]
-            meas_screen = self.tracker.prepare_screen(meas_screen0)
-            gauss_dict = self.tracker.reconstruct_profile_Gauss_forced(gap, beam_position, meas_screen, plot_details=plot_details)
+            gauss_dict = self.tracker.reconstruct_profile_Gauss_forced(gap, beam_position, meas_screen0, plot_details=plot_details)
             gauss_dicts.append(gauss_dict)
 
         self.gauss_dicts = gauss_dicts

@@ -49,7 +49,6 @@ class Profile(LogMsgBase):
         #    _yy = np.interp(_xx, self._xx, self._yy)
         #else:
         #    _yy = np.histogram(self._xx, bins=int(new_shape), weights=self._yy)[0]
-        #import pdb; pdb.set_trace()
 
         _yy *= old_sum / _yy.sum()
         self._xx, self._yy = _xx, _yy
@@ -167,9 +166,6 @@ class Profile(LogMsgBase):
         real_sigma = gauss_sigma/diff
         new_yy = gaussian_filter1d(self._yy, real_sigma)
         self._yy = new_yy
-
-        #if gauss_sigma < 5e-15:
-        #    import pdb; pdb.set_trace()
 
     def center(self, type_='Gauss'):
         if type_ == 'Gauss':
@@ -316,6 +312,8 @@ class BeamProfile(Profile):
         wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)
         self.wake_dict[dict_key] = wf_dict
         #self.logMsg('wake_dict calculated for gap %.2f mm and beam position %.2f mm' % (gap*1e3, beam_position*1e3))
+        if np.any(np.isnan(wf_dict['wake_potential'])):
+            raise ValueError
         return wf_dict
 
     def to_dict(self):

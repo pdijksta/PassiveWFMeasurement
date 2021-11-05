@@ -90,7 +90,7 @@ class StructureCalibrator(LogMsgBase):
         self.total_charge = tracker.total_charge
 
         self.raw_struct_positions = []
-        self.screen_x0_arr = []
+        self.screen_center_arr = []
         self.centroids = []
         self.centroids_std = []
         self.all_rms = []
@@ -132,7 +132,7 @@ class StructureCalibrator(LogMsgBase):
         bs0 = streaking_factors[index0]
         streaking_factors = streaking_factors/bs0
 
-        beam_positions = -(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
+        beam_positions = -(self.raw_struct_positions - np.mean(self.screen_center_arr))
 
         self.meas_screens = MeasScreens(meas_screens, beam_positions, streaking_factors)
 
@@ -196,7 +196,7 @@ class StructureCalibrator(LogMsgBase):
         screen_center = centroid_mean[where0]
         centroid_mean -= screen_center
         centroids -= screen_center
-        screen_x0_arr = np.array([screen_center]*len(raw_struct_positions), float)
+        screen_center_arr = np.array([screen_center]*len(raw_struct_positions), float)
         centroid_std = np.std(centroids, axis=1)
         rms_mean = np.mean(rms, axis=1)
         rms_std = np.std(rms, axis=1)
@@ -213,7 +213,7 @@ class StructureCalibrator(LogMsgBase):
         self.centroids_std = np.concatenate([self.centroids_std, centroid_std[mask]])[sort]
         self.rms = np.concatenate([self.rms, rms_mean[mask]])[sort]
         self.rms_std = np.concatenate([self.rms_std, rms_std[mask]])[sort]
-        self.screen_x0_arr = np.concatenate([self.screen_x0_arr, screen_x0_arr[mask]])[sort]
+        self.screen_center_arr = np.concatenate([self.screen_center_arr, screen_center_arr[mask]])[sort]
 
         plot_list_x = [x_axis - screen_center] * len(plot_list_y)
         y_axis_list = self.y_axis_list + [y_axis] * len(plot_list_y)
@@ -360,7 +360,7 @@ class StructureCalibrator(LogMsgBase):
         reconstruction2 = fit_func2(xx_fit2, *p_opt)
         initial_guess = fit_func2(xx_fit, *p0)
 
-        screen_center = np.mean(self.screen_x0_arr)
+        screen_center = np.mean(self.screen_center_arr)
         delta_gap = gap_fit - self.tracker.structure_gap0
 
         calibration = StructureCalibration(self.structure_name, screen_center, delta_gap, structure_position0)
@@ -377,9 +377,15 @@ class StructureCalibrator(LogMsgBase):
                 'xx_fit': xx_fit,
                 'xx_fit2': xx_fit2,
                 'screen_rms0': const0,
-                'screen_x0_arr': self.screen_x0_arr,
+                'screen_center_arr': self.screen_center_arr,
                 'screen_center': screen_center,
                 'calibration': calibration,
+                'raw_struct_positions': self.raw_struct_positions,
+                'meas_screens': self.get_meas_screens().meas_screens,
+                'centroids': self.centroids,
+                'centroids_std': self.centroids_std,
+                'rms': self.rms,
+                'rms_std': self.rms_std,
                 }
         self.fit_dicts[type_] = fit_dict
         self.logMsg('structure_position0 calibrated as %i um' % (structure_position0*1e6))
@@ -444,111 +450,23 @@ class StructureCalibrator(LogMsgBase):
                 }
         return output
 
-    def plot_structure_position0_fit(self, plot_handles=None, figsize=None):
-
-        if plot_handles is None:
-            fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure(figsize)
-        else:
-            (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
-
-        raw_struct_positions = self.raw_struct_positions
-        fit_dict_centroid = self.fit_dicts['centroid']
-        fit_dict_rms = self.fit_dicts['beamsize']
-        blmeas_profile = self.blmeas_profile
-        forward_propagate_blmeas = (blmeas_profile is not None)
-        screen_center = self.tracker.screen_center
-
-        meas_screens = self.get_meas_screens()
-        rms_sim = np.zeros(len(raw_struct_positions))
-        centroid_sim = np.zeros(len(raw_struct_positions))
-        if self.sim_screens is not None:
-            sim_screens = self.sim_screens
-            #len_screen = len(sim_screens[0])
-            for n_proj, (meas_screen, position) in enumerate(zip(meas_screens, raw_struct_positions)):
-                color = ms.colorprog(n_proj, raw_struct_positions)
-                meas_screen.plot_standard(sp_proj, label='%.2f mm' % (position*1e3), color=color)
-                sim_screen = sim_screens[n_proj]
-                sim_screen.plot_standard(sp_proj, color=color, ls='--')
-                centroid_sim[n_proj] = sim_screen.mean()
-                rms_sim[n_proj] = sim_screen.rms()
-        else:
-            sim_screens = None
-
-        if forward_propagate_blmeas:
-            blmeas_profile.plot_standard(sp_current, color='black', ls='--')
-
-        for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
-                (fit_dict_centroid, sp_center, sp_center2, self.centroids, self.centroids_std, centroid_sim),
-                (fit_dict_rms, sp_sizes, sp_sizes2, self.rms, self.rms_std, rms_sim),
-                ]:
-
-            xx_fit = fit_dict['xx_fit']
-            xx_fit2 = fit_dict['xx_fit2']
-            reconstruction = fit_dict['reconstruction']
-            reconstruction2 = fit_dict['reconstruction2']
-            gap = fit_dict['gap_fit']
-            fit_semigap = gap/2
-            structure_position0 = fit_dict['structure_position0']
-
-            xx_plot = (raw_struct_positions - structure_position0)
-            xx_plot_fit = (xx_fit - structure_position0)
-            sp1.errorbar(xx_plot*1e3, (yy-screen_center)*1e3, yerr=yy_err*1e3, label='Data', ls='None', marker='o')
-            sp1.plot(xx_plot_fit*1e3, (reconstruction-screen_center)*1e3, label='Fit')
-
-            mask_pos, mask_neg = raw_struct_positions > 0, raw_struct_positions < 0
-            xx_plot2 = np.abs(fit_semigap - np.abs(xx_plot))
-            for mask2, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
-                sp2.errorbar(xx_plot2[mask2]*1e6, np.abs(yy[mask2]-screen_center)*1e3, yerr=yy_err[mask2]*1e3, label=label, marker='o', ls='None')
-
-            if sim_screens is not None:
-                plot2_sim = []
-                for mask in mask_pos, mask_neg:
-                    plot2_sim.extend([(a, np.abs(b)) for a, b in zip(xx_plot2[mask], yy_sim[mask])])
-                plot2_sim.sort()
-                xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
-                xx_plot_sim = np.array(xx_plot_sim)
-                yy_plot_sim = np.array(yy_plot_sim)
-                sp2.plot(xx_plot_sim*1e6, yy_plot_sim*1e3, label='Simulated', ls='None', marker='o')
-                sp1.plot(xx_plot*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
-
-            xx_plot_fit2 = np.abs(fit_semigap - np.abs(xx_fit2 - structure_position0))
-            yy_plot_fit2 = np.abs(reconstruction2)-screen_center
-            xlims = sp_center2.get_xlim()
-            mask_fit = np.logical_and(xx_plot_fit2*1e6 > xlims[0], xx_plot_fit2*1e6 < xlims[1])
-            mask_fit = np.logical_and(mask_fit, xx_fit2 > 0)
-            sp2.plot(xx_plot_fit2[mask_fit]*1e6, yy_plot_fit2[mask_fit]*1e3, label='Fit')
-            sp2.set_xlim(*xlims)
-
-            title = sp1.get_title()
-            sp1.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
-            title = sp2.get_title()
-            sp2.set_title('%s; Center=%i $\mu$m' % (title, round(fit_dict['structure_position0']*1e6)), fontsize=config.fontsize)
-            sp1.legend()
-            sp2.legend()
 
     def reconstruct_current(self, plot_details=False, force_gap=None, force_struct_position0=None, use_n_positions=None):
-
         if force_gap is not None:
             gap = force_gap
         else:
             gap = self.fit_dicts['centroid']['gap_fit']
-
-
         if force_struct_position0 is not None:
             structure_position0 = force_struct_position0
         else:
             structure_position0 = self.fit_dicts['centroid']['structure_position0']
-
         gauss_dicts = []
         beam_position_list = []
-
         if use_n_positions is None:
             n_positions = range(len(self.raw_struct_positions))
         else:
             n_positions = use_n_positions
-
         meas_screens0 = self.get_meas_screens().meas_screens
-
         for n_position in n_positions:
             position = self.raw_struct_positions[n_position]
             if position == 0:
@@ -556,55 +474,11 @@ class StructureCalibrator(LogMsgBase):
             beam_position = -(position-structure_position0)
             #print(beam_offsets[self.n_streaker])
             beam_position_list.append(beam_position)
-
-
             meas_screen0 = meas_screens0[n_position]
             gauss_dict = self.tracker.reconstruct_profile_Gauss_forced(gap, beam_position, meas_screen0, plot_details=plot_details)
             gauss_dicts.append(gauss_dict)
-
         self.gauss_dicts = gauss_dicts
         return np.array(beam_position_list), gauss_dicts
-
-    def plot_reconstruction(self, gauss_dicts, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
-        center = 'Mean'
-        if plot_handles is None:
-            fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = gauss_recon_figure(figsize)
-        else:
-            fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = plot_handles
-
-        if len(gauss_dicts) == 0:
-            raise ValueError
-
-        for gauss_dict in gauss_dicts:
-            beam_offset = gauss_dict['beam_offsets'][self.n_streaker]
-
-            sp_screen = sp_screen_pos if beam_offset > 0 else sp_screen_neg
-            sp_profile = sp_profile_pos if beam_offset > 0 else sp_profile_neg
-
-            semigap = gauss_dict['gaps'][self.n_streaker]/2
-            distance = semigap-abs(beam_offset)
-            if distance > max_distance:
-                continue
-
-            rec_profile = gauss_dict['reconstructed_profile']
-            label = '%i' % (round(rec_profile.rms()*1e15))
-            rec_profile.plot_standard(sp_profile, label=label, center=center)
-
-            meas_screen = gauss_dict['meas_screen']
-            rec_screen = gauss_dict['reconstructed_screen']
-            label = '%i' % round(distance*1e6)
-            color = meas_screen.plot_standard(sp_screen, label=label)[0].get_color()
-            rec_screen.plot_standard(sp_screen, ls='--', color=color)
-
-        if blmeas_profile is not None:
-            for _sp in sp_profile_pos, sp_profile_neg:
-                blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
-
-        for _sp in sp_screen_pos, sp_screen_neg:
-            _sp.legend(title='d ($\mu$m)')
-
-        for _sp in sp_profile_pos, sp_profile_neg:
-            _sp.legend(title='rms (fs)')
 
     def reconstruct_gap(self, use_n_positions=None):
 
@@ -682,6 +556,9 @@ class StructureCalibrator(LogMsgBase):
         sort = np.argsort(gap_arr)
         assumed_rms = np.interp(gap, gap_arr[sort], rms_rms[sort])
         assumed_bunch_duration = np.interp(gap, gap_arr[sort], rms_mean[sort])
+
+        best_index = np.argwhere(gap_arr == gap).squeeze()
+
         output = {
                 'gap': gap,
                 'gap0': self.tracker.structure_gap0,
@@ -694,9 +571,15 @@ class StructureCalibrator(LogMsgBase):
                 'all_rms': rms_arr,
                 'use_n_positions': use_n_positions,
                 'final_gauss_dicts': gauss_dicts,
-                'beam_positions': np.array(beam_position_list)
+                'beam_positions': np.array(beam_position_list),
+                'best_index': best_index,
                 }
         return output
+
+    def get_n_positions(self, gap, max_distance):
+        distances = gap/2. - abs(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
+        index_arr = np.arange(len(self.raw_struct_positions))
+        return index_arr[distances <= max_distance]
 
 def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
     if plot_handles is None:
@@ -708,11 +591,8 @@ def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exc
     lin_fit = gap_recon_dict['lin_fit']
     lin_fit_const = gap_recon_dict['lin_fit_const']
     gap0 = gap_recon_dict['gap0']
-    use_n_positions = gap_recon_dict['use_n_positions']
 
     beam_positions = gap_recon_dict['beam_positions']
-    if use_n_positions is not None:
-        beam_positions = np.take(beam_positions, use_n_positions)
 
     for gap_ctr in list(range(len(gap_arr)))[::-1]:
         if gap_ctr in exclude_gap_ctrs:
@@ -743,12 +623,52 @@ def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exc
     mask_neg = beam_positions < 0
 
     distances = gap_recon_dict['gap']/2. - np.abs(beam_positions)
+    best_index = gap_recon_dict['best_index']
     for mask, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
-        sp_distances.plot(distances[mask]*1e3, all_rms_arr[-1][mask]*1e15, label=label)
+        sp_distances.plot(distances[mask]*1e3, all_rms_arr[best_index][mask]*1e15, label=label)
 
     sp_distances.legend()
 
+def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
+    center = 'Mean'
+    if plot_handles is None:
+        fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = gauss_recon_figure(figsize)
+    else:
+        fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = plot_handles
 
+    if len(gauss_dicts) == 0:
+        raise ValueError
+
+    for gauss_dict in gauss_dicts:
+        beam_position = gauss_dict['beam_position']
+
+        sp_screen = sp_screen_pos if beam_position > 0 else sp_screen_neg
+        sp_profile = sp_profile_pos if beam_position > 0 else sp_profile_neg
+
+        semigap = gauss_dict['gap']/2.
+        distance = semigap-abs(beam_position)
+        if distance > max_distance:
+            continue
+
+        rec_profile = gauss_dict['reconstructed_profile']
+        label = '%i' % (round(rec_profile.rms()*1e15))
+        rec_profile.plot_standard(sp_profile, label=label, center=center)
+
+        meas_screen = gauss_dict['meas_screen_raw']
+        rec_screen = gauss_dict['reconstructed_screen']
+        label = '%i' % round(distance*1e6)
+        color = meas_screen.plot_standard(sp_screen, label=label)[0].get_color()
+        rec_screen.plot_standard(sp_screen, ls='--', color=color)
+
+    if blmeas_profile is not None:
+        for _sp in sp_profile_pos, sp_profile_neg:
+            blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
+
+    for _sp in sp_screen_pos, sp_screen_neg:
+        _sp.legend(title='d ($\mu$m)')
+
+    for _sp in sp_profile_pos, sp_profile_neg:
+        _sp.legend(title='rms (fs)')
 
 def gauss_recon_figure(figsize=None):
     if figsize is None:
@@ -825,4 +745,82 @@ def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit, sp_distances):
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
+def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blmeas_profile=None, sim_screens=None):
+
+    if plot_handles is None:
+        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure(figsize)
+    else:
+        (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
+
+    fit_dict_centroid = fit_dicts['centroid']
+    raw_struct_positions = fit_dict_centroid['raw_struct_positions']
+    fit_dict_rms = fit_dicts['beamsize']
+    forward_propagate_blmeas = (blmeas_profile is not None)
+    centroids = fit_dict_centroid['centroids']
+    centroids_std = fit_dict_centroid['centroids_std']
+    rms = fit_dict_centroid['rms']
+    rms_std = fit_dict_centroid['rms_std']
+    meas_screens = fit_dict_centroid['meas_screens']
+
+    rms_sim = np.zeros(len(raw_struct_positions))
+    centroid_sim = np.zeros(len(raw_struct_positions))
+    if sim_screens is not None:
+        for n_proj, (meas_screen, position) in enumerate(zip(meas_screens, raw_struct_positions)):
+            color = ms.colorprog(n_proj, raw_struct_positions)
+            meas_screen.plot_standard(sp_proj, label='%.2f mm' % (position*1e3), color=color)
+            sim_screen = sim_screens[n_proj]
+            sim_screen.plot_standard(sp_proj, color=color, ls='--')
+            centroid_sim[n_proj] = sim_screen.mean()
+            rms_sim[n_proj] = sim_screen.rms()
+
+    if forward_propagate_blmeas:
+        blmeas_profile.plot_standard(sp_current, color='black', ls='--')
+
+    for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
+            (fit_dict_centroid, sp_center, sp_center2, centroids, centroids_std, centroid_sim),
+            (fit_dict_rms, sp_sizes, sp_sizes2, rms, rms_std, rms_sim),
+            ]:
+
+        xx_fit = fit_dict['xx_fit']
+        reconstruction = fit_dict['reconstruction']
+
+
+        sp1.errorbar(raw_struct_positions*1e3, yy*1e3, yerr=yy_err*1e3, label='Data', ls='None', marker='o')
+        sp1.plot(xx_fit*1e3, reconstruction*1e3, label='Fit')
+        if sim_screens is not None:
+            sp1.plot(raw_struct_positions*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
+        title = sp1.get_title()
+        sp1.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
+
+        structure_position0 = fit_dict['structure_position0']
+        beam_positions = -(raw_struct_positions - structure_position0)
+        beam_positions_fit = -(xx_fit - structure_position0)
+        gap = fit_dict['gap_fit']
+        distances = gap/2. - np.abs(beam_positions)
+        distances_fit = gap/2. - np.abs(beam_positions_fit)
+
+        mask_pos = np.logical_and(beam_positions > 0, raw_struct_positions != 0)
+        mask_neg = np.logical_and(beam_positions < 0, raw_struct_positions != 0)
+        for mask2, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
+            sp2.errorbar(distances[mask2]*1e6, np.abs(yy[mask2])*1e3, yerr=yy_err[mask2]*1e3, label=label, marker='o', ls='None')
+        lims = sp2.get_xlim()
+        mask_fit = np.logical_and(distances_fit*1e6 > lims[0], distances_fit*1e6 < lims[1])
+        xx_fit2 = distances_fit[mask_fit]
+        yy_fit2 = reconstruction[mask_fit]
+        sp2.plot(xx_fit2*1e6, np.abs(yy_fit2)*1e3, label='Fit')
+
+        if sim_screens is not None:
+            plot2_sim = []
+            for mask in mask_pos, mask_neg:
+                plot2_sim.extend([(a, np.abs(b)) for a, b in zip(xx_fit2[mask], yy_sim[mask])])
+            plot2_sim.sort()
+            xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
+            xx_plot_sim = np.array(xx_plot_sim)
+            yy_plot_sim = np.array(yy_plot_sim)
+            sp2.plot(xx_plot_sim*1e6, yy_plot_sim*1e3, label='Simulated', ls='None', marker='o')
+
+        title = sp2.get_title()
+        sp2.set_title('%s; Center=%i $\mu$m' % (title, round(fit_dict['structure_position0']*1e6)), fontsize=config.fontsize)
+        sp1.legend()
+        sp2.legend()
 

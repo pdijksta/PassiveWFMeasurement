@@ -204,8 +204,8 @@ class Tracker(LogMsgBase):
         bins2 = np.concatenate([beamProfile.time, [beamProfile.time[-1] + beamProfile.time[1] - beamProfile.time[0]]])
         charge_interp, hist_edges = np.histogram(t_interp0, bins=bins2, weights=screen.intensity, density=True)
         # UNSURE
-        charge_interp[0] = 0
-        charge_interp[-1] = 0
+        #charge_interp[0] = 0
+        #charge_interp[-1] = 0
         t_interp = (hist_edges[1:] + hist_edges[:-1])/2.
 
         try:
@@ -218,8 +218,6 @@ class Tracker(LogMsgBase):
             bp.smoothen(self.backward_options['profile_smoothen'])
             if np.any(np.isnan(bp.charge_dist)):
                 raise ValueError
-            #bp.crop()
-            #bp.reshape(self.backward_options['len_profile'])
         except (ValueError, AssertionError) as e:
             print(e)
             ms.figure('')
@@ -306,7 +304,6 @@ class Tracker(LogMsgBase):
             sp_ctr += 1
 
         n_iter = 0
-
 
         def gaussian_baf(sig_t0):
             sig_t = np.round(sig_t0/prec)*prec
@@ -399,6 +396,7 @@ class Tracker(LogMsgBase):
                'reconstructed_profile': best_profile,
                'best_gauss': best_gauss,
                'meas_screen': meas_screen,
+               'meas_screen_raw': meas_screen_raw,
                'gap': self.structure_gap,
                'structure': self.structure_name,
                'beam_position': self.beam_position,

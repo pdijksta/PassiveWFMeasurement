@@ -64,7 +64,7 @@ class CorrugatedStructure:
         elif spw_type == 'Dipole':
             func = self.wxd
         self.spw_dict[spw_type][dict_key] = func(time_grid0, semigap, beam_position)
-        self.logMsg('spw calculated for semigap %.2f mm and beam position %.2f mm' % (semigap*1e3, beam_position*1e3))
+        #self.logMsg('spw calculated for semigap %.2f mm and beam position %.2f mm' % (semigap*1e3, beam_position*1e3))
 
     def convolve(self, beamProfile, semigap, beam_position, spw_type):
         beam_time = beamProfile.time

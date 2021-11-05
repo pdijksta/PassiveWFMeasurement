@@ -145,7 +145,7 @@ class Tracker(LogMsgBase):
             if fig_number is not None:
                 ms.plt.figure(fig_number)
 
-        self.logMsg('Forward propagated profile with rms %.1f fs to screen with %.1f um mean' % (beam.beamProfile.rms()*1e15, screen.mean()*1e6))
+        #self.logMsg('Forward propagated profile with rms %.1f fs to screen with %.1f um mean' % (beam.beamProfile.rms()*1e15, screen.mean()*1e6))
         return outp_dict
 
     def prepare_screen(self, screen):
@@ -176,7 +176,7 @@ class Tracker(LogMsgBase):
         screen.crop()
         screen.reshape(self.n_particles)
 
-        self.logMsg('Prepared screen', 'I')
+        #self.logMsg('Prepared screen', 'I')
 
         return screen
 
@@ -248,16 +248,29 @@ class Tracker(LogMsgBase):
                 'wake_time': wake_time,
                 'wake_x': wake_x,
                 }
-        self.logMsg('Backward propagated screen with mean %i um and profile with rms %.1f fs to profile with rms %.1f fs' % (screen.mean()*1e6, beamProfile.rms()*1e15, bp.rms()*1e15))
+        #self.logMsg('Backward propagated screen with mean %i um and profile with rms %.1f fs to profile with rms %.1f fs' % (screen.mean()*1e6, beamProfile.rms()*1e15, bp.rms()*1e15))
         return outp_dict
 
-    def reconstruct_profile_Gauss(self, meas_screen, output_details=False, plot_details=False, centroid_meas=None):
+    def reconstruct_profile_Gauss_forced(self, forced_gap, forced_beam_position, *args, **kwargs):
+        force_gap0 = self.force_gap
+        pos0 = self.beam_position
+        try:
+            self.force_gap = forced_gap
+            self.beam_position = forced_beam_position
+            return self.reconstruct_profile_Gauss(*args, **kwargs)
+        finally:
+            self.force_gap = force_gap0
+            self.beam_position = pos0
+
+    def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False, centroid_meas=None):
         t0 = time.time()
         prec = self.reconstruct_gauss_options['precision']
         tt_range = self.reconstruct_gauss_options['gauss_profile_t_range']
         method = self.reconstruct_gauss_options['method']
         sig_t_range = self.reconstruct_gauss_options['sig_t_range']
         len_profile = self.backward_options['len_profile']
+
+        meas_screen = self.prepare_screen(meas_screen_raw)
 
         opt_func_screens = []
         opt_func_profiles = []
@@ -369,8 +382,10 @@ class Tracker(LogMsgBase):
 
         distance = self.structure_gap/2. - abs(self.beam_position)
         self.logMsg('iterations %i, duration %i fs, charge %i pC, gap %.2f mm, beam pos %.2f mm, distance %.2f um' % (n_iter, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap*1e3, self.beam_position*1e3, distance*1e6))
+
         time_needed = time.time() - t0
-        self.logMsg('Needed %.3f seconds for Gaussian reconstruction' % time_needed)
+        time_needed
+        #self.logMsg('Needed %.3f seconds for Gaussian reconstruction' % time_needed)
 
         output = {
                'gauss_sigma': best_sig_t,
@@ -397,6 +412,9 @@ class Tracker(LogMsgBase):
             sp_profile.legend()
             sp_screen.legend()
             ms.plt.figure(fig_number)
+
+        if '%i' % int(best_profile.rms()*1e15) == '0':
+            import pdb; pdb.set_trace()
 
         return output
 

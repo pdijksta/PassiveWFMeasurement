@@ -172,9 +172,9 @@ def get_default_structure_calibrator_options():
             'order_rms': 2.75,
             'fit_gap': True,
             'fit_order': False,
-            'proj_cutoff': 3e-2,
+            'proj_cutoff': 2e-2,
             'gap_recon_precision': 1e-6,
-            'gap_recon_delta': [-130e-6, 50e-6],
+            'gap_recon_delta': [-200e-6, 50e-6],
             }.copy()
 
 default_n_particles = int(1e5)

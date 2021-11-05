@@ -315,7 +315,7 @@ class BeamProfile(Profile):
             return self.wake_dict[dict_key]
         wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)
         self.wake_dict[dict_key] = wf_dict
-        self.logMsg('wake_dict calculated for gap %.2f mm and beam position %.2f mm' % (gap*1e3, beam_position*1e3))
+        #self.logMsg('wake_dict calculated for gap %.2f mm and beam position %.2f mm' % (gap*1e3, beam_position*1e3))
         return wf_dict
 
     def to_dict(self):

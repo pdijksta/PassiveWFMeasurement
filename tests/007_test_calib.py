@@ -4,7 +4,6 @@ path = os.path.join(os.path.dirname(__file__), '../../')
 if path not in sys.path:
     sys.path.append(path)
 
-
 import PassiveWFMeasurement.h5_storage as h5_storage
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.calibration as calibration
@@ -31,18 +30,19 @@ structure_position0 = 360e-6
 screen_center = -600e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.Tracker(beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics)
-
+tracker = tracking.Tracker(beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=180e-12)
 
 calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, dict_)
 calibrator.fit()
-
 calibrator.plot_structure_position0_fit()
+new_calib = calibrator.fit_dicts['centroid']['calibration']
+tracker.calib = new_calib
 
-calibrator.get_meas_screens()
-calibrator.plot_meas_screens()
+meas_screens = calibrator.get_meas_screens()
+meas_screens.plot()
 
-
+#gap_recon_dict = calibrator.reconstruct_gap()
+#calibration.plot_gap_reconstruction(gap_recon_dict)
 
 
 ms.show()

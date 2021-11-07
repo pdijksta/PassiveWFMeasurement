@@ -31,10 +31,6 @@ def add_dataset(group, name, data, system=None, dtype=None):
 
 def saveH5Recursive(h5_filename, data_dict):
     # import here to prevent circular import
-    try:
-        import tracking
-    except ImportError:
-        from . import tracking
 
     def recurse_save(group, dict_or_data, dict_or_data_name, new_group=None):
         if dict_or_data is None:
@@ -43,8 +39,8 @@ def saveH5Recursive(h5_filename, data_dict):
             print("'recurse_save' has been called with None")
             raise ValueError
 
-        if type(dict_or_data) is tracking.BeamProfile or type(dict_or_data) is tracking.ScreenDistribution:
-            dict_or_data = dict_or_data.to_dict()
+        if hasattr(dict_or_data, 'to_dict_custom'):
+            dict_or_data = dict_or_data.to_dict_custom()
 
         if type(dict_or_data) is tuple:
             dict_or_data = {'tuple_%i': x for i, x in enumerate(dict_or_data)}

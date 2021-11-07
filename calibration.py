@@ -34,7 +34,7 @@ class StructureCalibration:
                 'distance': distance,
                 }
 
-    def to_dict(self):
+    def to_dict_custom(self):
         return {
                 'structure_name': self.structure_name,
                 'screen_center': self.screen_center,
@@ -491,6 +491,9 @@ class StructureCalibrator(LogMsgBase):
         lin_fit = []
         lin_fit_const = []
 
+        n_positions = len(use_n_positions) if use_n_positions is not None else len(self.raw_struct_positions)-1
+        distance_rms_arr = [[] for _ in range(n_positions)]
+
         def one_gap(gap, force=False):
             if not force:
                 gap = np.round(gap/precision)*precision
@@ -503,6 +506,9 @@ class StructureCalibrator(LogMsgBase):
             d_arr2 = distance_arr - distance_arr.min()
             sort = np.argsort(d_arr2)
             fit = np.polyfit(d_arr2[sort], rms_arr[sort], 1)
+
+            for n in range(n_positions):
+                distance_rms_arr[n].append((distance_arr[n], rms_arr[n]))
 
             index = bisect.bisect(gaps, gap)
             gaps.insert(index, gap)
@@ -571,8 +577,9 @@ class StructureCalibrator(LogMsgBase):
                 'all_rms': rms_arr,
                 'use_n_positions': use_n_positions,
                 'final_gauss_dicts': gauss_dicts,
-                'beam_positions': np.array(beam_position_list),
+                'final_beam_positions': np.array(beam_position_list),
                 'best_index': best_index,
+                'distance_rms_arr': distance_rms_arr,
                 }
         return output
 
@@ -592,7 +599,7 @@ def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exc
     lin_fit_const = gap_recon_dict['lin_fit_const']
     gap0 = gap_recon_dict['gap0']
 
-    beam_positions = gap_recon_dict['beam_positions']
+    beam_positions = gap_recon_dict['final_beam_positions']
 
     for gap_ctr in list(range(len(gap_arr)))[::-1]:
         if gap_ctr in exclude_gap_ctrs:

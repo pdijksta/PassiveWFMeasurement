@@ -368,7 +368,7 @@ class Tracker(LogMsgBase):
         for sig_t in sig_t_arr:
             gaussian_baf(sig_t)
 
-        for _ in range(3):
+        for _ in range(5):
             sig_t_min = get_index_min(output='t_sig')
             gaussian_baf(sig_t_min)
         index_min = get_index_min()

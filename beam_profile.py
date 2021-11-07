@@ -248,7 +248,7 @@ class ScreenDistribution(Profile):
             sp.axvline(self.mean()*1e3, ls='--', color=color)
         return outp
 
-    def to_dict(self):
+    def to_dict_custom(self):
         return {'x': self.x,
                 'intensity': self.intensity,
                 'real_x': self.real_x,

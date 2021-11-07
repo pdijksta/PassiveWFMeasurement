@@ -9,6 +9,7 @@ import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.calibration as calibration
 import PassiveWFMeasurement.tracking as tracking
 import PassiveWFMeasurement.myplotstyle as ms
+import PassiveWFMeasurement.plot_results as plot_results
 
 ms.closeall()
 
@@ -34,7 +35,7 @@ tracker = tracking.Tracker(beamline, screen_name, structure_name, meta_data, cal
 
 calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, dict_)
 calibrator.fit()
-calibration.plot_structure_position0_fit(calibrator.fit_dicts)
+plot_results.plot_structure_position0_fit(calibrator.fit_dicts)
 new_calib = calibrator.fit_dicts['centroid']['calibration']
 tracker.calib = new_calib
 
@@ -42,19 +43,17 @@ meas_screens = calibrator.get_meas_screens()
 meas_screens.plot()
 
 gap_recon_dict = calibrator.reconstruct_gap()
-calibration.plot_gap_reconstruction(gap_recon_dict)
+plot_results.plot_gap_reconstruction(gap_recon_dict)
 
 max_distance = 350e-6
 n_positions = calibrator.get_n_positions(gap_recon_dict['gap'], max_distance)
 
 gap_recon_dict2 = calibrator.reconstruct_gap(use_n_positions=n_positions)
-calibration.plot_gap_reconstruction(gap_recon_dict2)
+plot_results.plot_gap_reconstruction(gap_recon_dict2)
 
 gauss_dicts = gap_recon_dict2['final_gauss_dicts']
 
-calibration.plot_reconstruction(gauss_dicts)
-
-
+plot_results.plot_reconstruction(gauss_dicts)
 
 ms.show()
 

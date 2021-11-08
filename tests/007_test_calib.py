@@ -16,7 +16,7 @@ ms.closeall()
 beamline = 'Aramis'
 screen_name = 'SARBD02-DSCR050'
 structure_name = 'SARUN18-UDCP020'
-file_ = './data/2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
+file_ = './data/2021_10_24-19_34_36_Calibration_SARUN18-UDCP020.h5'
 dict_ = h5_storage.loadH5Recursive(file_)['raw_data']
 meta_data = dict_['meta_data_begin']
 forward_options = config.get_default_forward_options()
@@ -26,9 +26,9 @@ beam_options = config.get_default_beam_spec()
 beam_optics = config.default_optics[beamline]
 structure_calib_options = config.get_default_structure_calibrator_options()
 
-delta_gap = -70e-6
+delta_gap = 0
 structure_position0 = 360e-6
-screen_center = -600e-6
+screen_center = 0
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
 tracker = tracking.Tracker(beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=180e-12)
@@ -45,7 +45,7 @@ meas_screens.plot()
 gap_recon_dict = calibrator.reconstruct_gap()
 plot_results.plot_gap_reconstruction(gap_recon_dict)
 
-max_distance = 350e-6
+max_distance = 500e-6
 n_positions = calibrator.get_n_positions(gap_recon_dict['gap'], max_distance)
 
 gap_recon_dict2 = calibrator.reconstruct_gap(use_n_positions=n_positions)

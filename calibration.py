@@ -1,6 +1,7 @@
 import bisect
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.interpolate import interp1d
 
 from . import data_loader
 from . import beam_profile
@@ -19,8 +20,8 @@ class StructureCalibration:
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
         gap = gap0 + self.delta_gap
-        structure_position0 = meta_data[self.structure_name+':CENTER']*1e-3
-        beam_position = -(structure_position0 - self.structure_position0)
+        structure_position = meta_data[self.structure_name+':CENTER']*1e-3
+        beam_position = -(structure_position - self.structure_position0)
         distance = gap/2. - abs(beam_position)
         if distance < 0:
             raise ValueError('Distance between beam and gap is negative')
@@ -28,7 +29,8 @@ class StructureCalibration:
         return {
                 'gap0': gap0,
                 'gap': gap,
-                'structure_position0': structure_position0,
+                'structure_position': structure_position,
+                'structure_position0': self.structure_position0,
                 'beam_position': beam_position,
                 'distance': distance,
                 }
@@ -471,7 +473,8 @@ class StructureCalibrator(LogMsgBase):
             if position == 0:
                 continue
             beam_position = -(position-structure_position0)
-            #print(beam_offsets[self.n_streaker])
+            if abs(beam_position) > gap/2.:
+                raise ValueError(beam_position, gap/2.)
             beam_position_list.append(beam_position)
             meas_screen0 = meas_screens0[n_position]
             gauss_dict = self.tracker.reconstruct_profile_Gauss_forced(gap, beam_position, meas_screen0, plot_details=plot_details)
@@ -582,8 +585,114 @@ class StructureCalibrator(LogMsgBase):
                 }
         return output
 
+    def calibrate_gap_and_struct_position(self, use_n_positions=None):
+        n_positions = len(use_n_positions) if use_n_positions is not None else len(self.raw_struct_positions)-1
+        delta_gap_scan_range = self.structure_calib_options['delta_gap_scan_range']
+        delta_gap_range = self.structure_calib_options['delta_gap_range']
+        delta_streaker0_range = self.structure_calib_options['delta_streaker0_range']
+        gap0 = self.tracker.structure_gap0
+        structure_position0 = self.tracker.structure_position0
+
+        distance_rms_arr = np.zeros([n_positions, len(delta_gap_scan_range), 2])
+
+        for n_delta, delta_gap in enumerate(delta_gap_scan_range):
+            gap = gap0 + delta_gap
+            beam_position_list, gauss_dicts = self.reconstruct_current(force_gap=gap, force_struct_position0=structure_position0, use_n_positions=use_n_positions)
+            rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
+            distance_arr = gap/2. - np.abs(beam_position_list)
+            distance_rms_arr[:,n_delta,0] = distance_arr
+            distance_rms_arr[:,n_delta,1] = rms_arr
+
+        beam_positions = np.array(beam_position_list)
+        distances0 = gap0/2. - np.abs(beam_positions)
+        mask_pos, mask_neg = beam_positions > 0, beam_positions < 0
+
+        distance_rms_dict = {}
+        for n in range(len(distance_rms_arr)):
+            distance_arr = distance_rms_arr[n,:,0]
+            rms_arr = distance_rms_arr[n,:,1]
+            distance_plot = distance_arr - distance_arr.min()
+            sort = np.argsort(distance_plot)
+            distance_rms_dict[n] = [distance_arr[sort], rms_arr[sort]]
+
+        def get_fit_param(delta_streaker0, delta_gap):
+            new_distances = np.zeros_like(distances0)
+            new_distances[mask_pos] = distances0[mask_pos] - delta_streaker0 + delta_gap/2.
+            new_distances[mask_neg] = distances0[mask_neg] + delta_streaker0 + delta_gap/2.
+            new_rms_list = []
+            for n, new_distance in enumerate(new_distances):
+                distance_arr = distance_rms_dict[n][0]
+                rms_arr = distance_rms_dict[n][1]
+                if distance_arr[1] < distance_arr[0]:
+                    distance_arr = distance_arr[::-1]
+                    rms_arr = rms_arr[::-1]
+
+                new_rms = interp1d(distance_arr, rms_arr, fill_value='extrapolate')(new_distance)
+                new_rms_list.append(new_rms)
+            new_rms_arr = np.array(new_rms_list)
+            fit = np.poly1d(np.polyfit(new_distances, new_rms_arr, 1))
+            outp = {
+                    'fit': fit,
+                    'new_distances': new_distances,
+                    'new_rms': new_rms_arr,
+                    }
+            return outp
+
+        fit_coefficients = np.zeros([len(delta_streaker0_range), len(delta_gap_range)])
+        mean_rms_arr = fit_coefficients.copy()
+        mean_rms_pos = fit_coefficients.copy()
+        mean_rms_neg = fit_coefficients.copy()
+
+        all_fit_dicts = {}
+
+        for n1, delta_streaker0 in enumerate(delta_streaker0_range):
+            all_fit_dicts[n1] = {}
+            for n2, delta_gap in enumerate(delta_gap_range):
+                fit_dict = get_fit_param(delta_streaker0, delta_gap)
+                fit_coefficients[n1, n2] = fit_dict['fit'][1] / np.mean(fit_dict['new_rms'])
+                mean_rms_arr[n1, n2] = np.mean(fit_dict['new_rms'])
+                mean_rms_pos[n1, n2] = np.mean(fit_dict['new_rms'][mask_pos])
+                mean_rms_neg[n1, n2] = np.mean(fit_dict['new_rms'][mask_neg])
+                all_fit_dicts[n1][n2] = fit_dict
+
+        fit_coefficients2 = np.abs(fit_coefficients)
+        fit_coefficients2 /= fit_coefficients2.max()
+        diff_sides = np.abs(mean_rms_pos - mean_rms_neg)
+        diff_sides /= diff_sides.max()
+
+        combined_target = diff_sides**2 + fit_coefficients2**2
+        combined_target /= combined_target.max()
+
+        argmin = np.argwhere(combined_target == np.nanmin(combined_target))[0]
+        structure_position0 = delta_streaker0_range[argmin[0]]
+        delta_gap = delta_gap_range[argmin[1]]
+        fit_dict = get_fit_param(structure_position0, delta_gap)
+        new_distances = fit_dict['new_distances']
+        new_rms = fit_dict['new_rms']
+
+        calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap, structure_position0)
+
+        outp = {
+                'diff_sides': diff_sides,
+                'new_distances': new_distances,
+                'new_rms': new_rms,
+                'fit_coefficients': fit_coefficients,
+                'fit_coefficients2': fit_coefficients2,
+                'distance_rms_arr': distance_rms_arr,
+                'beam_positions': beam_positions,
+                'delta_gap_range': delta_gap_range,
+                'delta_streaker0_range': delta_streaker0_range,
+                'mean_rms': mean_rms_arr,
+                'best_index': argmin,
+                'all_fit_dicts': all_fit_dicts,
+                'combined_target': combined_target,
+                'calibration': calib,
+                }
+        return outp
+
+
     def get_n_positions(self, gap, max_distance):
-        distances = gap/2. - abs(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
+        distances = gap/2. - np.abs(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
         index_arr = np.arange(len(self.raw_struct_positions))
         return index_arr[distances <= max_distance]
 

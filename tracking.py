@@ -261,10 +261,11 @@ class Tracker(LogMsgBase):
         try:
             self.force_gap = forced_gap
             self.beam_position = forced_beam_position
-            return self.reconstruct_profile_Gauss(*args, **kwargs)
+            outp = self.reconstruct_profile_Gauss(*args, **kwargs)
         finally:
             self.force_gap = force_gap0
             self.beam_position = pos0
+        return outp
 
     def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False, centroid_meas=None):
         t0 = time.time()

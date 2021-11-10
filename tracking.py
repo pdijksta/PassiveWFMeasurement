@@ -27,6 +27,7 @@ class Tracker(LogMsgBase):
 
         self.logger = logger
         self.force_gap = None
+        self.force_beam_position = None
         self._meta_data = None
 
         self.forward_options = forward_options
@@ -40,10 +41,7 @@ class Tracker(LogMsgBase):
         self.beamline = beamline
         self.screen_name = screen_name
         self.n_particles = n_particles
-        if force_charge is None:
-            self.total_charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
-        else:
-            self.total_charge = force_charge
+        self.force_charge = force_charge
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.meta_data = meta_data
@@ -60,9 +58,18 @@ class Tracker(LogMsgBase):
     @property
     def structure_gap(self):
         if self.force_gap is None:
-            return self._structure_gap
+            calib_dict = self.calib.gap_and_beam_position_from_meta(self.meta_data)
+            return calib_dict['gap']
         else:
             return self.force_gap
+
+    @property
+    def beam_position(self):
+        if self.force_beam_position is None:
+            calib_dict = self.calib.gap_and_beam_position_from_meta(self.meta_data)
+            return calib_dict['beam_position']
+        else:
+            return self.force_beam_position
 
     @property
     def meta_data(self):
@@ -70,6 +77,8 @@ class Tracker(LogMsgBase):
 
     @meta_data.setter
     def meta_data(self, meta_data):
+        if meta_data is None:
+            return
         self._meta_data = meta_data
         self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
         self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
@@ -79,19 +88,22 @@ class Tracker(LogMsgBase):
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
         self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
-        self._structure_gap = calib_dict['gap']
-        self.beam_position = calib_dict['beam_position']
+
+        if self.force_charge is None:
+            self.total_charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
+        else:
+            self.total_charge = self.force_charge
 
     def forward_propagate_forced(self, gap, beam_position, *args, **kwargs):
         old_gap = self.force_gap
-        old_bo = self.beam_position
+        old_bo = self.force_beam_position
         self.force_gap = gap
-        self.beam_position = beam_position
+        self.force_beam_position = beam_position
         try:
             outp = self.forward_propagate(*args, **kwargs)
         finally:
             self.force_gap = old_gap
-            self.beam_position = old_bo
+            self.force_beam_position = old_bo
         return outp
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
@@ -275,14 +287,14 @@ class Tracker(LogMsgBase):
 
     def reconstruct_profile_Gauss_forced(self, forced_gap, forced_beam_position, *args, **kwargs):
         force_gap0 = self.force_gap
-        pos0 = self.beam_position
+        pos0 = self.force_beam_position
         try:
             self.force_gap = forced_gap
-            self.beam_position = forced_beam_position
+            self.force_beam_position = forced_beam_position
             outp = self.reconstruct_profile_Gauss(*args, **kwargs)
         finally:
             self.force_gap = force_gap0
-            self.beam_position = pos0
+            self.force_beam_position = pos0
         return outp
 
     def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False, centroid_meas=None):

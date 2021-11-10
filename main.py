@@ -105,6 +105,8 @@ re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
 class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
+    charge_pv_text = 'Use PV'
+
     def __init__(self, logger=None):
         super(StartMain, self).__init__()
         uic.loadUi('gui.ui', self)
@@ -126,8 +128,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ObtainR12.clicked.connect(self.obtain_r12_0)
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
-        self.BeamlineSelect.addItems(config.structure_names.keys())
-        self.StructureSelect.addItems(config.structure_parameters.keys())
+        self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
+        self.StructureSelect.addItems(sorted(config.structure_parameters.keys()))
 
         # Default strings in gui fields
         hostname = socket.gethostname()
@@ -148,21 +150,19 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
         streaker_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
         screen_center = 898.02e-6
-        structure_center = 0, 364e-6
-        delta_gap = 0, -62e-6
+        structure_center = 364e-6
+        delta_gap = -62e-6
         pulse_energy = 180e-6
 
         self.ScreenCenterCalib.setText('%i' % round(screen_center*1e6))
-        self.StructureCenter.setText('%i' % round(structure_center[1]*1e6))
-        self.StructureGapDelta.setText('%i' % round(delta_gap[0]*1e6))
+        self.StructureCenter.setText('%i' % round(structure_center*1e6))
+        self.StructureGapDelta.setText('%i' % round(delta_gap*1e6))
         self.LasingEnergyInput.setText('%i' % round(pulse_energy*1e6))
 
         self.ReconstructionDataLoad.setText(lasing_file_off)
         self.BunchLengthMeasFile.setText(bunch_length_meas_file)
-        self.SaveDir.setText(save_dir)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
-        self.SaveDir.setText(save_dir)
         self.LoadCalibrationFilename.setText(streaker_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
 
@@ -170,20 +170,38 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         fs = config.get_default_forward_options()
         backs = config.get_default_backward_options()
         rs = config.get_default_reconstruct_gauss_options()
+        optics = config.get_default_optics(self.beamline)
 
         self.N_Particles.setText('%i' % config.default_n_particles)
-        self.TransEmittanceX.setText('%i' % round(bs['nemitx']*1e9))
-        self.TransEmittanceY.setText('%i' % round(bs['nemity']*1e9))
-        self.ScreenSmoothen.setText('%i' % round(fs['screen_smoothen']*1e6))
-        self.ProfileSmoothen.setText('%i' % round(backs['profile_smoothen']*1e15))
-        self.SigTfsStart.setText('%i' % round(rs['sig_t_range'][0]*1e15))
-        self.SigTfsStop.setText('%i' % round(rs['sig_t_range'][-1]*1e15))
+
+        # Forward options
         self.ScreenBins.setText('%i' % fs['screen_bins'])
-        self.ScreenLength.setText('%i' % fs['len_screen'])
         self.ScreenCutoff.setText('%.4f' % fs['screen_cutoff'])
+        self.ScreenSmoothen.setText('%i' % (fs['screen_smoothen']*1e6))
+        self.ScreenSize.setText('%i' % fs['len_screen'])
+
+        # Backward options
         self.ProfileCutoff.setText('%.4f' % backs['profile_cutoff'])
-        self.ProfileExtent.setText('%i' % round(rs['gauss_profile_t_range']*1e15))
-        self.Charge.setText('Use PV')
+        self.ProfileSmoothen.setText('%.4f' % (backs['profile_smoothen']*1e15))
+        self.ProfileSize.setText('%i' % backs['len_profile'])
+
+        # Gauss reconstruction options
+        self.SigTfsMin.setText('%.3f' % (rs['sig_t_range'][0]*1e15))
+        self.SigTfsMax.setText('%.3f' % (rs['sig_t_range'][1]*1e15))
+        self.GaussReconMaxIter.setText('%i' % rs['max_iterations'])
+        self.ProfileExtent.setText('%.3f' % (rs['gauss_profile_t_range']*1e15))
+
+        # Beam specifications
+        self.TransEmittanceX.setText('%.4f' % (bs['nemitx']*1e9))
+        self.TransEmittanceY.setText('%.4f' % (bs['nemity']*1e9))
+        self.BetaX.setText('%.4f' % optics['betax'])
+        self.AlphaX.setText('%.4f' % optics['alphax'])
+        self.BetaY.setText('%.4f' % optics['betay'])
+        self.AlphaY.setText('%.4f' % optics['alphay'])
+
+        # Other
+        self.Charge.setText(self.charge_pv_text)
+        self.SaveDir.setText(save_dir)
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
@@ -237,20 +255,42 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def clear_all_lasing_plots(self):
         plot_results.clear_lasing_figure(*self.all_lasing_plot_handles)
 
+    def gui_to_calib(self):
+        return calibration.StructureCalibration(
+                self.structure_name,
+                float(self.ScreenCenterCalib.text())/1e6,
+                float(self.StructureGapDelta.text())/1e6,
+                float(self.StructureCenter.text())/1e6)
+
+    def calib_to_gui(self, calib):
+        self.ScreenCenterCalib.setText('%.3f' % (calib.screen_center*1e6))
+        self.StructureGapDelta.setText('%.3f' % (calib.delta_gap*1e6))
+        self.StructureCenter.setText('%.3f' % (calib.structure_position0*1e6))
+
+    def get_tracker(self, meta_data):
+        if self.Charge.text() == self.charge_pv_text:
+            force_charge = None
+        else:
+            force_charge = float(self.Charge.text())*1e-12
+        n_particles = int(self.N_Particles.text())
+
+        tracker = tracking.Tracker(self.beamline, self.screen, self.structure_name, meta_data, self.gui_to_calib(), self.get_forward_options(), self.get_backward_options(), self.get_reconstruct_gauss_options(), self.get_beam_spec(), self.get_beam_optics(), force_charge, n_particles, self.logger)
+        return tracker
+
     def plot_resolution(self):
         # TODO
         # better resolution plot
         bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
         gap = 10e-3
         beam_offset = gap/2 - (float(self.PlotResolutionDistance.text())*1e-6)
-        struct_length = config.streaker_lengths[self.structure_name]
         meta_data = daq.get_meta_data(self.screen, False, self.beamline)
         tracker = self.get_tracker(meta_data)
-        beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], 6e9, self.charge)
-        res_dict = resolution.calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100), camera_res=20e-6)
+        beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], tracker.energy_eV, tracker.total_charge, self.logger)
+        res_dict = resolution.calc_resolution(beamprofile, gap, beam_offset, tracker)
 
         plot_results.clear_resolution_figure(*self.resolution_plot_handles)
         resolution.plot_resolution(res_dict, *self.resolution_plot_handles)
+        self.resolution_canvas.draw()
 
     def obtain_r12_0(self):
         return self.obtain_r12()
@@ -259,10 +299,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if meta_data is None:
             meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
             print(meta_data)
-        #print('obtain_r12', meta_data)
         tracker = self.get_tracker(meta_data)
-        r12 = tracker.calcR12()[self.n_streaker]
-        disp = tracker.calcDisp()[self.n_streaker]
+        r12 = tracker.r12
+        disp = tracker.disp
         print('R12:', r12)
         print('Dispersion:', disp)
         return r12, disp
@@ -271,81 +310,41 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def delta_gap(self):
         return float(self.StructureGapDelta.text())*1e-6
 
-    def get_gauss_kwargs(self):
-        start, stop = float(self.SigTfsStart.text()), float(self.SigTfsStop.text())
-        sig_t_range = np.array([start, stop])*1e-15
-        tt_halfrange = float(self.ProfileExtent.text())/2*1e-15
-        n_streaker = int(self.StreakerSelect.currentText())
-        charge = self.charge
-        delta_gap = self.delta_gaps
-        kwargs_recon = {
-                'sig_t_range': sig_t_range,
-                'tt_halfrange': tt_halfrange,
-                'n_streaker': n_streaker,
-                'charge': charge,
-                'method': 'centroid',
-                'delta_gap': delta_gap,
-                }
-        return kwargs_recon
-
-    #def get_tracker_kwargs(self, magnet_dict=None):
-
-    #    timestamp = None
-    #    struct_lengths = [float(self.StructLength1.text()), float(self.StructLength1.text())]
-    #    n_particles = int(float(self.N_Particles.text()))
-    #    n_emittances = [float(self.TransEmittanceX.text())*1e-9, float(self.TransEmittanceY.text())*1e-9]
-    #    screen_bins = int(self.ScreenBins.text())
-    #    screen_cutoff = float(self.ScreenCutoff.text())
-    #    smoothen = float(self.ScreenSmoothen.text())*1e-6
-    #    profile_cutoff = float(self.ProfileCutoff.text())
-    #    len_screen = int(self.ScreenLength.text())
-    #    quad_wake = self.UseQuadCheck.isChecked()
-    #    bp_smoothen = float(self.ProfileSmoothen.text())*1e-15
-    #    quad_x_beamsize = [float(self.QuadBeamsize1.text())*1e-6, float(self.QuadBeamsize2.text())*1e-6]
-
-    #    tracker_kwargs = {
-    #            'magnet_file': magnet_dict,
-    #            'timestamp': timestamp,
-    #            'struct_lengths': struct_lengths,
-    #            'n_particles': n_particles,
-    #            'n_emittances': n_emittances,
-    #            'screen_bins': screen_bins,
-    #            'screen_cutoff': screen_cutoff,
-    #            'smoothen': smoothen,
-    #            'profile_cutoff': profile_cutoff,
-    #            'len_screen': len_screen,
-    #            'quad_wake': quad_wake,
-    #            'bp_smoothen': bp_smoothen,
-    #            'override_quad_beamsize': override_quad_beamsize,
-    #            'quad_x_beamsize': quad_x_beamsize,
-    #            'beamline': self.beamline,
-    #            }
-    #    return tracker_kwargs
-
     def get_forward_options(self):
-        return config.get_default_forward_options()
+        outp = config.get_default_forward_options()
+        outp['screen_bins'] = int(self.ScreenBins.text())
+        outp['screen_smoothen'] = float(self.ScreenSmoothen.text())*1e-6
+        outp['screen_cutoff'] = float(self.ScreenCutoff.text())
+        outp['len_screen'] = int(self.ScreenSize.text())
+        return outp
 
     def get_backward_options(self):
-        return config.get_default_backward_options()
+        outp = config.get_default_backward_options()
+        outp['profile_cutoff'] = float(self.ProfileCutoff.text())
+        outp['len_profile'] = int(self.ProfileSize.text())
+        outp['profile_smoothen'] = float(self.ProfileSmoothen.text())*1e-15
+        return outp
 
     def get_reconstruct_gauss_options(self):
-        return config.get_default_reconstruct_gauss_options
+        outp = config.get_default_reconstruct_gauss_options
+        outp['sig_t_range'] = np.array([float(self.SigTfsMin.text())*1e-15, float(self.SigTfsMax.text())*1e-15])
+        outp['max_iterations'] = int(self.GaussReconMaxIter.text())
+        outp['gauss_profile_t_range'] = float(self.ProfileExtent.text())*1e-15
+        return outp
 
     def get_beam_spec(self):
-        return config.get_default_beam_spec()
+        outp = config.get_default_beam_spec()
+        outp['nemitx'] = float(self.TransEmittanceX.text())*1e-9
+        outp['nemity'] = float(self.TransEmittanceY.text())*1e-9
+        return outp
 
-    def get_calib(self):
-        return calibration.StructureCalibration(self.structure_name, self.screen_center)
-
-    def get_tracker(self, meta_data):
-        tracker = tracking.Tracker(self.beamline, self.screen, self.structure_name, meta_data, )
-        return tracker
-
-    @staticmethod
-    def _check_check(widgets, errormessage):
-        checks = [x.isChecked() for x in widgets]
-        if sum(checks) != 1:
-            raise ValueError(errormessage)
+    def get_beam_optics(self):
+        outp = config.get_default_optics(self.beamline)
+        outp['betax'] = float(self.BetaX.text())
+        outp['alphax'] = float(self.AlphaX.text())
+        outp['betay'] = float(self.BetaY.text())
+        outp['alphay'] = float(self.AlphaY.text())
+        return outp
 
     def reconstruct_current(self):
         self.clear_rec_plots()
@@ -513,10 +512,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     @property
     def screen_center(self):
         return float(self.ScreenCenterCalib.text())*1e-6
-
-    @property
-    def charge(self):
-        return float(self.Charge.text())*1e-12
 
     @property
     def streaker_means(self):

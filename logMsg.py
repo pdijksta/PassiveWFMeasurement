@@ -19,7 +19,6 @@ def get_logger(logfilename, title):
                             datefmt='%Y-%m-%d %H:%M:%S',
                             handlers=[handler, handler2])
 
-
         print('Logging file: %s' % logfilename)
     except Exception as e:
         print('Cannot write logging file...')

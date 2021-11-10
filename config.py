@@ -92,6 +92,9 @@ default_optics = {
             },
         }
 
+def get_default_optics(beamline):
+    return default_optics[beamline].copy()
+
 _aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.product(range(1, 21), ('X', 'Y'))]
 _aramis_pvs += ['SARBD01-DBPM040:%s1' % dim for dim in ('X', 'Y')]
 _aramis_pvs += ['SARBD02-DBPM010:%s1' % dim for dim in ('X', 'Y')]
@@ -130,7 +133,7 @@ def get_default_reconstruct_gauss_options():
             'gauss_profile_t_range': 400e-15,
             'precision': 0.1e-15,
             'method': 'centroid',
-            'sig_t_range': [7e-15, 100e-15],
+            'sig_t_range': np.array([7, 100])*1e15,
             'max_iterations': 5,
             }.copy()
 

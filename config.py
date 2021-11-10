@@ -105,33 +105,6 @@ all_structures = []
 for beamline, beamline_dict in structure_names.items():
     all_structures.extend([x for x in beamline_dict.values()])
 
-#get_default_tracker_settings = lambda: {
-#        'magnet_file': None,
-#        'timestamp': None,
-#        'struct_lengths': np.array([1., 1.]),
-#        'n_particles': int(100e3),
-#        'n_emittances': np.array([755, 755])*1e-9,
-#        'screen_bins': 500,
-#        'screen_cutoff': 2e-2,
-#        'smoothen': 20e-6,
-#        'profile_cutoff': 1e-2,
-#        'len_screen': 2000,
-#        'quad_wake': False,
-#        'bp_smoothen': 1e-15,
-#        'override_quad_beamsize': False,
-#        'quad_x_beamsize': np.array([10., 10.])*1e-6,
-#        }
-#
-#get_default_gauss_recon_settings = lambda: {
-#        'self_consistent': True,
-#        'sig_t_range': np.exp(np.linspace(np.log(7), np.log(100), 15))*1e-15,
-#        'tt_halfrange': 200e-15,
-#        'charge': 200e-12,
-#        'method': 'centroid',
-#        'delta_gap': (0., 0.)
-#        }
-
-
 def get_default_forward_options():
     return {
             'screen_bins': 1000,
@@ -155,6 +128,7 @@ def get_default_reconstruct_gauss_options():
             'precision': 0.1e-15,
             'method': 'centroid',
             'sig_t_range': [7e-15, 100e-15],
+            'max_iterations': 5,
             }.copy()
 
 def get_default_beam_spec():
@@ -181,10 +155,6 @@ def get_default_structure_calibrator_options():
             }.copy()
 
 default_n_particles = int(1e5)
-
-tmp_elegant_dir = '~/tmp_elegant'
-
 fontsize = 8
-
 rho_label = r'$\rho$ (nC/m)'
 

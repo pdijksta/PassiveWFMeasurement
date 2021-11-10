@@ -52,7 +52,7 @@ beam_positions = calib_dict['beam_positions']
 
 #gap_recon_dict = h5_storage.loadH5Recursive('./gap_recon_dict.h5')
 
-ms.figure('Gap reconstruction improvements')
+fig = ms.figure('Gap reconstruction improvements')
 subplot = ms.subplot_factory(3,3)
 sp_ctr = 1
 
@@ -77,7 +77,7 @@ x_factor = y_factor = 1e6
 extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[-1]*y_factor, y_axis[0]*y_factor]
 #extent = None
 plot = sp_heat.imshow(fit_coefficients2, extent=extent, aspect='auto')
-ms.plt.colorbar(plot)
+fig.colorbar(plot, label='Fit coefficint (arb. units)', ax=sp_heat)
 
 sp_heat_rms = subplot(sp_ctr, title='Rms duration', xlabel='$\Delta$ g ($\mu$m)', ylabel='$\Delta$ center ($\mu$m)', grid=False)
 sp_ctr += 1

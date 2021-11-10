@@ -246,3 +246,98 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
         sp1.legend()
         sp2.legend()
 
+def calib_figure(figsize=None):
+    if figsize is None:
+        figsize = [6.4, 6.4]
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Gap and structure position calibration')
+    fig.subplots_adjust(hspace=0.4, wspace=0.4)
+    ny, nx = 2, 3
+    subplot = ms.subplot_factory(ny, nx, grid=False)
+    plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+ny*nx)))
+    clear_calib(*plot_handles)
+    return fig, plot_handles
+
+
+def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
+    for sp, title, xlabel, ylabel in [
+            (sp_raw, 'Raw data', '$\Delta$ g ($\mu$ m)', 'rms duration (fs)'),
+            (sp_heat, 'Fit', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
+            (sp_heat_rms, 'Rms duration', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
+            (sp_heat_diff, 'Rms duration difference', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
+            (sp_comb, 'Target', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
+            (sp_final, 'New fits', 'distances ($\mu$m)', 'rms duration (fs)'),
+            ]:
+        sp.clear()
+        sp.set_title(title, fontsize=config.fontsize)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
+def plot_calib(calib_dict, fig=None, plot_handles=None):
+    delta_gap_range = calib_dict['delta_gap_range']
+    delta_streaker0_range = calib_dict['delta_streaker0_range']
+    fit_coefficients2 = calib_dict['fit_coefficients2']
+    mean_rms_arr = calib_dict['mean_rms']
+    diff_sides = calib_dict['diff_sides']
+    argmin = calib_dict['best_index']
+    distance_rms_arr = calib_dict['distance_rms_arr']
+    beam_positions = calib_dict['beam_positions']
+
+    if fig is None:
+        fig, plot_handles = calib_figure()
+    sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final = plot_handles
+
+    for n in range(len(distance_rms_arr)):
+        distance_arr = distance_rms_arr[n,:,0]
+        rms_arr = distance_rms_arr[n,:,1]
+        distance_plot = distance_arr - distance_arr.min()
+        sort = np.argsort(distance_plot)
+        label = '%.2f' % (beam_positions[n]*1e3)
+        sp_raw.plot(distance_plot[sort]*1e6, rms_arr[sort]*1e15, label=label, marker='.')
+
+    x_axis = delta_gap_range
+    y_axis = delta_streaker0_range
+    x_factor = y_factor = 1e6
+    extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[-1]*y_factor, y_axis[0]*y_factor]
+    #extent = None
+    plot = sp_heat.imshow(fit_coefficients2, extent=extent, aspect='auto')
+    fig.colorbar(plot, label='Fit coefficint (arb. units)', ax=sp_heat)
+
+    plot = sp_heat_rms.imshow(mean_rms_arr*1e15, cmap='hot', extent=extent, aspect='auto')
+    fig.colorbar(plot, label='Profile rms (fs)', ax=sp_heat_rms)
+
+
+    plot = sp_heat_diff.imshow(diff_sides*1e15, cmap='hot', extent=extent, aspect='auto')
+    fig.colorbar(plot, label='Profile rms delta (fs)')
+
+    combined_target = calib_dict['combined_target']
+    plot = sp_comb.imshow(np.sqrt(combined_target), cmap='hot', extent=extent, aspect='auto')
+    fig.colorbar(plot, label='Optimization function (arb. units)', ax=sp_comb)
+
+    n12_pairs = []
+
+    for n1 in [0, len(delta_streaker0_range)-1]:
+        for n2 in [0, len(delta_gap_range)-1]:
+            n12_pairs.append([n1, n2])
+    n12_pairs.append(argmin)
+
+    mask_pos, mask_neg = beam_positions > 0, beam_positions < 0
+
+    for n1, n2 in n12_pairs:
+        delta_streaker0 = delta_streaker0_range[n1]
+        delta_gap = delta_gap_range[n2]
+        fit_dict = calib_dict['all_fit_dicts'][n1][n2]
+        new_distances = fit_dict['new_distances']
+        new_rms = fit_dict['new_rms']
+        label = '%i / %i / %i' % (round(delta_streaker0*1e6), delta_gap*1e6, new_rms.mean()*1e15)
+        color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color()
+        sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=color, ls='None', marker='o')
+        xx_fit = np.array(new_distances)
+        yy_fit = fit_dict['fit'](xx_fit)
+        sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=color, ls='dotted')
+
+
+    sp_raw.legend(title='Beam position (mm)')
+    sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')
+

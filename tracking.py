@@ -25,22 +25,20 @@ class Tracker(LogMsgBase):
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
 
+        self.logger = logger
         self.force_gap = None
+        self._meta_data = None
 
         self.forward_options = forward_options
         self.backward_options = backward_options
         self.reconstruct_gauss_options = reconstruct_gauss_options
         self.beam_options = beam_options
         self.beam_optics = beam_optics
-        self.logger = logger
 
+        self.update_calib(calib)
         self.structure_name = structure_name
         self.beamline = beamline
         self.screen_name = screen_name
-        self.calib = calib
-        self.structure_position0 = calib.structure_position0
-        self.screen_center = calib.screen_center
-        self.delta_gap = calib.delta_gap
         self.n_particles = n_particles
         if force_charge is None:
             self.total_charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
@@ -50,6 +48,14 @@ class Tracker(LogMsgBase):
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.meta_data = meta_data
         self.logMsg('Tracker initialized')
+
+    def update_calib(self, calib):
+        self.calib = calib
+        self.structure_position0 = calib.structure_position0
+        self.screen_center = calib.screen_center
+        self.delta_gap = calib.delta_gap
+        if self._meta_data is not None:
+            self.meta_data = self._meta_data
 
     @property
     def structure_gap(self):
@@ -365,11 +371,11 @@ class Tracker(LogMsgBase):
             elif output == 't_sig':
                 return t_min
 
-        sig_t_arr = np.exp(np.linspace(np.log(np.min(sig_t_range)), np.log(np.max(sig_t_range)), 3))
-        for sig_t in sig_t_arr:
+        #sig_t_arr = np.exp(np.linspace(np.log(np.min(sig_t_range)), np.log(np.max(sig_t_range)), 2))
+        for sig_t in sig_t_range:
             gaussian_baf(sig_t)
 
-        for _ in range(5):
+        for _ in range(self.reconstruct_gauss_options['max_iterations']):
             sig_t_min = get_index_min(output='t_sig')
             gaussian_baf(sig_t_min)
         index_min = get_index_min()

@@ -142,29 +142,6 @@ class StructureCalibrator(LogMsgBase):
             self.init_meas_screens()
         return self.meas_screens
 
-    def get_result_dict(self):
-        fit_dict_centroid = self.fit_dicts_gap_order['centroid']
-        fit_dict_rms = self.fit_dicts_gap_order['beamsize']
-        meta_data = {
-                 'centroid_mean': self.centroids,
-                 'centroid_std': self.centroids_std,
-                 'rms_mean': self.rms,
-                 'rms_std': self.rms_std,
-                 'raw_struct_positions': self.raw_struct_positions,
-                 'semigap': fit_dict_centroid['gap_fit']/2.,
-                 'structure_position0': fit_dict_centroid['structure_position0'],
-                 'x_axis': self.plot_list_x[0],
-                 'structure_name': self.structure_name,
-                 'fit_dict_rms': fit_dict_rms,
-                 'fit_dict_centroid': fit_dict_centroid
-                 }
-        output = {
-                'raw_data': self.raw_data,
-                'meta_data': meta_data,
-                'blmeas_profile': self.blmeas_profile
-                }
-        return output
-
     def add_data(self, raw_struct_positions, images, x_axis, y_axis):
 
         proj_cutoff = self.structure_calib_options['proj_cutoff']

@@ -337,18 +337,3 @@ class Image(LogMsgBase):
             xlim = sp.get_xlim()
             sp.set_xlim(*xlim[::-1])
 
-def plot_slice_dict(slice_dict):
-    subplot = ms.subplot_factory(3, 3)
-    sp_ctr = np.inf
-    for n_slice, slice_gf in enumerate(slice_dict['slice_gf']):
-        slice_sigma = slice_dict['slice_sigma_sq'][n_slice]
-        slice_rms = slice_dict['slice_rms_sq'][n_slice]
-        slice_cut = slice_dict['slice_cut_rms_sq'][n_slice]
-        if sp_ctr > 9:
-            ms.figure('Investigate slice')
-            sp_ctr = 1
-        sp = subplot(sp_ctr, title='Slice %i, $\sigma$=%.1e, rms=%.1e, cut=%.1e' % (n_slice, slice_sigma, slice_rms, slice_cut))
-        sp_ctr += 1
-        slice_gf.plot_data_and_fit(sp)
-        sp.legend()
-

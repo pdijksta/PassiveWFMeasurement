@@ -2,50 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
-try:
-    from . import h5_storage
-    from . import image_and_profile as iap
-    from . import analysis
-    from . import tracking
-    from . import config
-    from . import myplotstyle as ms
-except ImportError:
-    import h5_storage
-    import image_and_profile as iap
-    import analysis
-    import tracking
-    import config
-    import myplotstyle as ms
-
-class dummy_plot:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def plot(self, *args, **kwargs):
-        class dummy_return:
-            def get_color(self):
-                return None
-        return [dummy_return(),]
-
-    def dummy(self, *args, **kwargs):
-        pass
-
-    errorbar = plot
-    legend = dummy
-    axhline = dummy
-    axvline = dummy
-    grid = dummy
-    set_title = dummy
-    set_xlabel = dummy
-    set_ylabel = dummy
-    clear = dummy
-    scatter = dummy
-    set_ylim = dummy
-    set_xlim = dummy
-    set_yticklabels = dummy
-    set_yticks = dummy
-    imshow = dummy
-
+from . import h5_storage
+from . import beam_profile
+from . import analysis
+from . import tracking
+from . import config
+from . import myplotstyle as ms
+from . import image_analysis
+from . import plot_results
 
 def power_Eloss(slice_current, slice_Eloss_eV):
     power = slice_current * slice_Eloss_eV
@@ -173,35 +137,6 @@ def obtain_lasing(image_off, image_on, n_slices, wake_x, wake_t, len_profile, di
 
     return output
 
-def lasing_figure(figsize=None):
-    fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Lasing reconstruction')
-    fig.subplots_adjust(hspace=0.4)
-    subplot = ms.subplot_factory(3,3)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
-    clear_lasing_figure(*subplots)
-    return fig, subplots
-
-def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit):
-
-    for sp, title, xlabel, ylabel in [
-            (sp_image_on, 'Lasing On', 'x (mm)', 'y (mm)'),
-            (sp_image_on2, 'Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_image_off, 'Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_sigma, 'Energy spread increase', 't (fs)', 'Energy spread (MeV)'),
-            (sp_current, 'Current profile', 't (fs)', 'Current (kA)'),
-            (sp_lasing_loss, 'Energy loss power profile', 't (fs)', 'Power (GW)'),
-            (sp_lasing_spread, 'Energy spread power profile', 't (fs)', 'Power (GW)'),
-            (sp_orbit, 'Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
-            ]:
-        sp.clear()
-        sp.set_title(title)
-        sp.set_xlabel(xlabel)
-        sp.set_ylabel(ylabel)
-        sp.grid(False)
-
-
 class LasingReconstruction:
     def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq', norm_factor=None):
         assert images_off.profile == images_on.profile
@@ -301,7 +236,7 @@ class LasingReconstruction:
         mask = self.current_mask
 
         if plot_handles is None:
-            _, plot_handles = lasing_figure(figsize=figsize)
+            _, plot_handles = plot_results.lasing_figure(figsize=figsize)
         sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit = plot_handles
 
         for sp_image_tE, sp_image_xy, obj in [
@@ -447,9 +382,9 @@ class LasingReconstructionImages:
                 img[img<0] = 0
             else:
                 img = img - np.quantile(img, 0.1)
-            image = iap.Image(img, self.x_axis, y_axis)
+            image = image_analysis.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
-            screen = iap.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), charge=self.charge)
+            screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), charge=self.charge)
             self.meas_screens.append(screen)
             rms_arr.append(screen.rms())
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]

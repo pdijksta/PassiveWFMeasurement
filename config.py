@@ -1,6 +1,7 @@
-import numpy as np
+import os
 import itertools
 import collections
+import numpy as np
 
 #Important naming convention
 #    beam_position: Position of the beam relative to the middle of the structure
@@ -11,6 +12,8 @@ import collections
 #    The sign is opposite to the structure_position!
 #
 #    structure_position0: calibration
+
+logfile = os.path.join(os.path.dirname(__file__), 'passiveWFMeasurement.log')
 
 structure_names = {
         'Aramis': collections.OrderedDict([

@@ -13,18 +13,21 @@ import PyQt5.Qt
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
 
-import config
-import tracking
-# import analysis
-import lasing
-import h5_storage
-import calibration
-import beam_profile
-import plot_results
-import resolution
-import logMsg
 
-import myplotstyle as ms
+path = os.path.join(os.path.dirname(__file__), '../')
+if path not in sys.path:
+    sys.path.append(path)
+
+from PassiveWFMeasurement import config
+from PassiveWFMeasurement import tracking
+from PassiveWFMeasurement import lasing
+from PassiveWFMeasurement import h5_storage
+from PassiveWFMeasurement import calibration
+from PassiveWFMeasurement import beam_profile
+from PassiveWFMeasurement import plot_results
+from PassiveWFMeasurement import resolution
+from PassiveWFMeasurement import logMsg
+from PassiveWFMeasurement import myplotstyle as ms
 
 #TODO
 #
@@ -81,24 +84,6 @@ import myplotstyle as ms
 # - Fix erronous gap calibration
 # - Fix systematic current profile reconstruction differences
 
-# Other comments
-# - Data for paper
-# - 33713
-# - One for big streaking
-# - Resolution for big streaking
-
-# - Figure 2: Current profile reconstruction (early offset scan)
-# - Maybe add wake function
-# - Time profile reconstructed and measured
-# - Screen profile: measured, reconstructed, TDC forward
-# - Unstreaked and streaked
-# - Resolution
-
-# - Figure 3: Lasing reconstruction of full, short, two-color beam
-# - Images (in time) 3x2
-# - FEL power profile (average and shot-to-shot) 3x1
-# - Slice energy spread per slice and slice current 1
-
 try:
     from . import daq
     always_dryrun = False
@@ -119,11 +104,12 @@ pyqtRemoveInputHook() # for pdb to work
 re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
 
-class StartMain(QtWidgets.QMainWindow):
+class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
-    def __init__(self):
+    def __init__(self, logger=None):
         super(StartMain, self).__init__()
         uic.loadUi('GUI.ui', self)
+        self.logger = logger
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
         self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
@@ -244,7 +230,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.screen_calib_fig, self.screen_calib_plot_handles = plot_results.screen_calibration_figure()
         self.screen_calib_plot_tab_index, self.screen_calib_canvas = get_new_tab(self.screen_calib_fig, 'Screen')
 
-        self.all_lasing_fig, self.all_lasing_plot_handles = lasing.lasing_figure()
+        self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
 
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
@@ -267,7 +253,7 @@ class StartMain(QtWidgets.QMainWindow):
         self.screen_calib_canvas.draw()
 
     def clear_all_lasing_plots(self):
-        lasing.clear_lasing_figure(*self.all_lasing_plot_handles)
+        plot_results.clear_lasing_figure(*self.all_lasing_plot_handles)
 
     def plot_resolution(self):
         bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
@@ -355,6 +341,18 @@ class StartMain(QtWidgets.QMainWindow):
                 'beamline': self.beamline,
                 }
         return tracker_kwargs
+
+    def get_forward_options(self):
+        return config.get_default_forward_options()
+
+    def get_backward_options(self):
+        return config.get_default_backward_options()
+
+    def get_reconstruct_gauss_options(self):
+        return config.get_default_reconstruct_gauss_options
+
+    def get_beam_spec(self):
+        return config.get_default_beam_spec()
 
     def get_tracker(self, magnet_dict=None):
         tracker_kwargs = self.get_tracker_kwargs(magnet_dict)
@@ -687,9 +685,10 @@ if __name__ == '__main__':
         sys.__excepthook__(type, value, tback)
         print(type, value, tback)
     sys.excepthook = my_excepthook
+    logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
 
     app = QtWidgets.QApplication(sys.argv)
-    window = StartMain()
+    window = StartMain(logger)
     window.show()
     app.exec_()
 

@@ -3,6 +3,35 @@ import matplotlib.pyplot as plt
 from . import myplotstyle as ms
 from . import config
 
+class dummy_plot:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def plot(self, *args, **kwargs):
+        class dummy_return:
+            def get_color(self):
+                return None
+        return [dummy_return(),]
+
+    def dummy(self, *args, **kwargs):
+        pass
+
+    errorbar = plot
+    legend = dummy
+    axhline = dummy
+    axvline = dummy
+    grid = dummy
+    set_title = dummy
+    set_xlabel = dummy
+    set_ylabel = dummy
+    clear = dummy
+    scatter = dummy
+    set_ylim = dummy
+    set_xlim = dummy
+    set_yticklabels = dummy
+    set_yticks = dummy
+    imshow = dummy
+
 def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
     if plot_handles is None:
         fig, plot_handles = gap_recon_figure(figsize=figsize)
@@ -442,4 +471,19 @@ def clear_lasing(plot_handles):
         sp.set_title(title)
         sp.set_xlabel(xlabel)
         sp.set_ylabel(ylabel)
+
+def plot_slice_dict(slice_dict):
+    subplot = ms.subplot_factory(3, 3)
+    sp_ctr = np.inf
+    for n_slice, slice_gf in enumerate(slice_dict['slice_gf']):
+        slice_sigma = slice_dict['slice_sigma_sq'][n_slice]
+        slice_rms = slice_dict['slice_rms_sq'][n_slice]
+        slice_cut = slice_dict['slice_cut_rms_sq'][n_slice]
+        if sp_ctr > 9:
+            ms.figure('Investigate slice')
+            sp_ctr = 1
+        sp = subplot(sp_ctr, title='Slice %i, $\sigma$=%.1e, rms=%.1e, cut=%.1e' % (n_slice, slice_sigma, slice_rms, slice_cut))
+        sp_ctr += 1
+        slice_gf.plot_data_and_fit(sp)
+        sp.legend()
 

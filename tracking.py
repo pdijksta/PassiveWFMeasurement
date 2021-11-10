@@ -315,9 +315,9 @@ class Tracker(LogMsgBase):
         gauss_profiles = []
         sig_t_list = []
 
-        rms_meas = meas_screen.rms()
+        rms_meas = meas_screen_raw.rms()
         if centroid_meas is None:
-            centroid_meas = meas_screen.mean()
+            centroid_meas = meas_screen_raw.mean()
 
         beam_options = self.beam_spec.copy()
         beam_options.update(self.beam_optics)

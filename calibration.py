@@ -166,7 +166,7 @@ class StructureCalibrator(LogMsgBase):
                 proj[proj<proj.max()*proj_cutoff] = 0
                 centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
                 rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
-            median_proj_index = data_loader.get_median(proj_x[n_o,:], method='mean', output='index')
+            median_proj_index = data_loader.get_median(proj_x[n_o,:], 'mean', 'index')
             median_proj = proj_x[n_o, median_proj_index]
             plot_list_image.append(images[n_o, median_proj_index])
             plot_list_y.append(median_proj)

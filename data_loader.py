@@ -1,7 +1,10 @@
 import numpy as np
 from . import gaussfit
+from . import config
 
-def get_median(projx, method='gf_mean', output='proj'):
+default_cutoff = config.get_default_forward_options()['screen_cutoff']
+
+def get_median(projx, method, output, cutoff=default_cutoff):
     """
     From list of projections, return the median one
     Methods: gf_mean, gf_sigma, mean, rms
@@ -30,16 +33,18 @@ def get_median(projx, method='gf_mean', output='proj'):
     index_median = np.argsort(all_mean)[len(all_mean)//2]
     projx_median = projx[index_median]
 
-    #import matplotlib.pyplot as plt
-    #plt.figure()
-    #for proj in projx:
-    #    plt.plot(proj)
-    #plt.plot(projx_median, color='black', lw=3)
-    #plt.show()
-    #import pdb; pdb.set_trace()
-
     if output == 'proj':
         return projx_median
     elif output == 'index':
         return index_median
+
+def screen_data_to_median(pyscan_result):
+    x_axis = pyscan_result['x_axis_m'].astype(np.float64)
+    projx = pyscan_result['image'].astype(np.float64).sum(axis=-2)
+    proj = get_median(projx, 'mean', 'proj')
+
+    if x_axis[1] < x_axis[0]:
+        x_axis = x_axis[::-1]
+        proj = proj[::-1]
+    return x_axis, proj
 

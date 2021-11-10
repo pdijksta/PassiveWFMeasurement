@@ -475,5 +475,62 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
+def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True, skip_indices=()):
 
+    opt_func_values = gauss_dict['opt_func_values']
+    opt_func_screens = gauss_dict['opt_func_screens']
+    opt_func_profiles = gauss_dict['opt_func_profiles']
+    opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
+    meas_screen = gauss_dict['meas_screen']
+    gauss_sigma = gauss_dict['gauss_sigma']
+
+    if plot_handles is None:
+        fig, (sp_screen, sp_profile, sp_opt, sp_moments) = reconstruction_figure(figsize)
+        plt.suptitle('Optimization')
+    else:
+        sp_screen, sp_profile, sp_opt, sp_moments = plot_handles
+
+    rms_arr = np.zeros(len(opt_func_screens))
+    centroid_arr = rms_arr.copy()
+
+    for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
+        if opt_ctr in skip_indices:
+            continue
+        if opt_ctr == gauss_dict['best_index']:
+            lw = 3.
+        else:
+            lw = None
+        screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
+        profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
+        rms_arr[opt_ctr] = screen.rms()
+        centroid_arr[opt_ctr] = screen.mean()
+
+    meas_screen.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
+
+    #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
+    #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
+
+    if blmeas_profiles is not None:
+        for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%i' % round(blmeas_profile.rms()*1e15))
+            if not both_zero_crossings:
+                break
+
+    color = sp_moments.plot(opt_func_sigmas*1e15, np.abs(centroid_arr)*1e3, marker='.', label='Reconstructed centroid')[0].get_color()
+    sp_moments.axhline(np.abs(meas_screen.mean())*1e3, label='Measured centroid', color=color, ls='--')
+    color = sp_moments.plot(opt_func_sigmas*1e15, rms_arr*1e3, marker='.', label='Reconstructed rms')[0].get_color()
+    sp_moments.axhline(meas_screen.rms()*1e3, label='Measured rms', color=color, ls='--')
+
+    sp_moments.legend()
+    sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
+    sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
+
+    yy_opt = opt_func_values[:,1]
+    sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
+    sp_opt.set_ylim(0,1.1*yy_opt.max())
+
+    for sp_ in sp_opt, sp_moments:
+        sp_.axvline(gauss_sigma*1e15, color='black')
+
+    return gauss_dict
 

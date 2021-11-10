@@ -26,6 +26,7 @@ from PassiveWFMeasurement import calibration
 from PassiveWFMeasurement import beam_profile
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import resolution
+from PassiveWFMeasurement import data_loader
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
@@ -278,8 +279,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         return tracker
 
     def plot_resolution(self):
-        # TODO
-        # better resolution plot
+        # Not ideal but ok for now
         bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
         gap = 10e-3
         beam_offset = gap/2 - (float(self.PlotResolutionDistance.text())*1e-6)
@@ -349,21 +349,25 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def reconstruct_current(self):
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
-        streaker_means = self.streaker_means
-        print('Streaker calibrated: mean = %i, %i um' % (streaker_means[0]*1e6, streaker_means[1]*1e6))
-
-        rec_mode = self.ReconstructionDataLoadUseSelect.currentText()
-
-        print('Obtained reconstruction data')
-
         if self.ShowBlmeasCheck.isChecked():
             blmeas_file = self.BunchLengthMeasFile.text()
         else:
             blmeas_file = None
 
-        gauss_kwargs = self.get_gauss_kwargs()
-        tracker_kwargs = self.get_tracker_kwargs()
-        self.current_rec_dict = analysis.reconstruct_current(filename, self.n_streaker, self.beamline, tracker_kwargs, rec_mode, gauss_kwargs, self.screen_center, self.streaker_means, blmeas_file, self.reconstruction_plot_handles)
+        screen_data = h5_storage.loadH5Recursive(filename)
+        if 'meta_data' in screen_data:
+            meta_data = screen_data['meta_data']
+        elif 'meta_data_begin' in screen_data:
+            meta_data = screen_data['meta_data_begin']
+        else:
+            self.logMsg('Problems with screen data meta data. Available keys: %s' % screen_data.keys(), 'E')
+            raise ValueError
+
+        tracker = self.get_tracker(meta_data)
+        x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'])
+        meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
+        self.current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
+        plot_results.plot_rec_gauss(self.current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=blmeas_file)
 
         self.rec_canvas.draw()
         self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)

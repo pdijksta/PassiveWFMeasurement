@@ -69,7 +69,7 @@ def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max
 
         semigap = gauss_dict['gap']/2.
         distance = semigap-abs(beam_position)
-        if distance > max_distance:
+        if max_distance and distance > max_distance:
             continue
 
         rec_profile = gauss_dict['reconstructed_profile']
@@ -309,19 +309,17 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
 
 
     plot = sp_heat_diff.imshow(diff_sides*1e15, cmap='hot', extent=extent, aspect='auto')
-    fig.colorbar(plot, label='Profile rms delta (fs)')
+    fig.colorbar(plot, label='Profile rms delta (fs)', ax=sp_heat_diff)
 
     combined_target = calib_dict['combined_target']
     plot = sp_comb.imshow(np.sqrt(combined_target), cmap='hot', extent=extent, aspect='auto')
     fig.colorbar(plot, label='Optimization function (arb. units)', ax=sp_comb)
 
     n12_pairs = []
-
     for n1 in [0, len(delta_streaker0_range)-1]:
         for n2 in [0, len(delta_gap_range)-1]:
             n12_pairs.append([n1, n2])
     n12_pairs.append(argmin)
-
     mask_pos, mask_neg = beam_positions > 0, beam_positions < 0
 
     for n1, n2 in n12_pairs:
@@ -336,7 +334,6 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
         xx_fit = np.array(new_distances)
         yy_fit = fit_dict['fit'](xx_fit)
         sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=color, ls='dotted')
-
 
     sp_raw.legend(title='Beam position (mm)')
     sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')

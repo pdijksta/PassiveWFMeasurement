@@ -391,11 +391,8 @@ class Tracker(LogMsgBase):
         best_gauss = gauss_profiles[index_min]
 
         distance = self.structure_gap/2. - abs(self.beam_position)
-        self.logMsg('iterations %i, duration %i fs, charge %i pC, gap %.2f mm, beam pos %.2f mm, distance %.2f um' % (n_iter, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap*1e3, self.beam_position*1e3, distance*1e6))
-
         time_needed = time.time() - t0
-        time_needed
-        #self.logMsg('Needed %.3f seconds for Gaussian reconstruction' % time_needed)
+        self.logMsg('iterations %i, duration %i fs, charge %i pC, gap %.2f mm, beam pos %.2f mm, distance %.2f um time %.3f' % (n_iter-2, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap*1e3, self.beam_position*1e3, distance*1e6, time_needed))
 
         output = {
                'gauss_sigma': best_sig_t,

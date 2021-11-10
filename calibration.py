@@ -246,25 +246,23 @@ class StructureCalibrator(LogMsgBase):
         self.add_data(raw_struct_positions, images, x_axis, y_axis)
         self.raw_data = data_dict
 
-    @staticmethod
-    def beamsize_fit_func(raw_struct_positions, structure_position0, strength, order, semigap, const):
-        sq0 = const**2
-        c1 = np.abs((raw_struct_positions-structure_position0+semigap))**(-order*2)
-        c2 = np.abs((raw_struct_positions-structure_position0-semigap))**(-order*2)
-        if strength > 0:
-            sq_add = strength**2 * (c1+c2)
-        else:
-            sq_add = np.zeros(len(raw_struct_positions))
-        output = np.sqrt(sq0 + sq_add)
-        return output
-
-    @staticmethod
-    def centroid_fit_func(raw_struct_positions, structure_position0, strength, order, semigap, const):
-        c1 = np.abs((raw_struct_positions-structure_position0+semigap))**(-order)
-        c2 = np.abs((raw_struct_positions-structure_position0-semigap))**(-order)
-        return const + (c1 - c2)*strength
-
     def fit_type(self, type_):
+
+        def beamsize_fit_func(raw_struct_positions, structure_position0, strength, order, semigap, const):
+            sq0 = const**2
+            c1 = np.abs((raw_struct_positions-structure_position0+semigap))**(-order*2)
+            c2 = np.abs((raw_struct_positions-structure_position0-semigap))**(-order*2)
+            if strength > 0:
+                sq_add = strength**2 * (c1+c2)
+            else:
+                sq_add = np.zeros(len(raw_struct_positions))
+            output = np.sqrt(sq0 + sq_add)
+            return output
+
+        def centroid_fit_func(raw_struct_positions, structure_position0, strength, order, semigap, const):
+            c1 = np.abs((raw_struct_positions-structure_position0+semigap))**(-order)
+            c2 = np.abs((raw_struct_positions-structure_position0-semigap))**(-order)
+            return const + (c1 - c2)*strength
 
         fit_order = self.structure_calib_options['fit_order']
         fit_gap = self.structure_calib_options['fit_gap']
@@ -278,12 +276,12 @@ class StructureCalibrator(LogMsgBase):
         if type_ == 'beamsize':
             yy_mean = self.rms
             yy_std = self.rms_std
-            fit_func = self.beamsize_fit_func
+            fit_func0 = beamsize_fit_func
             order0 = self.structure_calib_options['order_rms']
         elif type_ == 'centroid':
             yy_mean = self.centroids
             yy_std = self.centroids_std
-            fit_func = self.centroid_fit_func
+            fit_func0 = centroid_fit_func
             order0 = self.structure_calib_options['order_centroid']
 
         const0 = yy_mean[where0]
@@ -300,22 +298,22 @@ class StructureCalibrator(LogMsgBase):
         if fit_gap:
             p0.append(semigap)
 
-        def fit_func2(*args):
+        def fit_func(*args):
             args = list(args)
             if fit_order:
                 if fit_gap:
-                    output = fit_func(*args, const0)
+                    output = fit_func0(*args, const0)
                 else:
-                    output = fit_func(*args, semigap, const0)
+                    output = fit_func0(*args, semigap, const0)
             else:
                 if fit_gap:
-                    output = fit_func(*args[:-1], order0, args[-1], const0)
+                    output = fit_func0(*args[:-1], order0, args[-1], const0)
                 else:
-                    output = fit_func(*args, order0, semigap, const0)
+                    output = fit_func0(*args, order0, semigap, const0)
             return output
 
         try:
-            p_opt, p_cov = curve_fit(fit_func2, raw_struct_positions, yy_mean, p0, sigma=yy_std)
+            p_opt, p_cov = curve_fit(fit_func, raw_struct_positions, yy_mean, p0, sigma=yy_std)
         except RuntimeError:
             print('Streaker calibration type %s did not converge' % type_)
             p_opt = p0
@@ -331,12 +329,8 @@ class StructureCalibrator(LogMsgBase):
             order_fit = order0
 
         xx_fit = np.linspace(raw_struct_positions.min(), raw_struct_positions.max(), int(1e3))
-        xx_fit2_min = -(gap_fit/2-structure_position0-10e-6)
-        xx_fit2_max = -xx_fit2_min + 2*structure_position0
-        xx_fit2 = np.linspace(xx_fit2_min, xx_fit2_max, int(1e3))
-        reconstruction = fit_func2(xx_fit, *p_opt)
-        reconstruction2 = fit_func2(xx_fit2, *p_opt)
-        initial_guess = fit_func2(xx_fit, *p0)
+        reconstruction = fit_func(xx_fit, *p_opt)
+        initial_guess = fit_func(xx_fit, *p0)
 
         screen_center = np.mean(self.screen_center_arr)
         delta_gap = gap_fit - self.tracker.structure_gap0
@@ -345,7 +339,6 @@ class StructureCalibrator(LogMsgBase):
 
         fit_dict = {
                 'reconstruction': reconstruction,
-                'reconstruction2': reconstruction2,
                 'initial_guess': initial_guess,
                 'structure_position0': structure_position0,
                 'gap_fit': gap_fit,
@@ -353,7 +346,6 @@ class StructureCalibrator(LogMsgBase):
                 'p_opt': p_opt,
                 'p0': p0,
                 'xx_fit': xx_fit,
-                'xx_fit2': xx_fit2,
                 'screen_rms0': const0,
                 'screen_center_arr': self.screen_center_arr,
                 'screen_center': screen_center,
@@ -366,7 +358,7 @@ class StructureCalibrator(LogMsgBase):
                 'rms_std': self.rms_std,
                 }
         self.fit_dicts[type_] = fit_dict
-        self.logMsg('structure_position0 calibrated as %i um' % (structure_position0*1e6))
+        self.logMsg('structure_position0 and gap calibrated as %i um, %i um with method %s' % (structure_position0*1e6, gap_fit*1e6, type_))
         return fit_dict
 
     def fit(self):
@@ -643,6 +635,7 @@ class StructureCalibrator(LogMsgBase):
         argmin = np.argwhere(combined_target == np.nanmin(combined_target))[0]
         structure_position0 = delta_streaker0_range[argmin[0]]
         delta_gap = delta_gap_range[argmin[1]]
+        new_gap = gap0 + delta_gap
         fit_dict = get_fit_param(structure_position0, delta_gap)
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
@@ -664,7 +657,9 @@ class StructureCalibrator(LogMsgBase):
                 'all_fit_dicts': all_fit_dicts,
                 'combined_target': combined_target,
                 'calibration': calib,
+                'new_gap': new_gap,
                 }
+        self.logMsg('Streaker position and gap reconstructed as %i um %i um' % (round(calib.structure_position0*1e6), round(new_gap*1e6)))
         return outp
 
 

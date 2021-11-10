@@ -53,7 +53,7 @@ plot_results.plot_gap_reconstruction(gap_recon_dict2)
 
 gauss_dicts = gap_recon_dict2['final_gauss_dicts']
 
-plot_results.plot_reconstruction(gauss_dicts)
+plot_results.plot_reconstruction(gauss_dicts, max_distance=None)
 
 ms.show()
 

@@ -8,7 +8,7 @@ if path not in sys.path:
 
 import PassiveWFMeasurement.tracking as tracking
 import PassiveWFMeasurement.h5_storage as h5_storage
-import PassiveWFMeasurement.beam as beam
+import PassiveWFMeasurement.gen_beam as gen_beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.calibration as calibration
@@ -48,7 +48,7 @@ tt_points = int(1e4)
 total_charge = 200e-12
 bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, tracker.energy_eV)
 
-beam_obj = beam.beam_from_spec(['x', 't'], beam_spec, n_particles, bp, total_charge, tracker.energy_eV)
+beam_obj = gen_beam.beam_from_spec(['x', 't'], beam_spec, n_particles, bp, total_charge, tracker.energy_eV)
 
 beam_obj0 = copy.deepcopy(beam_obj)
 beam_obj0.linear_propagate(tracker.lat.get_matrix(tracker.lat.element_names[0].replace('-', '.'), tracker.structure_name.replace('-', '.')))
@@ -140,7 +140,7 @@ yy = blmeas_dict[1]['current']
 yy = yy - yy.min()
 blmeas_profile = beam_profile.BeamProfile(xx, yy, tracker.energy_eV, tracker.total_charge)
 
-blmeas_beam = beam.beam_from_spec(['x', 't'], beam_spec, n_particles, blmeas_profile, total_charge, tracker.energy_eV)
+blmeas_beam = gen_beam.beam_from_spec(['x', 't'], beam_spec, n_particles, blmeas_profile, total_charge, tracker.energy_eV)
 
 
 

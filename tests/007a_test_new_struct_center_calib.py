@@ -34,13 +34,9 @@ distance_rms_dict = {}
 for n in range(len(distance_rms_arr)):
     distance_arr = distance_rms_arr[n,:,0]
     rms_arr = distance_rms_arr[n,:,1]
-
     distance_plot = distance_arr - distance_arr.min()
-
     sort = np.argsort(distance_plot)
-
     distance_rms_dict[n] = [distance_arr[sort], rms_arr[sort]]
-
     label = '%i $\mu$m' % (gap_recon_dict['final_beam_positions'][n]*1e6)
     sp_raw.plot(distance_plot[sort]*1e6, rms_arr[sort]*1e15, label=label, marker='.')
 

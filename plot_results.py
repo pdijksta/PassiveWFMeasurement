@@ -432,46 +432,6 @@ def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
         sp.set_ylabel(ylabel)
         sp.grid(True)
 
-def lasing_figures(figsize=None):
-    output = []
-    fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Lasing reconstruction')
-    subplot = ms.subplot_factory(3,3, grid=False)
-    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+8)))
-    output.append((fig, plot_handles))
-    fig.subplots_adjust(hspace=0.5, wspace=0.3)
-
-    fig = plt.figure()
-    fig.subplots_adjust(hspace=0.4)
-    subplot = ms.subplot_factory(2,2, grid=False)
-    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+4)))
-    output.append((fig, plot_handles))
-    clear_lasing(output)
-    return output
-
-def clear_lasing(plot_handles):
-    (_, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
-    (_, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
-
-    for sp, title, xlabel, ylabel in [
-            (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
-            (sp_wake, 'Wake', 't (fs)', 'x (mm)'),
-            (sp_off, 'Lasing off raw', 'x (mm)', 'y (mm)'),
-            (sp_on, 'Lasing on raw', 'x (mm)', 'y (mm)'),
-            (sp_off_cut, 'Lasing off cut', 'x (mm)', 'y (mm)'),
-            (sp_on_cut, 'Lasing on cut', 'x (mm)', 'y (mm)'),
-            (sp_off_tE, 'Lasing off tE', 't (fs)', '$\Delta$ E (MeV)'),
-            (sp_on_tE, 'Lasing on tE', 't (fs)', '$\Delta$ E (MeV)'),
-            (sp_power, 'Power', 't (fs)', 'P (GW)'),
-            (sp_current, 'Current', 't (fs)', 'I (kA)'),
-            (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
-            (sp_slice_size, 'Slice sizes', 't (fs)', '$\sigma_E$ (MeV)'),
-            ]:
-        sp.clear()
-        sp.set_title(title)
-        sp.set_xlabel(xlabel)
-        sp.set_ylabel(ylabel)
-
 def plot_slice_dict(slice_dict):
     subplot = ms.subplot_factory(3, 3)
     sp_ctr = np.inf
@@ -486,4 +446,34 @@ def plot_slice_dict(slice_dict):
         sp_ctr += 1
         slice_gf.plot_data_and_fit(sp)
         sp.legend()
+
+def lasing_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Lasing reconstruction')
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(3,3)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
+    clear_lasing_figure(*subplots)
+    return fig, subplots
+
+def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit):
+
+    for sp, title, xlabel, ylabel in [
+            (sp_image_on, 'Lasing On', 'x (mm)', 'y (mm)'),
+            (sp_image_on2, 'Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_image_off, 'Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_slice_sigma, 'Energy spread increase', 't (fs)', 'Energy spread (MeV)'),
+            (sp_current, 'Current profile', 't (fs)', 'Current (kA)'),
+            (sp_lasing_loss, 'Energy loss power profile', 't (fs)', 'Power (GW)'),
+            (sp_lasing_spread, 'Energy spread power profile', 't (fs)', 'Power (GW)'),
+            (sp_orbit, 'Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
+
 

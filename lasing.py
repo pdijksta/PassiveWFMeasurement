@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from . import h5_storage
 from . import beam_profile
-from . import analysis
 from . import tracking
 from . import config
 from . import myplotstyle as ms

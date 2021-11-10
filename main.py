@@ -27,6 +27,7 @@ from PassiveWFMeasurement import beam_profile
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import resolution
 from PassiveWFMeasurement import data_loader
+from PassiveWFMeasurement import blmeas
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
@@ -172,6 +173,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         backs = config.get_default_backward_options()
         rs = config.get_default_reconstruct_gauss_options()
         optics = config.get_default_optics(self.beamline)
+        gs = config.get_default_structure_calibrator_options()
 
         self.N_Particles.setText('%i' % config.default_n_particles)
 
@@ -204,6 +206,20 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.Charge.setText(self.charge_pv_text)
         self.SaveDir.setText(save_dir)
 
+        # Gap reconstruction options
+        _lower = gs['delta_gap_scan_range'].min()
+        _upper = gs['delta_gap_scan_range'].max()
+        _step = gs['delta_gap_scan_range'][1] - gs['delta_gap_scan_range'][0]
+        self.DeltaGapRangeLower.setText('%.3f' % (_lower*1e6))
+        self.DeltaGapRangeUpper.setText('%.3f' % (_upper*1e6))
+        self.DeltaGapRangeStep.setText('%.3f' % (_step*1e6))
+        self.DeltaGapSearchLower.setText('%.3f' % (gs['delta_gap_range'].min()*1e6))
+        self.DeltaGapSearchUpper.setText('%.3f' % (gs['delta_gap_range'].max()*1e6))
+        self.DeltaGapSearchPoints.setText('%.3f' % len(gs['delta_gap_range']))
+        self.StructCenterSearchLower.setText('%.3f' % (gs['delta_streaker0_range'].min()*1e6))
+        self.StructCenterSearchUpper.setText('%.3f' % (gs['delta_streaker0_range'].max()*1e6))
+        self.StructCenterSearchPoints.setText('%.3f' % len(gs['delta_streaker0_range']))
+
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
 
@@ -225,7 +241,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
         self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I Rec.')
 
-        self.streaker_calib_fig, self.streaker_calib_plot_handles = plot_results.streaker_calibration_figure()
+        self.streaker_calib_fig, self.structure_calib_plot_handles = plot_results.streaker_calibration_figure()
         self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Calib.')
 
         self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.gap_recon_figure()
@@ -246,7 +262,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.gap_recon_canvas.draw()
 
     def clear_calib_plots(self):
-        plot_results.clear_streaker_calibration(*self.streaker_calib_plot_handles)
+        plot_results.clear_streaker_calibration(*self.structure_calib_plot_handles)
         self.streaker_calib_canvas.draw()
 
     def clear_screen_plots(self):
@@ -346,6 +362,22 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['alphay'] = float(self.AlphaY.text())
         return outp
 
+    def get_structure_calib_options(self):
+        outp = config.get_default_structure_calibrator_options()
+        _lower = float(self.DeltaGapRangeLower.text())*1e-6
+        _upper = float(self.DeltaGapRangeUpper.text())*1e-6
+        _step = float(self.DeltaGapRangeStep.text())*1e-6
+        outp['delta_gap_scan_range'] = np.arange(_lower, _upper, _step)
+        _lower = float(self.DeltaGapSearchLower.text())*1e-6
+        _upper = float(self.DeltaGapSearchUpper.text())*1e-6
+        _points = int(self.DeltaGapSearchPoints.text())
+        outp['delta_gap_range'] = np.linspace(_lower, _upper, _points)
+        _lower = float(self.StructCenterSearchLower.text())*1e-6
+        _upper = float(self.StructCenterSearchUpper.text())*1e-6
+        _points = int(self.StructCenterSearchPoints.text())
+        outp['delta_streaker0_range'] = np.linspace(_lower, _upper, _points)
+        return outp
+
     def reconstruct_current(self):
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
@@ -368,6 +400,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
         self.current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
         plot_results.plot_rec_gauss(self.current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=blmeas_file)
+
+        self.logMsg('Current profile reconstructed.')
 
         self.rec_canvas.draw()
         self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
@@ -399,46 +433,56 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         range_.sort()
         range_ = np.unique(range_)
 
-        streaker = config.streaker_names[self.beamline][self.n_streaker]
         n_images = int(self.CalibrateStreakerImages.text())
 
         if daq is None:
             raise ImportError('Daq not available')
 
-        result_dict = daq.data_streaker_offset(streaker, range_, self.screen, n_images, self.dry_run, self.beamline)
+        result_dict = daq.data_streaker_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
 
         try:
             full_dict = self._analyze_streaker_calib(result_dict)
         except:
             date = datetime.now()
-            basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % streaker.replace('.','_')
+            basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % self.structure_name.replace('.','_')
             filename = os.path.join(self.save_dir, basename)
             h5_storage.saveH5Recursive(filename, result_dict)
-            print('Saved streaker calibration data %s' % filename)
+            self.logMsg('Saved streaker calibration data %s' % filename)
             raise
 
         date = datetime.now()
-        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % streaker.replace('.','_')
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % self.structure_name.replace('.','_')
         streaker_offset = full_dict['meta_data']['streaker_offset']
         self.updateStreakerCenter(streaker_offset)
 
-        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (streaker, streaker_offset*1e6)
+        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (self.structure_name, streaker_offset*1e6)
         self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
         self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
 
     def _analyze_streaker_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
         tracker = self.get_tracker(result_dict['meta_data_begin'])
+        structure_calib_options = self.get_structure_calib_options()
         if forward_blmeas:
             blmeasfile = self.ForwardBlmeasFilename.text()
         else:
             blmeasfile = None
 
-        streaker = result_dict['streaker']
-        beamline, n_streaker = analysis.get_beamline_n_streaker(streaker)
+        sc = calibration.StructureCalibrator(tracker, structure_calib_options, result_dict, self.logger)
 
-        full_dict = calibration.analyze_streaker_calibration(result_dict, do_plot=True, plot_handles=self.streaker_calib_plot_handles, forward_propagate_blmeas=forward_blmeas, tracker=tracker, blmeas=blmeasfile, beamline=beamline)
-        return full_dict
+        sc.fit()
+        if self.ForwardBlmeasCheck.isChecked():
+            bp_dict = blmeas.load_avg_blmeas(blmeasfile)
+            bp = beam_profile.BeamProfile(bp_dict['time'], bp_dict['current_reduced'], tracker.energy_eV, tracker.total_charge, self.logger)
+            forward_options = self.get_forward_options()
+            bp.reshape(forward_options['len_screen'])
+            bp.aggressive_cutoff(forward_options['screen_cutoff'])
+            bp.crop()
+            bp.reshape(forward_options['len_screen'])
+
+            sc.forward_propagate(bp)
+        sc.plot_structure_calib(self.structure_calib_plot_handles)
+        self.streaker_calib_canvas.draw()
 
     def gap_reconstruction(self):
         self.clear_gap_recon_plots()

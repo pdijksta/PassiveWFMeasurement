@@ -106,6 +106,12 @@ class Tracker(LogMsgBase):
             self.force_beam_position = old_bo
         return outp
 
+    def gen_beam(self, beamProfile):
+        beam_options = self.beam_spec.copy()
+        beam_options.update(self.beam_optics)
+        beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
+        return beam
+
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
         beam: must be beam corresponding to beginning of self.lat
@@ -319,9 +325,6 @@ class Tracker(LogMsgBase):
         if centroid_meas is None:
             centroid_meas = meas_screen_raw.mean()
 
-        beam_options = self.beam_spec.copy()
-        beam_options.update(self.beam_optics)
-
         if plot_details:
             fig_number = ms.plt.gcf().number
             ms.figure('Gauss_recon')
@@ -349,7 +352,7 @@ class Tracker(LogMsgBase):
             back_dict1 = self.backward_propagate(meas_screen, bp_back0)
             bp_back1 = back_dict1['profile']
 
-            beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, bp_back1, self.total_charge, self.energy_eV)
+            beam = self.gen_beam(bp_back1)
             screen = self.forward_propagate(beam, plot_details=False)['screen']
 
             index = bisect.bisect(sig_t_list, sig_t)

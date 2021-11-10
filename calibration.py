@@ -10,6 +10,7 @@ from . import h5_storage
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
+
 class StructureCalibration:
     def __init__(self, structure_name, screen_center, delta_gap, structure_position0):
         self.structure_name = structure_name
@@ -81,7 +82,7 @@ class MeasScreens:
 
 class StructureCalibrator(LogMsgBase):
 
-    def __init__(self, tracker, structure_calib_options, file_or_dict=None, blmeas_profile=None, logger=None):
+    def __init__(self, tracker, structure_calib_options, file_or_dict=None, logger=None):
         self.logger = logger
         self.tracker = tracker
         self.structure_name = tracker.structure_name
@@ -99,7 +100,6 @@ class StructureCalibrator(LogMsgBase):
         self.rms = []
         self.rms_std = []
         self.images = []
-        self.blmeas_profile = blmeas_profile
         self.sim_screen_dict = {}
         self.sim_screens = None
         self.plot_list_x = []
@@ -366,48 +366,23 @@ class StructureCalibrator(LogMsgBase):
         b = self.fit_type('centroid')
         return a, b
 
-    def forward_propagate(self, blmeas_profile, tt_halfrange, tracker, type_='centroid', blmeas_cutoff=None, force_gap=None, force_streaker_offset=None):
-        tracker.set_simulator(self.meta_data)
-        if force_streaker_offset is None:
-            structure_position0 = self.fit_dicts[type_]['structure_position0']
-        else:
-            structure_position0 = force_streaker_offset
-        if force_gap is None:
-            gap = self.fit_dicts[type_]['gap_fit']
-        else:
-            gap = force_gap
-        if type(blmeas_profile) is beam_profile.BeamProfile:
-            pass
-        else:
-            try:
-                blmeas_profile = beam_profile.profile_from_blmeas(blmeas_profile, tt_halfrange, tracker.energy_eV, True)
-            except Exception:
-                print(type(blmeas_profile))
-                print(type(beam_profile.BeamProfile))
-                raise
-            if blmeas_cutoff is None:
-                blmeas_profile.cutoff2(tracker.profile_cutoff)
-            else:
-                blmeas_profile.cutoff2(blmeas_cutoff)
-            blmeas_profile.crop()
-            blmeas_profile.reshape(tracker.len_screen)
-
-        len_screen = tracker.len_screen
-        gaps = np.array([10., 10.])
-        gaps[self.n_streaker] = gap
-        beam_offsets0 = np.array([0., 0.])
-
+    def forward_propagate(self, blmeas_profile, force_gap=None, force_streaker_offset=None):
         sim_screens = []
         forward_dicts = []
+        beam_offsets = []
+        tracker = self.tracker
+        if force_streaker_offset is None:
+            structure_position0 = tracker.calib.structure_position0
+        if force_gap is None:
+            gap = tracker.structure_gap
+        else:
+            gap = force_gap
+
         for s_offset in self.raw_struct_positions:
-            beam_offsets = beam_offsets0[:]
-            beam_offsets[self.n_streaker] = -(s_offset-structure_position0)
-            forward_dict = tracker.matrix_forward(blmeas_profile, gaps, beam_offsets)
+            beam_offsets.append(-(s_offset-structure_position0))
+            forward_dict = tracker.forward_propagate
             forward_dicts.append(forward_dict)
             sim_screen = forward_dict['screen']
-            sim_screen.cutoff2(tracker.screen_cutoff)
-            sim_screen.crop()
-            sim_screen.reshape(len_screen)
             sim_screens.append(sim_screen)
 
         self.blmeas_profile = blmeas_profile
@@ -419,7 +394,6 @@ class StructureCalibrator(LogMsgBase):
                 'forward_dicts': forward_dicts,
                 }
         return output
-
 
     def reconstruct_current(self, plot_details=False, force_gap=None, force_struct_position0=None, use_n_positions=None):
         if force_gap is not None:

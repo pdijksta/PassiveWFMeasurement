@@ -23,7 +23,7 @@ class Tracker(LogMsgBase):
         structure_position0 - Structure position for which the beam is centered inside.
         screen_center - Position of the unstreaked beam on the screen.
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
 
         self.logger = logger
         self.force_gap = None
@@ -32,7 +32,7 @@ class Tracker(LogMsgBase):
         self.forward_options = forward_options
         self.backward_options = backward_options
         self.reconstruct_gauss_options = reconstruct_gauss_options
-        self.beam_options = beam_options
+        self.beam_spec = beam_spec
         self.beam_optics = beam_optics
 
         self.update_calib(calib)
@@ -81,6 +81,18 @@ class Tracker(LogMsgBase):
         self.structure_gap0 = calib_dict['gap0']
         self._structure_gap = calib_dict['gap']
         self.beam_position = calib_dict['beam_position']
+
+    def forward_propagate_forced(self, gap, beam_position, *args, **kwargs):
+        old_gap = self.force_gap
+        old_bo = self.beam_position
+        self.force_gap = gap
+        self.beam_position = beam_position
+        try:
+            outp = self.forward_propagate(*args, **kwargs)
+        finally:
+            self.force_gap = old_gap
+            self.beam_position = old_bo
+        return outp
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
@@ -295,7 +307,7 @@ class Tracker(LogMsgBase):
         if centroid_meas is None:
             centroid_meas = meas_screen.mean()
 
-        beam_options = self.beam_options.copy()
+        beam_options = self.beam_spec.copy()
         beam_options.update(self.beam_optics)
 
         if plot_details:
@@ -422,4 +434,13 @@ class Tracker(LogMsgBase):
             ms.plt.figure(fig_number)
 
         return output
+
+def get_default_tracker(beamline, structure_name, meta_data, calib, logger=None):
+    screen = config.beamline_screens[beamline]
+    forward_options = config.get_default_forward_options()
+    backward_options = config.get_default_backward_options()
+    reconstruct_gauss_options = config.get_default_reconstruct_gauss_options
+    beam_spec = config.get_default_beam_spec()
+    beam_optics = config.default_optics[beamline]
+    return Tracker(beamline, screen, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, logger=logger)
 

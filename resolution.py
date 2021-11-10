@@ -1,20 +1,21 @@
 import numpy as np
+from . import gen_beam
 
-def calc_resolution(beamprofile, gap, beam_offset, struct_length, tracker, n_streaker, bins=(150, 100), camera_res=20e-6):
-    gaps = [10e-3, 10e-3]
-    gaps[n_streaker] = gap
-    beam_offsets = [0, 0]
-    beam_offsets[n_streaker] = beam_offset
+def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6):
     #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
-    forward_dict = tracker.matrix_forward(beamprofile, gaps, beam_offsets)
+    beam_spec = tracker.beam_spec.copy()
+    beam_spec.update(tracker.beam_optics)
+    beam = gen_beam.beam_from_spec(['x', 't'], beam_spec, tracker.n_particles, beamprofile, tracker.total_charge, tracker.energy_eV)
+    forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
     beam = forward_dict['beam_at_screen']
-    r12 = tracker.calcR12()[n_streaker]
-    _, wf_x = beamprofile.get_x_t(gap, beam_offset, struct_length, r12)
+    r12 = tracker.r12
+    wake_dict = beamprofile.calc_wake(tracker.structure, gap, beam_offset, 'Dipole')
+    wf_x = wake_dict['wake_potential'] / tracker.energy_eV * r12
     wf_t = beamprofile.time
     dxdt = np.diff(wf_x)/np.diff(wf_t)
     dx_dt_t = wf_t[:-1]
-    beam_t = beam[-2]
-    beam_x = beam[0] + np.random.randn(beam_t.size)*camera_res
+    beam_t = beam['t']
+    beam_x = beam['x'] + np.random.randn(beam_t.size)*camera_res
     hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam_x, bins=bins)
     t_axis = (xedges[1:] + xedges[:-1])/2.
     x_axis = (yedges[1:] + yedges[:-1])/2.

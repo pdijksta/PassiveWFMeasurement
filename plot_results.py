@@ -338,3 +338,108 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
     sp_raw.legend(title='Beam position (mm)')
     sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')
 
+def resolution_figure():
+    fig = plt.figure()
+    fig.canvas.set_window_title('Screen center calibration')
+    fig.subplots_adjust(hspace=0.35)
+    subplot = ms.subplot_factory(1, 1)
+    sp_res = subplot(1)
+    sp_curr = sp_res.twinx()
+    clear_resolution_figure(sp_curr, sp_res)
+    return fig, (sp_curr, sp_res)
+
+def clear_resolution_figure(sp_curr, sp_res):
+    for sp, title, xlabel, ylabel in [
+            (sp_res, 'Expected resolution', 't (fs)', 'R (fs)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp_res.grid(True)
+    sp_curr.set_ylabel('I (kA)')
+
+def screen_calibration_figure():
+    fig = plt.figure()
+    fig.canvas.set_window_title('Screen center calibration')
+    fig.subplots_adjust(hspace=0.35)
+    sp_ctr = 1
+    subplot = ms.subplot_factory(1, 1)
+
+    sp_proj = subplot(sp_ctr, sciy=True)
+    sp_ctr += 1
+    clear_screen_calibration(sp_proj)
+    return fig, (sp_proj, )
+
+def clear_screen_calibration(sp_proj):
+    for sp, title, xlabel, ylabel in [
+            (sp_proj, 'Unstreaked beam', 'x (mm)', config.rho_label),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
+
+def reconstruction_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Current reconstruction')
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(2,2)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+4)]
+    clear_reconstruction(*subplots)
+    return fig, subplots
+
+def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
+    for sp, title, xlabel, ylabel in [
+            (sp_screen, 'Screen', 'x (mm)', config.rho_label),
+            (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
+            (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
+            (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(True)
+
+def lasing_figures(figsize=None):
+    output = []
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('Lasing reconstruction')
+    subplot = ms.subplot_factory(3,3, grid=False)
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+8)))
+    output.append((fig, plot_handles))
+    fig.subplots_adjust(hspace=0.5, wspace=0.3)
+
+    fig = plt.figure()
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(2,2, grid=False)
+    plot_handles = tuple((subplot(sp_ctr) for sp_ctr in range(1, 1+4)))
+    output.append((fig, plot_handles))
+    clear_lasing(output)
+    return output
+
+def clear_lasing(plot_handles):
+    (_, (sp_profile, sp_wake, sp_off, sp_on, sp_off_cut, sp_on_cut, sp_off_tE, sp_on_tE)) = plot_handles[0]
+    (_, (sp_power, sp_current, sp_centroid, sp_slice_size)) = plot_handles[1]
+
+    for sp, title, xlabel, ylabel in [
+            (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
+            (sp_wake, 'Wake', 't (fs)', 'x (mm)'),
+            (sp_off, 'Lasing off raw', 'x (mm)', 'y (mm)'),
+            (sp_on, 'Lasing on raw', 'x (mm)', 'y (mm)'),
+            (sp_off_cut, 'Lasing off cut', 'x (mm)', 'y (mm)'),
+            (sp_on_cut, 'Lasing on cut', 'x (mm)', 'y (mm)'),
+            (sp_off_tE, 'Lasing off tE', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_on_tE, 'Lasing on tE', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_power, 'Power', 't (fs)', 'P (GW)'),
+            (sp_current, 'Current', 't (fs)', 'I (kA)'),
+            (sp_centroid, 'Slice centroids', 't (fs)', '$\Delta$ E (MeV)'),
+            (sp_slice_size, 'Slice sizes', 't (fs)', '$\sigma_E$ (MeV)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+

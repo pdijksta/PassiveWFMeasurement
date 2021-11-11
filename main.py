@@ -174,6 +174,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         rs = config.get_default_reconstruct_gauss_options()
         optics = config.get_default_optics(self.beamline)
         gs = config.get_default_structure_calibrator_options()
+        fbs = config.get_default_find_beam_position_options()
 
         self.N_Particles.setText('%i' % config.default_n_particles)
 
@@ -219,6 +220,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.StructCenterSearchLower.setText('%.3f' % (gs['delta_streaker0_range'].min()*1e6))
         self.StructCenterSearchUpper.setText('%.3f' % (gs['delta_streaker0_range'].max()*1e6))
         self.StructCenterSearchPoints.setText('%.3f' % len(gs['delta_streaker0_range']))
+
+        # Find beam position options
+        self.FindBeamMaxIter.setText('%i' % fbs['max_iterations'])
+        self.FindBeamExplorationRange.setText('%.3f' % (fbs['position_explore']*1e6))
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
@@ -291,7 +296,20 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             force_charge = float(self.Charge.text())*1e-12
         n_particles = int(self.N_Particles.text())
 
-        tracker = tracking.Tracker(self.beamline, self.screen, self.structure_name, meta_data, self.gui_to_calib(), self.get_forward_options(), self.get_backward_options(), self.get_reconstruct_gauss_options(), self.get_beam_spec(), self.get_beam_optics(), force_charge, n_particles, self.logger)
+        tracker = tracking.Tracker(
+                self.beamline,
+                self.screen,
+                self.structure_name,
+                meta_data,
+                self.gui_to_calib(),
+                self.get_forward_options(),
+                self.get_backward_options(),
+                self.get_reconstruct_gauss_options(),
+                self.get_beam_spec(), self.get_beam_optics(),
+                self.get_find_beam_position_options(),
+                force_charge,
+                n_particles,
+                self.logger)
         return tracker
 
     def plot_resolution(self):
@@ -361,6 +379,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['betay'] = float(self.BetaY.text())
         outp['alphay'] = float(self.AlphaY.text())
         return outp
+
+    def get_find_beam_position_options(self):
+        outp = config.get_default_find_beam_position_options()
+        outp['position_explore'] = float(self.FindBeamExplorationRange.text())*1e-6
+        outp['max_iterations'] = int(self.FindBeamMaxIter.text())
 
     def get_structure_calib_options(self):
         outp = config.get_default_structure_calibrator_options()

@@ -166,7 +166,15 @@ def get_default_lasing_options():
             'subtract_quantile': 0.1,
             'noise_cut': 0.1,
             'slice_factor': 3,
-            'offset_explore': 30e-6,
+            }.copy()
+    return outp
+
+def get_default_find_beam_position_options():
+    outp = {
+            'position_explore': 30e-6,
+            'method': 'centroid',
+            'precision': 1e-6,
+            'max_iterations': 3,
             }
     return outp
 

@@ -315,7 +315,6 @@ class LasingReconstructionImages:
         self.subtract_quantile = lasing_options['subtract_quantile']
         self.noise_cut = lasing_options['noise_cut']
         self.slice_factor = lasing_options['slice_factor']
-        self.offset_explore = lasing_options['offset_explore']
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -397,7 +396,7 @@ class LasingReconstructionImages:
         gaps[self.n_streaker] = self.gap
         beam_offsets = []
         for meas_screen in self.meas_screens:
-            offset_dict = self.tracker.find_best_offset(offset0, self.offset_explore, tt_halfrange, meas_screen, gaps, self.profile, self.n_streaker, self.charge)
+            #offset_dict = self.tracker.find_best_offset(offset0,, tt_halfrange, meas_screen, gaps, self.profile, self.n_streaker, self.charge)
             offset_dicts.append(offset_dict)
             beam_offsets.append(offset_dict['beam_offset'])
         self.beam_offsets = np.array(beam_offsets)

@@ -23,7 +23,7 @@ class Tracker(LogMsgBase):
         structure_position0 - Structure position for which the beam is centered inside.
         screen_center - Position of the unstreaked beam on the screen.
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, force_charge=None, n_particles=config.default_n_particles, logger=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, n_particles=config.default_n_particles, logger=None):
 
         self.logger = logger
         self.force_gap = None
@@ -35,6 +35,7 @@ class Tracker(LogMsgBase):
         self.reconstruct_gauss_options = reconstruct_gauss_options
         self.beam_spec = beam_spec
         self.beam_optics = beam_optics
+        self.find_beam_position_options = find_beam_position_options
 
         self.update_calib(calib)
         self.structure_name = structure_name
@@ -449,6 +450,84 @@ class Tracker(LogMsgBase):
             ms.plt.figure(fig_number)
 
         return output
+
+
+    def find_beam_position(self, position0, meas_screen_raw, profile):
+
+        position_explore = self.find_beam_position_options['position_explore']
+        prec = self.find_beam_position_options['precision']
+        method = self.find_beam_position_options['method']
+        max_iterations = self.find_beam_position_options['max_iterations']
+
+        beam_position_list = []
+        sim_screens = []
+        rms_list = []
+        mean_list = []
+
+        meas_screen = self.prepare_screen(meas_screen_raw)
+        centroid_meas = meas_screen.mean()
+        rms_meas = meas_screen.rms()
+
+        beam = self.gen_beam(profile)
+
+        def forward(beam_position):
+            beam_position = np.round(beam_position/prec)*prec
+            if beam_position in beam_position_list:
+                return
+
+            sim_screen = self.forward_propagate_forced(self.structure_gap, beam_position, beam)['screen']
+
+            index = bisect.bisect(beam_position_list, beam_position)
+            beam_position_list.insert(index, beam_position)
+            sim_screens.insert(index, sim_screen)
+            mean_list.insert(index, sim_screen.mean())
+            rms_list.insert(index, sim_screen.rms())
+
+        def get_index_min(output='index'):
+            beam_offset_arr = np.array(beam_position_list)
+            if method == 'centroid':
+                centroid_sim = np.array(mean_list)
+                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
+                sort = np.argsort(centroid_sim)
+                beam_position = np.interp(centroid_meas, centroid_sim[sort], beam_offset_arr[sort])
+            elif method == 'rms' or method == 'beamsize':
+                rms_sim = np.array(rms_list)
+                index_min = np.argmin(np.abs(rms_sim - rms_meas))
+                sort = np.argsort(rms_sim)
+                beam_position = np.interp(rms_meas, rms_sim[sort], beam_offset_arr[sort])
+            else:
+                raise ValueError('Method %s unknown' % method)
+
+            if output == 'index':
+                return index_min.squeeze()
+            elif output == 'offset':
+                return beam_position
+
+        beam_offset_arr = np.linspace(position0-position_explore, position0+position_explore, 3)
+        for beam_position in beam_offset_arr:
+            forward(beam_position)
+        for _ in range(max_iterations):
+            beam_position = get_index_min(output='offset')
+            forward(beam_position)
+        index = get_index_min(output='index')
+        beam_position = beam_position_list[index]
+        delta_offset = beam_position - position0
+
+        output = {
+                'sim_screens': sim_screens,
+                'meas_screen': meas_screen,
+                'sim_screen': sim_screens[index],
+                'beam_position': beam_position,
+                'beam_offsets': np.array(beam_position_list),
+                'delta_offset': delta_offset,
+                'gap': self.structure_gap,
+                'structure_name': self.structure_name,
+                'beam_offset0': position0,
+                'rms_arr': np.array(rms_list),
+                'mean_arr': np.array(mean_list),
+                }
+        return output
+
 
 def get_default_tracker(beamline, structure_name, meta_data, calib, logger=None):
     screen = config.beamline_screens[beamline]

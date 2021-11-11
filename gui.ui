@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -2029,7 +2029,7 @@
       <property name="geometry">
        <rect>
         <x>440</x>
-        <y>350</y>
+        <y>340</y>
         <width>211</width>
         <height>16</height>
        </rect>
@@ -2106,7 +2106,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>140</y>
+        <y>130</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2119,7 +2119,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>180</y>
+        <y>170</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2145,7 +2145,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>100</y>
+        <y>90</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2158,7 +2158,7 @@
       <property name="geometry">
        <rect>
         <x>490</x>
-        <y>100</y>
+        <y>90</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2171,7 +2171,7 @@
       <property name="geometry">
        <rect>
         <x>490</x>
-        <y>140</y>
+        <y>130</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2248,7 +2248,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>350</y>
+        <y>340</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2325,7 +2325,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>430</y>
+        <y>420</y>
         <width>121</width>
         <height>16</height>
        </rect>
@@ -2396,7 +2396,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>220</y>
+        <y>210</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2438,7 +2438,7 @@
       <property name="geometry">
        <rect>
         <x>490</x>
-        <y>180</y>
+        <y>170</y>
         <width>161</width>
         <height>16</height>
        </rect>
@@ -2480,8 +2480,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>390</y>
-        <width>161</width>
+        <y>380</y>
+        <width>101</width>
         <height>16</height>
        </rect>
       </property>
@@ -2554,7 +2554,7 @@
       <property name="geometry">
        <rect>
         <x>440</x>
-        <y>390</y>
+        <y>380</y>
         <width>141</width>
         <height>16</height>
        </rect>
@@ -2615,7 +2615,7 @@
       <property name="geometry">
        <rect>
         <x>440</x>
-        <y>430</y>
+        <y>420</y>
         <width>141</width>
         <height>16</height>
        </rect>
@@ -2683,6 +2683,77 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_48">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>480</y>
+        <width>191</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Find beam position options</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_71">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>510</y>
+        <width>101</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Max iterations</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="FindBeamMaxIter">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>510</y>
+        <width>111</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="FindBeamExplorationRange">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>550</y>
+        <width>111</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_75">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>550</y>
+        <width>141</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Exploration range [μm]</string>
       </property>
      </widget>
     </widget>

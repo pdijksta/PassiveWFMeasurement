@@ -147,7 +147,7 @@ def get_default_beam_spec():
     return outp
 
 def get_default_structure_calibrator_options():
-    return {
+    outp = {
             'order_centroid': 2.75,
             'order_rms': 2.75,
             'fit_gap': True,
@@ -159,6 +159,16 @@ def get_default_structure_calibrator_options():
             'delta_gap_range': np.linspace(-100, 100.01, 51)*1e-6,
             'delta_streaker0_range': np.linspace(-20, 20, 11)*1e-6,
             }.copy()
+    return outp
+
+def get_default_lasing_options():
+    outp = {
+            'subtract_quantile': 0.1,
+            'noise_cut': 0.1,
+            'slice_factor': 3,
+            'offset_explore': 30e-6,
+            }
+    return outp
 
 default_n_particles = int(1e5)
 fontsize = 8

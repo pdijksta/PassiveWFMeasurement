@@ -369,7 +369,7 @@ class StructureCalibrator(LogMsgBase):
     def forward_propagate(self, blmeas_profile, force_gap=None, force_streaker_offset=None):
         sim_screens = []
         forward_dicts = []
-        beam_offsets = []
+        beam_positions = []
         tracker = self.tracker
         if force_streaker_offset is None:
             structure_position0 = tracker.calib.structure_position0
@@ -379,8 +379,8 @@ class StructureCalibrator(LogMsgBase):
             gap = force_gap
 
         for s_offset in self.raw_struct_positions:
-            beam_offsets.append(-(s_offset-structure_position0))
-            forward_dict = tracker.forward_propagate
+            beam_positions.append(-(s_offset-structure_position0))
+            forward_dict = tracker.forward_propagate_forced(gap, beam_position)
             forward_dicts.append(forward_dict)
             sim_screen = forward_dict['screen']
             sim_screens.append(sim_screen)
@@ -392,6 +392,7 @@ class StructureCalibrator(LogMsgBase):
                 'blmeas_profile': blmeas_profile,
                 'sim_screens': sim_screens,
                 'forward_dicts': forward_dicts,
+                'beam_positions': beam_positions,
                 }
         return output
 

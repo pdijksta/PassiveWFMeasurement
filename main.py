@@ -226,7 +226,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.current_rec_dict = None
         self.lasing_rec_dict = None
 
-        ## Handle plots
+        ## Init plots
         def get_new_tab(fig, title):
             new_tab = QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
@@ -244,7 +244,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.streaker_calib_fig, self.structure_calib_plot_handles = plot_results.streaker_calibration_figure()
         self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Calib.')
 
-        self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.gap_recon_figure()
+        self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.calib_figure()
         self.gap_recon_tab_index, self.gap_recon_canvas = get_new_tab(self.gap_recon_fig, 'Gap rec.')
 
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
@@ -441,7 +441,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         result_dict = daq.data_streaker_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
 
         try:
-            full_dict = self._analyze_streaker_calib(result_dict)
+            fit_dicts = self._analyze_streaker_calib(result_dict)
         except:
             date = datetime.now()
             basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % self.structure_name.replace('.','_')
@@ -450,12 +450,16 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.logMsg('Saved streaker calibration data %s' % filename)
             raise
 
+        full_dict = {
+                'fit_results': fit_dicts,
+                'raw_data': result_dict,
+                }
+
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % self.structure_name.replace('.','_')
-        streaker_offset = full_dict['meta_data']['streaker_offset']
-        self.updateStreakerCenter(streaker_offset)
 
-        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (self.structure_name, streaker_offset*1e6)
+        calib = fit_dicts['centroid']['calibration']
+        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
         self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
         self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
 
@@ -481,8 +485,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             bp.reshape(forward_options['len_screen'])
 
             sc.forward_propagate(bp)
-        sc.plot_structure_calib(self.structure_calib_plot_handles)
+
+        calib = sc.fit_dicts['centroid']['calibration']
+        self.calib_to_gui(calib)
+        plot_results.plot_structure_calib(self.structure_calib_plot_handles)
         self.streaker_calib_canvas.draw()
+        return sc.fit_dicts
 
     def gap_reconstruction(self):
         self.clear_gap_recon_plots()
@@ -494,14 +502,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             saved_dict = saved_dict['raw_data']
 
         tracker = self.get_tracker(saved_dict['meta_data_begin'])
-        gauss_kwargs = self.get_gauss_kwargs()
-        gauss_kwargs['delta_gap'] = np.array([0., 0.])
-        gap_recon_dict = calibration.reconstruct_gap(saved_dict, tracker, gauss_kwargs, plot_handles=self.gap_recon_plot_handles)
-        n_streaker = gap_recon_dict['n_streaker']
-        delta_gap = gap_recon_dict['delta_gap']
-        gap = gap_recon_dict['gap']
-        self.updateDeltaGap(delta_gap, n_streaker)
-        print('Reconstructed gap: %.3f mm' % (gap*1e3))
+        structure_calib_options = self.get_structure_calib_options()
+        calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, saved_dict)
+        calib_dict = calibrator.calibrate_gap_and_struct_position()
+        new_calib = calib_dict['calibration']
+        self.calib_to_gui(new_calib)
+        plot_results.plot_calib(calib_dict, self.gap_recon_fig, self.gap_recon_plot_handles)
         self.gap_recon_canvas.draw()
 
     def load_calibration(self):
@@ -511,31 +517,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         if 'raw_data' in saved_dict:
             saved_dict = saved_dict['raw_data']
-        full_dict = self._analyze_streaker_calib(saved_dict)
-
-        streaker_offset = full_dict['meta_data']['streaker_offset']
-        self.updateStreakerCenter(streaker_offset)
-        #self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
-        if self.streaker_calib_canvas is not None:
-            self.streaker_calib_canvas.draw()
-
-    def updateStreakerCenter(self, streaker_offset, n_streaker=None):
-        if n_streaker is None:
-            n_streaker = self.n_streaker
-        if self.n_streaker == 0:
-            widget = self.StreakerDirect0
-        elif self.n_streaker == 1:
-            widget = self.StreakerDirect1
-        old = float(widget.text())
-        widget.setText('%.3f' % (streaker_offset*1e6))
-        new = float(widget.text())
-        print('Updated center calibration for streaker %i. Old: %.3f um New: %.3f um' % (self.n_streaker, old, new))
-
-    def updateDeltaGap(self, delta_gap, n_streaker=None):
-        old = float(self.StructureGapDelta.text())
-        self.StructureGapDelta.setText('%.3f' % (delta_gap*1e6))
-        new = float(self.StructureGapDelta.text())
-        print('Updated gap calibration for streaker %s. Old: %.3f um New: %.3f um' % (self.structure_name, old, new))
+        self._analyze_streaker_calib(saved_dict)
 
     def obtain_reconstruction(self):
         n_images = int(self.ReconNumberImages.text())
@@ -560,12 +542,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     @property
     def screen_center(self):
         return float(self.ScreenCenterCalib.text())*1e-6
-
-    @property
-    def streaker_means(self):
-        streaker0_mean = float(self.StreakerDirect0.text())*1e-6
-        streaker1_mean = float(self.StreakerDirect1.text())*1e-6
-        return np.array([streaker0_mean, streaker1_mean])
 
     @property
     def screen(self):
@@ -601,22 +577,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def obtainLasingOff(self):
         return self.obtainLasing(False)
 
-    @staticmethod
-    def get_energy_from_meta(meta_data):
-        if 'SARBD01-MBND100:ENERGY-OP' in meta_data:
-            energy_eV = meta_data['SARBD01-MBND100:ENERGY-OP']*1e6
-        elif 'SARBD01-MBND100:P-SET' in meta_data:
-            energy_eV = meta_data['SARBD01-MBND100:P-SET']*1e6
-        return energy_eV
-
     def reconstruct_all_lasing(self):
         self.clear_all_lasing_plots()
 
         screen_center = self.screen_center
         beamline, n_streaker = self.beamline, self.n_streaker
-        charge = self.charge
-        streaker_offset = self.streaker_means[n_streaker]
-        delta_gap = self.delta_gaps[n_streaker]
         pulse_energy = float(self.LasingEnergyInput.text())*1e-6
         slice_factor = int(self.LasingReconstructionSliceFactor.text())
 
@@ -625,8 +590,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_off_dict = h5_storage.loadH5Recursive(file_off)
         lasing_on_dict = h5_storage.loadH5Recursive(file_on)
 
-        tracker_kwargs = self.get_tracker_kwargs()
-        recon_kwargs = self.get_gauss_kwargs()
         las_rec_images = {}
 
         for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):

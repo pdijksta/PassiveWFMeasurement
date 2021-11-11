@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from . import h5_storage
 from . import beam_profile
-from . import tracking
 from . import config
 from . import myplotstyle as ms
 from . import image_analysis
@@ -309,27 +308,18 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImages:
-    def __init__(self, screen_x0, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, profile=None, recon_kwargs=None, charge=None, subtract_median=False, noise_cut=0.1, slice_factor=1, offset_explore=30e-6, ref_slice_dict=None, ref_y=None):
-        self.delta_gap = delta_gap
-        recon_kwargs['delta_gap'] = [0, 0]
-        recon_kwargs['delta_gap'][n_streaker] = delta_gap
-        print('Lasing reconstruction images: delta_gap', recon_kwargs['delta_gap'])
-        self.screen_x0 = screen_x0
-        self.beamline = beamline
-        self.n_streaker = n_streaker
-        self.streaker = config.streaker_names[beamline][n_streaker]
-        self.streaker_offset = streaker_offset
-        self.charge = charge
+    def __init__(self, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
+        self.tracker = tracker
         self.profile = profile
-        self.recon_kwargs = recon_kwargs
-        self.subtract_median = subtract_median
-        self.noise_cut = noise_cut
-        self.slice_factor = slice_factor
-        self.offset_explore = offset_explore
+
+        self.subtract_quantile = lasing_options['subtract_quantile']
+        self.noise_cut = lasing_options['noise_cut']
+        self.slice_factor = lasing_options['slice_factor']
+        self.offset_explore = lasing_options['offset_explore']
+
         self.ref_slice_dict = None
         self.ref_y = ref_y
 
-        self.tracker = tracking.Tracker(**tracker_kwargs)
         self.do_recon_plot = False
         self.beam_offsets = None
         self.index_median = None
@@ -352,7 +342,7 @@ class LasingReconstructionImages:
 
     def add_dict(self, data_dict, max_index=None):
         meta_data = data_dict['meta_data_begin']
-        self.tracker.set_simulator(meta_data)
+        self.tracker.meta_data = meta_data
         images = data_dict['pyscan_result']['image'].astype(float)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
@@ -376,11 +366,8 @@ class LasingReconstructionImages:
         for n_image, img in enumerate(images):
             if max_index is not None and n_image >= max_index:
                 break
-            if self.subtract_median:
-                img = img - np.median(img)
-                img[img<0] = 0
-            else:
-                img = img - np.quantile(img, 0.1)
+            img = img - np.quantile(img, self.subtract_quantile)
+            img[img < 0] = 0
             image = image_analysis.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), charge=self.charge)
@@ -389,20 +376,11 @@ class LasingReconstructionImages:
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
 
     def get_current_profiles(self, blmeas_file=None):
-        data_dict = {
-                'meta_data_begin': self.meta_data,
-                'pyscan_result': {
-                    'image': self.raw_images[:len(self.meas_screens)],
-                    'x_axis_m': self.x_axis0,
-                    'y_axis_m': self.y_axis,
-                    }
-                }
+        self.profiles = []
+        for meas_screen in self.meas_screens:
+            gd = self.tracker.reconstruct_profile_Gauss(meas_screen)
+            self.profiles.append(gd['reconstructed_profile'])
 
-        streaker_offsets = [0., 0.]
-        streaker_offsets[self.n_streaker] = self.streaker_offset
-
-        output_dicts = analysis.reconstruct_current(data_dict, self.n_streaker, self.beamline, self.tracker, 'All', self.recon_kwargs, self.screen_x0, streaker_offsets, blmeas_file, do_plot=self.do_recon_plot)
-        self.profiles = [x['gauss_dict']['reconstructed_profile'] for x in output_dicts]
         for p in self.profiles:
             p._xx -= p._xx.min()
 

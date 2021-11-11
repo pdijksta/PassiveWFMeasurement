@@ -141,7 +141,7 @@ class Image(LogMsgBase):
                     slice_cut_mean.append(0)
                 else:
                     profile = beam_profile.AnyProfile(y_axis, prof_y)
-                    profile.cutoff2(noise_cut)
+                    profile.aggressive_cutoff(noise_cut)
                     profile.crop()
 
                     slice_cut_rms.append(profile.rms()**2)

@@ -300,7 +300,7 @@ class LasingReconstruction:
         #sp_lasing_spread.legend()
 
         for label, recon_image in [('Lasing On', self.images_on), ('Lasing Off', self.images_off)]:
-            delta_distance = recon_image.beam_positions - (-recon_image.streaker_center)
+            delta_distance = recon_image.beam_positions - (-recon_image.tracker.calib.structure_position0)
             mean_x = np.array([abs(x.mean()) for x in recon_image.meas_screens])
             sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
         sp_orbit.legend()
@@ -387,9 +387,9 @@ class LasingReconstructionImages:
         beam_positions = []
         position_dicts = []
         for meas_screen in self.meas_screens:
-            offset_dict = self.tracker.find_beam_position(self.tracker.beam_position, meas_screen, self.profile)
-            position_dicts.append(offset_dict)
-            beam_positions.append(offset_dict['beam_offset'])
+            position_dict = self.tracker.find_beam_position(self.tracker.beam_position, meas_screen, self.profile)
+            position_dicts.append(position_dict)
+            beam_positions.append(position_dict['beam_position'])
         self.beam_positions = np.array(beam_positions)
         return position_dicts
 
@@ -402,7 +402,7 @@ class LasingReconstructionImages:
 
     def convert_axes(self):
         #print('convert_axes, self.ref_y', self.ref_y)
-        dispersion = self.tracker.calcDisp()[self.n_streaker]
+        dispersion = self.tracker.disp
         self.dispersion = dispersion
         self.images_tE = []
         self.ref_y_list = []

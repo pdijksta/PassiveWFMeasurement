@@ -202,6 +202,7 @@ class Tracker(LogMsgBase):
 
         screen.aggressive_cutoff(self.forward_options['screen_cutoff'])
         screen.crop()
+        mean, rms = screen.mean(), screen.rms()
 
         if screen.mean() > 0:
             mask_negative = screen.x < 0
@@ -224,9 +225,13 @@ class Tracker(LogMsgBase):
         screen.crop()
         screen.reshape(self.n_particles)
 
-        #self.logMsg('Prepared screen', 'I')
+        outp = {
+                'screen': screen,
+                'centroid': mean,
+                'rms': rms,
+                }
 
-        return screen
+        return outp
 
     def backward_propagate(self, screen, beamProfile, plot_details=False):
         if self.total_charge != beamProfile.total_charge:
@@ -262,8 +267,10 @@ class Tracker(LogMsgBase):
                 charge_interp = charge_interp[::-1]
             assert np.all(np.diff(t_interp) >= 0)
             bp = beam_profile.BeamProfile(t_interp, charge_interp, self.energy_eV, self.total_charge)
-            bp.aggressive_cutoff(self.backward_options['profile_cutoff'])
             bp.smoothen(self.backward_options['profile_smoothen'])
+            bp.aggressive_cutoff(self.backward_options['profile_cutoff'])
+            bp.crop()
+            bp.reshape(self.backward_options['len_profile'])
             if np.any(np.isnan(bp.charge_dist)):
                 raise ValueError
         except (ValueError, AssertionError) as e:
@@ -315,7 +322,7 @@ class Tracker(LogMsgBase):
             self.force_beam_position = pos0
         return outp
 
-    def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False, centroid_meas=None):
+    def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False):
         t0 = time.time()
         prec = self.reconstruct_gauss_options['precision']
         tt_range = self.reconstruct_gauss_options['gauss_profile_t_range']
@@ -323,7 +330,10 @@ class Tracker(LogMsgBase):
         sig_t_range = self.reconstruct_gauss_options['sig_t_range']
         len_profile = self.backward_options['len_profile']
 
-        meas_screen = self.prepare_screen(meas_screen_raw)
+        prepare_dict = self.prepare_screen(meas_screen_raw)
+        meas_screen = prepare_dict['screen']
+        centroid_meas = prepare_dict['centroid']
+        rms_meas = prepare_dict['rms']
 
         opt_func_screens = []
         opt_func_profiles = []
@@ -332,10 +342,6 @@ class Tracker(LogMsgBase):
         opt_func_wake_x = []
         gauss_profiles = []
         sig_t_list = []
-
-        rms_meas = meas_screen_raw.rms()
-        if centroid_meas is None:
-            centroid_meas = meas_screen_raw.mean()
 
         if plot_details:
             fig_number = ms.plt.gcf().number
@@ -475,9 +481,10 @@ class Tracker(LogMsgBase):
         rms_list = []
         mean_list = []
 
-        meas_screen = self.prepare_screen(meas_screen_raw)
-        centroid_meas = meas_screen.mean()
-        rms_meas = meas_screen.rms()
+        prepare_dict = self.prepare_screen(meas_screen_raw)
+        meas_screen = prepare_dict['screen']
+        centroid_meas = prepare_dict['centroid']
+        rms_meas = prepare_dict['rms']
 
         beam = self.gen_beam(profile)
 

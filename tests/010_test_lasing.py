@@ -4,7 +4,6 @@ path = os.path.join(os.path.dirname(__file__), '../../')
 if path not in sys.path:
     sys.path.append(path)
 
-
 import PassiveWFMeasurement.h5_storage as h5_storage
 import PassiveWFMeasurement.lasing as lasing
 import PassiveWFMeasurement.tracking as tracking
@@ -15,8 +14,8 @@ import PassiveWFMeasurement.myplotstyle as ms
 ms.closeall()
 
 
-lasing_on_dict = h5_storage.loadH5Recursive('./data/2021_10_18-18_04_07_Lasing_True_SARBD02-DSCR050.h5')
-lasing_off_dict = h5_storage.loadH5Recursive('./data/2021_10_18-18_04_50_Lasing_False_SARBD02-DSCR050.h5')
+lasing_on_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_13_42_Lasing_True_SARBD02-DSCR050.h5')
+lasing_off_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_11_55_Lasing_False_SARBD02-DSCR050.h5')
 
 structure_name = 'SARUN18-UDCP020'
 screen_center = 1046e-6

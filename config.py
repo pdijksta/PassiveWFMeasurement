@@ -134,7 +134,7 @@ def get_default_reconstruct_gauss_options():
             'gauss_profile_t_range': 400e-15,
             'precision': 0.1e-15,
             'method': 'centroid',
-            'sig_t_range': np.array([7, 100])*1e15,
+            'sig_t_range': np.array([7, 100])*1e-15,
             'max_iterations': 5,
             }.copy()
 

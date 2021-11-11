@@ -62,7 +62,7 @@ tracker_old = tracking_old.Tracker(**config_old.get_default_tracker_settings())
 tracker_old.set_simulator(meta_data)
 
 screen_raw = beam_profile.ScreenDistribution(x_axis-screen_center, projx, total_charge=total_charge)
-gauss_dict = tracker.reconstruct_profile_Gauss(screen_raw, output_details=True, plot_details=plot_details, centroid_meas=screen_raw.mean())
+gauss_dict = tracker.reconstruct_profile_Gauss(screen_raw, output_details=True, plot_details=plot_details)
 
 meas_screen = gauss_dict['meas_screen']
 
@@ -101,17 +101,12 @@ wake_x = gauss_dict['opt_func_wake_x'][index]
 index_old = gauss_dict_old['best_index']
 wake_time_old = gauss_dict_old['opt_func_wakes'][index_old]
 
-
-
-
 sp_wake = subplot(sp_ctr, title='Wake effect', xlabel='t (fs)', ylabel='x (mm)')
 sp_ctr += 1
 
 sp_wake.plot(wake_time, wake_x, label='New')
 
-
 sp_wake.legend()
-
 
 ms.show()
 

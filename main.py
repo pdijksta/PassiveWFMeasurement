@@ -175,6 +175,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         optics = config.get_default_optics(self.beamline)
         gs = config.get_default_structure_calibrator_options()
         fbs = config.get_default_find_beam_position_options()
+        ls = config.get_default_lasing_options()
 
         self.N_Particles.setText('%i' % config.default_n_particles)
 
@@ -224,6 +225,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         # Find beam position options
         self.FindBeamMaxIter.setText('%i' % fbs['max_iterations'])
         self.FindBeamExplorationRange.setText('%.3f' % (fbs['position_explore']*1e6))
+
+        # Lasing options
+        self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
+        self.LasingNoiseCut.setText('%.4f' % ls['noise_cut'])
+        self.LasingIntensityCut.setText('%.4f' % ls['subtract_quantile'])
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
@@ -399,6 +405,13 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         _upper = float(self.StructCenterSearchUpper.text())*1e-6
         _points = int(self.StructCenterSearchPoints.text())
         outp['delta_streaker0_range'] = np.linspace(_lower, _upper, _points)
+        return outp
+
+    def get_lasing_options(self):
+        outp = config.get_default_lasing_options()
+        outp['slice_factor'] = int(self.LasingReconstructionSliceFactor.text())
+        outp['noise_cut'] = float(self.LasingNoiseCut.text())
+        outp['subtract_quantile'] = float(self.LasingIntensityCut.text())
         return outp
 
     def reconstruct_current(self):
@@ -603,10 +616,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def reconstruct_all_lasing(self):
         self.clear_all_lasing_plots()
 
-        screen_center = self.screen_center
-        beamline, n_streaker = self.beamline, self.n_streaker
         pulse_energy = float(self.LasingEnergyInput.text())*1e-6
-        slice_factor = int(self.LasingReconstructionSliceFactor.text())
 
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()
@@ -615,8 +625,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         las_rec_images = {}
 
+        tracker = self.get_tracker(lasing_off_dict['meta_data_begin'])
+        lasing_options = self.get_lasing_options()
+
         for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-            rec_obj = lasing.LasingReconstructionImages(screen_center, beamline, n_streaker, streaker_offset, delta_gap, tracker_kwargs, recon_kwargs=recon_kwargs, charge=charge, subtract_median=True, slice_factor=slice_factor)
+            rec_obj = lasing.LasingReconstructionImages(tracker, lasing_options)
 
             rec_obj.add_dict(data_dict)
             if main_ctr == 1:

@@ -364,8 +364,6 @@ class Tracker(LogMsgBase):
                 return 0
 
             bp_gauss = beam_profile.get_gaussian_profile(sig_t, float(tt_range), len_profile, float(self.total_charge), float(self.energy_eV))
-
-
             bp_back0 = self.backward_propagate(meas_screen, bp_gauss)['profile']
             back_dict1 = self.backward_propagate(meas_screen, bp_back0)
             bp_back1 = back_dict1['profile']

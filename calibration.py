@@ -610,14 +610,14 @@ class StructureCalibrator(LogMsgBase):
         combined_target /= combined_target.max()
 
         argmin = np.argwhere(combined_target == np.nanmin(combined_target))[0]
-        structure_position0 = delta_structure0_range[argmin[0]]
+        new_structure_position0 = self.tracker.calib.structure_position0 + delta_structure0_range[argmin[0]]
         delta_gap = delta_gap_range[argmin[1]]
         new_gap = gap0 + delta_gap
         fit_dict = get_fit_param(structure_position0, delta_gap)
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
 
-        calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap, structure_position0)
+        calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap, new_structure_position0)
 
         outp = {
                 'diff_sides': diff_sides,

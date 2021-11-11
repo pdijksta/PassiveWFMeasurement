@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -62,7 +62,7 @@
        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="ClearCalibPlots">
+     <widget class="QPushButton" name="ClearStructureFitPlots">
       <property name="geometry">
        <rect>
         <x>710</x>
@@ -115,7 +115,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Clear calib plots</string>
+       <string>Clear fit plots</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_19">
@@ -219,12 +219,12 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="CalibrateStreaker">
+     <widget class="QPushButton" name="FitStreaker">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>180</y>
-        <width>171</width>
+        <width>201</width>
         <height>41</height>
        </rect>
       </property>
@@ -272,7 +272,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Perform structure calib</string>
+       <string>Perform structure fit (fast)</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="StructureCenter">
@@ -355,11 +355,11 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="LoadCalibration">
+     <widget class="QPushButton" name="LoadFit">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>280</y>
+        <x>230</x>
+        <y>330</y>
         <width>131</width>
         <height>41</height>
        </rect>
@@ -539,12 +539,12 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QPushButton" name="GapReconstruction">
+     <widget class="QPushButton" name="GapCalibration">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>340</y>
-        <width>151</width>
+        <x>10</x>
+        <y>330</y>
+        <width>201</width>
         <height>41</height>
        </rect>
       </property>
@@ -592,10 +592,10 @@
        </font>
       </property>
       <property name="text">
-       <string>Gap reconstruction</string>
+       <string>Gap calibration (slow)</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="ClearGapRecPlots">
+     <widget class="QPushButton" name="ClearCalibPlots">
       <property name="geometry">
        <rect>
         <x>710</x>
@@ -648,7 +648,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Clear gap rec plots</string>
+       <string>Clear gap calib plots</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_22">
@@ -2793,6 +2793,51 @@
         <width>881</width>
         <height>271</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QPlainTextEdit" name="plainTextEdit_2">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>390</y>
+        <width>881</width>
+        <height>271</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_78">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>20</y>
+        <width>241</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Auto generated ELOG text</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_79">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>350</y>
+        <width>241</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Comment</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
     </widget>

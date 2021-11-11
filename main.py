@@ -122,11 +122,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
         self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
-        self.CalibrateStreaker.clicked.connect(self.calibrate_structure)
-        self.GapReconstruction.clicked.connect(self.gap_reconstruction)
-        self.ClearCalibPlots.clicked.connect(self.clear_calib_plots)
-        self.ClearGapRecPlots.clicked.connect(self.clear_gap_recon_plots)
-        self.LoadCalibration.clicked.connect(self.load_calibration)
+        self.FitStreaker.clicked.connect(self.daq_calibration)
+        self.ClearStructureFitPlots.clicked.connect(self.clear_structure_fit_plots)
+        self.GapCalibration.clicked.connect(self.gap_reconstruction)
+        self.ClearCalibPlots.clicked.connect(self.clear_structure_calib_plots)
+        self.LoadFit.clicked.connect(self.load_structure_fit)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
@@ -255,11 +255,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
         self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I Rec.')
 
-        self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.structure_calibration_figure()
-        self.structure_calib_plot_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Calib.')
+        self.structure_fit_fig, self.structure_fit_plot_handles = plot_results.structure_fit_figure()
+        self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'Calib.')
 
-        self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.gap_recon_figure()
-        self.gap_recon_tab_index, self.gap_recon_canvas = get_new_tab(self.gap_recon_fig, 'Gap rec.')
+        self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.calib_figure()
+        self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
 
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
@@ -273,13 +273,13 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         plot_results.clear_reconstruction(*self.reconstruction_plot_handles)
         self.rec_canvas.draw()
 
-    def clear_gap_recon_plots(self):
-        plot_results.clear_gap_recon(*self.gap_recon_plot_handles)
-        self.gap_recon_canvas.draw()
-
-    def clear_calib_plots(self):
-        plot_results.clear_structure_calibration(*self.structure_calib_plot_handles)
+    def clear_structure_calib_plots(self):
+        plot_results.clear_calib(*self.structure_calib_plot_handles)
         self.structure_calib_canvas.draw()
+
+    def clear_structure_fit_plots(self):
+        plot_results.clear_structure_fit(*self.structure_fit_plot_handles)
+        self.structure_fit_canvas.draw()
 
     def clear_screen_plots(self):
         plot_results.clear_screen_calibration(*self.screen_calib_plot_handles)
@@ -450,8 +450,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def save_dir(self):
         return os.path.expanduser(self.SaveDir.text())
 
-    def calibrate_structure(self):
-        self.clear_calib_plots()
+    def daq_calibration(self):
+        self.clear_structure_fit_plots()
         start, stop, step = w2f(self.Range1Begin), w2f(self.Range1Stop), w2i(self.Range1Step)
         range1 = np.linspace(start, stop, step)
         start, stop, step= w2f(self.Range2Begin), w2f(self.Range2Stop), w2i(self.Range2Step)
@@ -487,8 +487,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = fit_dicts['centroid']['calibration']
         elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
-        self.elog_and_H5(elog_text, [self.structure_calib_fig], 'Streaker center calibration', basename, full_dict)
-        self.tabWidget.setCurrentIndex(self.structure_calib_plot_tab_index)
+        self.elog_and_H5(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
+        self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
 
     def _analyze_structure_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
@@ -515,13 +515,13 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = sc.fit_dicts['centroid']['calibration']
         self.calib_to_gui(calib)
-        plot_results.plot_structure_position0_fit(sc.fit_dicts, self.structure_calib_plot_handles)
-        self.structure_calib_canvas.draw()
-        self.tabWidget.setCurrentIndex(self.structure_calib_plot_tab_index)
+        plot_results.plot_structure_position0_fit(sc.fit_dicts, self.structure_fit_plot_handles)
+        self.structure_fit_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
         return sc.fit_dicts
 
     def gap_reconstruction(self):
-        self.clear_gap_recon_plots()
+        self.clear_structure_calib_plots()
 
         filename = self.LoadCalibrationFilename.text().strip()
         saved_dict = h5_storage.loadH5Recursive(filename)
@@ -535,11 +535,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         calib_dict = calibrator.calibrate_gap_and_struct_position()
         new_calib = calib_dict['calibration']
         self.calib_to_gui(new_calib)
-        plot_results.plot_calib(calib_dict, self.gap_recon_fig, self.gap_recon_plot_handles)
-        self.gap_recon_canvas.draw()
+        plot_results.plot_calib(calib_dict, self.structure_calib_fig, self.structure_calib_plot_handles)
+        self.structure_calib_canvas.draw()
 
-    def load_calibration(self):
-        self.clear_calib_plots()
+    def load_structure_fit(self):
+        self.clear_structure_fit_plots()
         filename = self.LoadCalibrationFilename.text().strip()
         saved_dict = h5_storage.loadH5Recursive(filename)
 

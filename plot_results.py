@@ -145,7 +145,7 @@ def clear_gauss_recon(sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_n
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def structure_calibration_figure(figsize=None):
+def structure_fit_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
@@ -153,10 +153,10 @@ def structure_calibration_figure(figsize=None):
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+6)))
-    clear_structure_calibration(*plot_handles)
+    clear_structure_fit(*plot_handles)
     return fig, plot_handles
 
-def clear_structure_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
+def clear_structure_fit(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
     for sp, title, xlabel, ylabel in [
             (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam X centroid (mm)'),
             (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam X rms (mm)'),
@@ -199,7 +199,7 @@ def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit, sp_distances):
 def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blmeas_profile=None, sim_screens=None):
 
     if plot_handles is None:
-        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = structure_calibration_figure(figsize)
+        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = structure_fit_figure(figsize)
     else:
         (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
 
@@ -283,7 +283,7 @@ def calib_figure(figsize=None):
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     ny, nx = 2, 3
     subplot = ms.subplot_factory(ny, nx, grid=False)
-    plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+ny*nx)))
+    plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+6)))
     clear_calib(*plot_handles)
     return fig, plot_handles
 
@@ -330,7 +330,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
     x_factor = y_factor = 1e6
     extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[-1]*y_factor, y_axis[0]*y_factor]
     #extent = None
-    plot = sp_heat.imshow(fit_coefficients2, extent=extent, aspect='auto')
+    plot = sp_heat.imshow(fit_coefficients2, cmap='hot', extent=extent, aspect='auto')
     fig.colorbar(plot, label='Fit coefficint (arb. units)', ax=sp_heat)
 
     plot = sp_heat_rms.imshow(mean_rms_arr*1e15, cmap='hot', extent=extent, aspect='auto')

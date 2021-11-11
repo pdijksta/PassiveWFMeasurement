@@ -5,7 +5,6 @@ matplotlib.use('Qt5Agg')
 
 import sys
 import os
-import re
 import socket
 from datetime import datetime
 import numpy as np
@@ -33,19 +32,11 @@ from PassiveWFMeasurement import myplotstyle as ms
 
 #TODO
 #
-# - add info of beamsize with / without assumed screen resolution
 # - add tilt option
 # - handle feedback in user interface
 # - detune undulator button
-# - streaker center calibration: repeat with one data point removed at one side
-# - Offset based on centroid, offset based on sizes (?)
-# - Dispersion (?)
 # - Plot centroid of forward propagated
-# - add blmeas option to lasing rec
-# - Mean of square instead of square of mean of squareroot
-# - Athos gas detector
 # - Calibration based on TDC
-# - Fix calibration - screen and streaker offset at same time
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -55,14 +46,22 @@ from PassiveWFMeasurement import myplotstyle as ms
 # Probably fixed:
 # - sort out daq pyscan_result_to_dict
 # - debug delay after using BsreadPositioner or any pyscan
+# - Dispersion (?)
 
 # Not so important
+# - add blmeas option to lasing rec
 # - noise reduction from the image
 # - uJ instead of True, False
 # - non blocking daq
 # - One-sided plate
+# - streaker center calibration: repeat with one data point removed at one side
+# - add info of beamsize with / without assumed screen resolution
 
 # Done
+# - Offset based on centroid, offset based on sizes (?)
+# - Mean of square instead of square of mean of squareroot
+# - Athos gas detector
+# - Fix calibration - screen and streaker offset at same time
 # - pulse energy from gas detector in pyscan
 # - yum install libhdf5
 # - streaker calibration fit guess improvements
@@ -103,7 +102,6 @@ except ImportError:
 ms.set_fontsizes(config.fontsize)
 
 pyqtRemoveInputHook() # for pdb to work
-re_time = re.compile('(\\d{4})-(\\d{2})-(\\d{2}):(\\d{2})-(\\d{2})-(\\d{2})')
 
 class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
@@ -127,7 +125,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
-        self.ObtainR12.clicked.connect(self.obtain_r12_0)
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
@@ -264,6 +261,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
         self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Resolution')
 
+        self.logMsg('Main window initialized')
+
     def clear_rec_plots(self):
         plot_results.clear_reconstruction(*self.reconstruction_plot_handles)
         self.rec_canvas.draw()
@@ -331,20 +330,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         plot_results.clear_resolution_figure(*self.resolution_plot_handles)
         resolution.plot_resolution(res_dict, *self.resolution_plot_handles)
         self.resolution_canvas.draw()
-
-    def obtain_r12_0(self):
-        return self.obtain_r12()
-
-    def obtain_r12(self, meta_data=None):
-        if meta_data is None:
-            meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
-            print(meta_data)
-        tracker = self.get_tracker(meta_data)
-        r12 = tracker.r12
-        disp = tracker.disp
-        print('R12:', r12)
-        print('Dispersion:', disp)
-        return r12, disp
 
     @property
     def delta_gap(self):
@@ -574,10 +559,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     @property
     def dry_run(self):
         return (self.DryRun.isChecked() or always_dryrun)
-
-    @property
-    def screen_center(self):
-        return float(self.ScreenCenterCalib.text())*1e-6
 
     @property
     def screen(self):

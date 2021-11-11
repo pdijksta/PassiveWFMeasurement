@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -1298,62 +1298,6 @@
       </property>
       <property name="checked">
        <bool>true</bool>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="ObtainR12">
-      <property name="geometry">
-       <rect>
-        <x>560</x>
-        <y>170</y>
-        <width>191</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="palette">
-       <palette>
-        <active>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </active>
-        <inactive>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </inactive>
-        <disabled>
-         <colorrole role="Button">
-          <brush brushstyle="SolidPattern">
-           <color alpha="255">
-            <red>183</red>
-            <green>157</green>
-            <blue>92</blue>
-           </color>
-          </brush>
-         </colorrole>
-        </disabled>
-       </palette>
-      </property>
-      <property name="font">
-       <font>
-        <family>Sans Serif</family>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Printout current R12</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="CurrentElogComment">
@@ -2834,6 +2778,24 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>ELOG</string>
+     </attribute>
+     <widget class="QPlainTextEdit" name="plainTextEdit">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>50</y>
+        <width>881</width>
+        <height>271</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
    </widget>
    <widget class="QComboBox" name="StructureSelect">
     <property name="geometry">
@@ -2896,7 +2858,7 @@
    <widget class="QCheckBox" name="DryRun">
     <property name="geometry">
      <rect>
-      <x>650</x>
+      <x>530</x>
       <y>730</y>
       <width>111</width>
       <height>20</height>
@@ -2954,19 +2916,22 @@
     </item>
    </widget>
    <widget class="QCheckBox" name="ElogSaveCheck">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
-      <x>740</x>
+      <x>620</x>
       <y>730</y>
-      <width>111</width>
+      <width>241</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Save to ELOG</string>
+     <string>Auto save measurements to ELOG</string>
     </property>
     <property name="checked">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QLineEdit" name="Charge">

@@ -300,7 +300,7 @@ class LasingReconstruction:
         #sp_lasing_spread.legend()
 
         for label, recon_image in [('Lasing On', self.images_on), ('Lasing Off', self.images_off)]:
-            delta_distance = recon_image.beam_positions - (-recon_image.tracker.calib.structure_position0)
+            delta_distance = recon_image.beam_positions - recon_image.tracker.beam_position
             mean_x = np.array([abs(x.mean()) for x in recon_image.meas_screens])
             sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
         sp_orbit.legend()

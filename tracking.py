@@ -46,7 +46,7 @@ class Tracker(LogMsgBase):
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.meta_data = meta_data
-        self.logMsg('Tracker initialized')
+        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (calib.structure_gap*1e6, calib.structure_position0*1e6))
 
     def update_calib(self, calib):
         self.calib = calib
@@ -544,6 +544,7 @@ class Tracker(LogMsgBase):
                 'rms_arr': np.array(rms_list),
                 'mean_arr': np.array(mean_list),
                 }
+        self.logMsg('Beam position found. Delta: %i um' % (delta_position*1e6))
         return output
 
 

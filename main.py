@@ -119,12 +119,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logger = logger
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
-        self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
-        self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
+        #self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
+        #self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.FitStreaker.clicked.connect(self.daq_calibration)
         self.ClearStructureFitPlots.clicked.connect(self.clear_structure_fit_plots)
-        self.GapCalibration.clicked.connect(self.gap_reconstruction)
+        self.GapCalibration.clicked.connect(self.calibrate_gap)
         self.ClearCalibPlots.clicked.connect(self.clear_structure_calib_plots)
         self.LoadFit.clicked.connect(self.load_structure_fit)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
@@ -134,7 +134,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
-        self.StructureSelect.addItems(sorted(config.structure_parameters.keys()))
+        self.StructureSelect.addItems(sorted(config.structure_parameters.keys(), reverse=True))
 
         # Default strings in gui fields
         hostname = socket.gethostname()
@@ -300,23 +300,27 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.StructureGapDelta.setText('%.3f' % (calib.delta_gap*1e6))
         self.StructureCenter.setText('%.3f' % (calib.structure_position0*1e6))
 
-    def get_tracker(self, meta_data):
+    def get_tracker(self, meta_data, structure_name=None):
         if self.Charge.text() == self.charge_pv_text:
             force_charge = None
         else:
             force_charge = w2f(self.Charge)*1e-12
         n_particles = w2i(self.N_Particles)
 
+        if structure_name is None:
+            structure_name = self.structure_name
+
         tracker = tracking.Tracker(
                 self.beamline,
                 self.screen,
-                self.structure_name,
+                structure_name,
                 meta_data,
                 self.gui_to_calib(),
                 self.get_forward_options(),
                 self.get_backward_options(),
                 self.get_reconstruct_gauss_options(),
-                self.get_beam_spec(), self.get_beam_optics(),
+                self.get_beam_spec(),
+                self.get_beam_optics(),
                 self.get_find_beam_position_options(),
                 force_charge,
                 n_particles,
@@ -381,6 +385,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp = config.get_default_find_beam_position_options()
         outp['position_explore'] = w2f(self.FindBeamExplorationRange)*1e-6
         outp['max_iterations'] = w2i(self.FindBeamMaxIter)
+        return outp
 
     def get_structure_calib_options(self):
         outp = config.get_default_structure_calibrator_options()
@@ -408,10 +413,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def reconstruct_current(self):
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
-        if self.ShowBlmeasCheck.isChecked():
-            blmeas_file = self.BunchLengthMeasFile.text()
-        else:
-            blmeas_file = None
+
 
         screen_data = h5_storage.loadH5Recursive(filename)
         if 'meta_data' in screen_data:
@@ -423,10 +425,22 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             raise ValueError
 
         tracker = self.get_tracker(meta_data)
+
+
+
+        if self.ShowBlmeasCheck.isChecked():
+            blmeas_file = self.BunchLengthMeasFile.text()
+            time_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
+            blmeas_profile = beam_profile.profile_from_blmeas(blmeas_file, time_range, tracker.total_charge, tracker.energy_eV, 2e-2)
+        else:
+            blmeas_profile = None
+
         x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'])
+        x_axis = x_axis - tracker.calib.screen_center
         meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
         self.current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
-        plot_results.plot_rec_gauss(self.current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=blmeas_file)
+
+        plot_results.plot_rec_gauss(self.current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=[blmeas_profile])
 
         self.logMsg('Current profile reconstructed.')
 
@@ -443,7 +457,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
         elog_text = 'Passive current reconstruction'
-        elog_text +='\nComment: %s' % self.CurrentElogComment.text()
         self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
 
     @property
@@ -468,7 +481,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         result_dict = daq.data_structure_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
 
         try:
-            fit_dicts = self._analyze_structure_calib(result_dict)
+            fit_dicts = self._analyze_structure_fit(result_dict)
         except:
             date = datetime.now()
             basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % self.structure_name.replace('.','_')
@@ -487,10 +500,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = fit_dicts['centroid']['calibration']
         elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
-        self.elog_and_H5(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
+        filename = self.elog_and_H5(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
+        self.LoadCalibrationFilename.setText(filename)
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
 
-    def _analyze_structure_calib(self, result_dict):
+    def _analyze_structure_fit(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
         tracker = self.get_tracker(result_dict['meta_data_begin'])
         structure_calib_options = self.get_structure_calib_options()
@@ -520,7 +534,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
         return sc.fit_dicts
 
-    def gap_reconstruction(self):
+    def calibrate_gap(self):
         self.clear_structure_calib_plots()
 
         filename = self.LoadCalibrationFilename.text().strip()
@@ -537,6 +551,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.calib_to_gui(new_calib)
         plot_results.plot_calib(calib_dict, self.structure_calib_fig, self.structure_calib_plot_handles)
         self.structure_calib_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.structure_calib_tab_index)
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()
@@ -545,7 +560,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         if 'raw_data' in saved_dict:
             saved_dict = saved_dict['raw_data']
-        self._analyze_structure_calib(saved_dict)
+        self._analyze_structure_fit(saved_dict)
 
     def obtain_reconstruction(self):
         n_images = w2i(self.ReconNumberImages)
@@ -628,12 +643,13 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
         las_rec.plot(plot_handles=self.all_lasing_plot_handles)
         self.all_lasing_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
 
     def save_lasing_rec_data(self):
         if self.lasing_rec_dict is None:
             raise ValueError('No lasing reconstruction data to save')
         elog_text = 'Lasing reconstruction'
-        elog_text +='\nComment: %s' % self.LasingElogComment.text()
+        #elog_text +='\nComment: %s' % self.LasingElogComment.text()
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str

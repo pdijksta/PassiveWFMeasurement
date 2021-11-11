@@ -3,6 +3,7 @@ from scipy.ndimage import gaussian_filter1d
 
 from .gaussfit import GaussFit
 from .logMsg import LogMsgBase
+from . import blmeas
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -339,23 +340,6 @@ class BeamProfile(Profile):
         self.total_charge *= scale_factor
         super().scale_yy(scale_factor)
 
-    def wake_effect_on_screen(self, wf_dict, r12):
-        wake = wf_dict['dipole']['wake_potential']
-        quad = wf_dict['quadrupole']['wake_potential']
-        wake_effect = wake/self.energy_eV*r12*np.sign(self.total_charge)
-        quad_effect = quad/self.energy_eV*r12*np.sign(self.total_charge)
-        if np.any(np.isnan(wake_effect)):
-            raise ValueError('Nan in wake_effect!')
-        if np.any(np.isnan(quad_effect)):
-            raise ValueError('Nan in quad_effect!')
-        output = {
-                't': self.time,
-                'x': wake_effect,
-                'quad': quad_effect,
-                'total_charge': self.total_charge,
-                }
-        return output
-
     def shift(self, center):
         if center == 'Max':
             center_index = np.argmax(np.abs(self.charge_dist))
@@ -419,6 +403,24 @@ class BeamProfile(Profile):
             y = np.concatenate([y, [0.]])
 
         return sp.plot(x, y*factor/1e3, **kwargs)
+
+
+def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1):
+    blmeas_dict = blmeas.load_avg_blmeas(file_or_dict)[zero_crossing]
+
+    tt = blmeas_dict['time']
+    if subtract_min:
+        curr = blmeas_dict['current_reduced']
+    else:
+        curr = blmeas_dict['current']
+
+    if tt[1] < tt[0]:
+        tt = tt[::-1]
+        curr = curr[::-1]
+    bp = BeamProfile(tt, curr, energy_eV, total_charge)
+    bp.aggressive_cutoff(cutoff)
+    bp.crop()
+    return bp
 
 def get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cutoff=1e-3):
     """

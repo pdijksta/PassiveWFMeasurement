@@ -477,7 +477,6 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
 
 def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=True, figsize=None, both_zero_crossings=True, skip_indices=()):
 
-    opt_func_values = gauss_dict['opt_func_values']
     opt_func_screens = gauss_dict['opt_func_screens']
     opt_func_profiles = gauss_dict['opt_func_profiles']
     opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
@@ -493,7 +492,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     rms_arr = np.zeros(len(opt_func_screens))
     centroid_arr = rms_arr.copy()
 
-    for opt_ctr, (screen, profile, value, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_values[:,1], opt_func_sigmas)):
+    for opt_ctr, (screen, profile, sigma) in enumerate(zip(opt_func_screens, opt_func_profiles, opt_func_sigmas)):
         if opt_ctr in skip_indices:
             continue
         if opt_ctr == gauss_dict['best_index']:
@@ -512,7 +511,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
 
     if blmeas_profiles is not None:
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
-            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%i' % round(blmeas_profile.rms()*1e15))
+            blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%i' % round(blmeas_profile.rms()*1e15), center='Mean')
             if not both_zero_crossings:
                 break
 
@@ -524,10 +523,6 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     sp_moments.legend()
     sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
     sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
-
-    yy_opt = opt_func_values[:,1]
-    sp_opt.scatter(opt_func_sigmas*1e15, yy_opt)
-    sp_opt.set_ylim(0,1.1*yy_opt.max())
 
     for sp_ in sp_opt, sp_moments:
         sp_.axvline(gauss_sigma*1e15, color='black')

@@ -46,7 +46,7 @@ class Tracker(LogMsgBase):
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.meta_data = meta_data
-        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (calib.structure_gap*1e6, calib.structure_position0*1e6))
+        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (self.structure_gap*1e6, calib.structure_position0*1e6))
 
     def update_calib(self, calib):
         self.calib = calib
@@ -426,9 +426,9 @@ class Tracker(LogMsgBase):
         index_min = get_index_min()
 
         if index_min == 0:
-            print('Warning! index at left border!')
+            self.logMsg('Warning! index at left border!', 'W')
         if index_min == len(sig_t_list)-1:
-            print('Warning! index at right border!')
+            self.logMsg('Warning! index at right border!', 'W')
 
         best_screen = opt_func_screens[index_min]
         best_profile = opt_func_profiles[index_min]

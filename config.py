@@ -158,7 +158,7 @@ def get_default_structure_calibrator_options():
             'gap_recon_delta': [-100e-6, 100e-6],
             'delta_gap_scan_range': np.arange(-100, 100.01, 20)*1e-6,
             'delta_gap_range': np.linspace(-100, 100.01, 51)*1e-6,
-            'delta_streaker0_range': np.linspace(-20, 20, 11)*1e-6,
+            'delta_structure0_range': np.linspace(-20, 20, 11)*1e-6,
             }.copy()
     return outp
 

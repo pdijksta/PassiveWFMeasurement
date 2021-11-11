@@ -103,6 +103,12 @@ ms.set_fontsizes(config.fontsize)
 
 pyqtRemoveInputHook() # for pdb to work
 
+def w2f(w):
+    return float(w.text())
+
+def w2i(w):
+    return int(round(w2f(w)))
+
 class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     charge_pv_text = 'Use PV'
@@ -116,7 +122,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
         self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
-        self.CalibrateStreaker.clicked.connect(self.calibrate_streaker)
+        self.CalibrateStreaker.clicked.connect(self.calibrate_structure)
         self.GapReconstruction.clicked.connect(self.gap_reconstruction)
         self.ClearCalibPlots.clicked.connect(self.clear_calib_plots)
         self.ClearGapRecPlots.clicked.connect(self.clear_gap_recon_plots)
@@ -147,7 +153,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         #recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
         lasing_file_off = default_dir + '2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
-        streaker_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
+        structure_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
         screen_center = 898.02e-6
         structure_center = 364e-6
         delta_gap = -62e-6
@@ -162,7 +168,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.BunchLengthMeasFile.setText(bunch_length_meas_file)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
-        self.LoadCalibrationFilename.setText(streaker_calib_file)
+        self.LoadCalibrationFilename.setText(structure_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
 
         bs = config.get_default_beam_spec()
@@ -215,9 +221,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.DeltaGapSearchLower.setText('%.3f' % (gs['delta_gap_range'].min()*1e6))
         self.DeltaGapSearchUpper.setText('%.3f' % (gs['delta_gap_range'].max()*1e6))
         self.DeltaGapSearchPoints.setText('%.3f' % len(gs['delta_gap_range']))
-        self.StructCenterSearchLower.setText('%.3f' % (gs['delta_streaker0_range'].min()*1e6))
-        self.StructCenterSearchUpper.setText('%.3f' % (gs['delta_streaker0_range'].max()*1e6))
-        self.StructCenterSearchPoints.setText('%.3f' % len(gs['delta_streaker0_range']))
+        self.StructCenterSearchLower.setText('%.3f' % (gs['delta_structure0_range'].min()*1e6))
+        self.StructCenterSearchUpper.setText('%.3f' % (gs['delta_structure0_range'].max()*1e6))
+        self.StructCenterSearchPoints.setText('%.3f' % len(gs['delta_structure0_range']))
 
         # Find beam position options
         self.FindBeamMaxIter.setText('%i' % fbs['max_iterations'])
@@ -249,10 +255,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
         self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I Rec.')
 
-        self.streaker_calib_fig, self.structure_calib_plot_handles = plot_results.streaker_calibration_figure()
-        self.streaker_calib_plot_tab_index, self.streaker_calib_canvas = get_new_tab(self.streaker_calib_fig, 'Calib.')
+        self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.structure_calibration_figure()
+        self.structure_calib_plot_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Calib.')
 
-        self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.calib_figure()
+        self.gap_recon_fig, self.gap_recon_plot_handles = plot_results.gap_recon_figure()
         self.gap_recon_tab_index, self.gap_recon_canvas = get_new_tab(self.gap_recon_fig, 'Gap rec.')
 
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
@@ -272,8 +278,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.gap_recon_canvas.draw()
 
     def clear_calib_plots(self):
-        plot_results.clear_streaker_calibration(*self.structure_calib_plot_handles)
-        self.streaker_calib_canvas.draw()
+        plot_results.clear_structure_calibration(*self.structure_calib_plot_handles)
+        self.structure_calib_canvas.draw()
 
     def clear_screen_plots(self):
         plot_results.clear_screen_calibration(*self.screen_calib_plot_handles)
@@ -285,9 +291,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def gui_to_calib(self):
         return calibration.StructureCalibration(
                 self.structure_name,
-                float(self.ScreenCenterCalib.text())/1e6,
-                float(self.StructureGapDelta.text())/1e6,
-                float(self.StructureCenter.text())/1e6)
+                w2f(self.ScreenCenterCalib)/1e6,
+                w2f(self.StructureGapDelta)/1e6,
+                w2f(self.StructureCenter)/1e6)
 
     def calib_to_gui(self, calib):
         self.ScreenCenterCalib.setText('%.3f' % (calib.screen_center*1e6))
@@ -298,8 +304,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if self.Charge.text() == self.charge_pv_text:
             force_charge = None
         else:
-            force_charge = float(self.Charge.text())*1e-12
-        n_particles = int(self.N_Particles.text())
+            force_charge = w2f(self.Charge)*1e-12
+        n_particles = w2i(self.N_Particles)
 
         tracker = tracking.Tracker(
                 self.beamline,
@@ -321,7 +327,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         # Not ideal but ok for now
         bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
         gap = 10e-3
-        beam_offset = gap/2 - (float(self.PlotResolutionDistance.text())*1e-6)
+        beam_offset = gap/2 - w2f(self.PlotResolutionDistance)*1e-6
         meta_data = daq.get_meta_data(self.screen, False, self.beamline)
         tracker = self.get_tracker(meta_data)
         beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], tracker.energy_eV, tracker.total_charge, self.logger)
@@ -333,70 +339,70 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     @property
     def delta_gap(self):
-        return float(self.StructureGapDelta.text())*1e-6
+        return w2f(self.StructureGapDelta)*1e-6
 
     def get_forward_options(self):
         outp = config.get_default_forward_options()
-        outp['screen_bins'] = int(self.ScreenBins.text())
-        outp['screen_smoothen'] = float(self.ScreenSmoothen.text())*1e-6
-        outp['screen_cutoff'] = float(self.ScreenCutoff.text())
-        outp['len_screen'] = int(self.ScreenSize.text())
+        outp['screen_bins'] = w2i(self.ScreenBins)
+        outp['screen_smoothen'] = w2f(self.ScreenSmoothen)*1e-6
+        outp['screen_cutoff'] = w2f(self.ScreenCutoff)
+        outp['len_screen'] = w2i(self.ScreenSize)
         return outp
 
     def get_backward_options(self):
         outp = config.get_default_backward_options()
-        outp['profile_cutoff'] = float(self.ProfileCutoff.text())
-        outp['len_profile'] = int(self.ProfileSize.text())
-        outp['profile_smoothen'] = float(self.ProfileSmoothen.text())*1e-15
+        outp['profile_cutoff'] = w2f(self.ProfileCutoff)
+        outp['len_profile'] = w2i(self.ProfileSize)
+        outp['profile_smoothen'] = w2f(self.ProfileSmoothen)*1e-15
         return outp
 
     def get_reconstruct_gauss_options(self):
         outp = config.get_default_reconstruct_gauss_options()
-        outp['sig_t_range'] = np.array([float(self.SigTfsMin.text())*1e-15, float(self.SigTfsMax.text())*1e-15])
-        outp['max_iterations'] = int(self.GaussReconMaxIter.text())
-        outp['gauss_profile_t_range'] = float(self.ProfileExtent.text())*1e-15
+        outp['sig_t_range'] = np.array([w2f(self.SigTfsMin)*1e-15, w2f(self.SigTfsMax)*1e-15])
+        outp['max_iterations'] = w2i(self.GaussReconMaxIter)
+        outp['gauss_profile_t_range'] = w2f(self.ProfileExtent)*1e-15
         return outp
 
     def get_beam_spec(self):
         outp = config.get_default_beam_spec()
-        outp['nemitx'] = float(self.TransEmittanceX.text())*1e-9
-        outp['nemity'] = float(self.TransEmittanceY.text())*1e-9
+        outp['nemitx'] = w2f(self.TransEmittanceX)*1e-9
+        outp['nemity'] = w2f(self.TransEmittanceY)*1e-9
         return outp
 
     def get_beam_optics(self):
         outp = config.get_default_optics(self.beamline)
-        outp['betax'] = float(self.BetaX.text())
-        outp['alphax'] = float(self.AlphaX.text())
-        outp['betay'] = float(self.BetaY.text())
-        outp['alphay'] = float(self.AlphaY.text())
+        outp['betax'] = w2f(self.BetaX)
+        outp['alphax'] = w2f(self.AlphaX)
+        outp['betay'] = w2f(self.BetaY)
+        outp['alphay'] = w2f(self.AlphaY)
         return outp
 
     def get_find_beam_position_options(self):
         outp = config.get_default_find_beam_position_options()
-        outp['position_explore'] = float(self.FindBeamExplorationRange.text())*1e-6
-        outp['max_iterations'] = int(self.FindBeamMaxIter.text())
+        outp['position_explore'] = w2f(self.FindBeamExplorationRange)*1e-6
+        outp['max_iterations'] = w2i(self.FindBeamMaxIter)
 
     def get_structure_calib_options(self):
         outp = config.get_default_structure_calibrator_options()
-        _lower = float(self.DeltaGapRangeLower.text())*1e-6
-        _upper = float(self.DeltaGapRangeUpper.text())*1e-6
-        _step = float(self.DeltaGapRangeStep.text())*1e-6
+        _lower = w2f(self.DeltaGapRangeLower)*1e-6
+        _upper = w2f(self.DeltaGapRangeUpper)*1e-6
+        _step = w2f(self.DeltaGapRangeStep)*1e-6
         outp['delta_gap_scan_range'] = np.arange(_lower, _upper, _step)
-        _lower = float(self.DeltaGapSearchLower.text())*1e-6
-        _upper = float(self.DeltaGapSearchUpper.text())*1e-6
-        _points = int(self.DeltaGapSearchPoints.text())
+        _lower = w2f(self.DeltaGapSearchLower)*1e-6
+        _upper = w2f(self.DeltaGapSearchUpper)*1e-6
+        _points = w2i(self.DeltaGapSearchPoints)
         outp['delta_gap_range'] = np.linspace(_lower, _upper, _points)
-        _lower = float(self.StructCenterSearchLower.text())*1e-6
-        _upper = float(self.StructCenterSearchUpper.text())*1e-6
-        _points = int(self.StructCenterSearchPoints.text())
-        outp['delta_streaker0_range'] = np.linspace(_lower, _upper, _points)
+        _lower = w2f(self.StructCenterSearchLower)*1e-6
+        _upper = w2f(self.StructCenterSearchUpper)*1e-6
+        _points = w2i(self.StructCenterSearchPoints)
+        outp['delta_structure0_range'] = np.linspace(_lower, _upper, _points)
         return outp
 
     def get_lasing_options(self):
         outp = config.get_default_lasing_options()
-        outp['slice_factor'] = int(self.LasingReconstructionSliceFactor.text())
-        outp['noise_cut'] = float(self.LasingNoiseCut.text())
-        outp['subtract_quantile'] = float(self.LasingIntensityCut.text())
+        outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
+        outp['noise_cut'] = w2f(self.LasingNoiseCut)
+        outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
         return outp
 
     def reconstruct_current(self):
@@ -444,31 +450,31 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def save_dir(self):
         return os.path.expanduser(self.SaveDir.text())
 
-    def calibrate_streaker(self):
+    def calibrate_structure(self):
         self.clear_calib_plots()
-        start, stop, step= float(self.Range1Begin.text()), float(self.Range1Stop.text()), int(float(self.Range1Step.text()))
+        start, stop, step = w2f(self.Range1Begin), w2f(self.Range1Stop), w2i(self.Range1Step)
         range1 = np.linspace(start, stop, step)
-        start, stop, step= float(self.Range2Begin.text()), float(self.Range2Stop.text()), int(float(self.Range2Step.text()))
+        start, stop, step= w2f(self.Range2Begin), w2f(self.Range2Stop), w2i(self.Range2Step)
         range2 = np.linspace(start, stop, step)
         range_ = np.concatenate([range1, [0], range2])*1e-3 # Convert mm to m
         range_.sort()
         range_ = np.unique(range_)
 
-        n_images = int(self.CalibrateStreakerImages.text())
+        n_images = w2i(self.CalibrateStreakerImages)
 
         if daq is None:
             raise ImportError('Daq not available')
 
-        result_dict = daq.data_streaker_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
+        result_dict = daq.data_structure_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
 
         try:
-            fit_dicts = self._analyze_streaker_calib(result_dict)
+            fit_dicts = self._analyze_structure_calib(result_dict)
         except:
             date = datetime.now()
             basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'Calibration_data_%s.h5' % self.structure_name.replace('.','_')
             filename = os.path.join(self.save_dir, basename)
             h5_storage.saveH5Recursive(filename, result_dict)
-            self.logMsg('Saved streaker calibration data %s' % filename)
+            self.logMsg('Saved structure calibration data %s' % filename)
             raise
 
         full_dict = {
@@ -480,11 +486,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % self.structure_name.replace('.','_')
 
         calib = fit_dicts['centroid']['calibration']
-        elog_text = 'Streaker calibration streaker %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
-        self.elog_and_H5(elog_text, [self.streaker_calib_fig], 'Streaker center calibration', basename, full_dict)
-        self.tabWidget.setCurrentIndex(self.streaker_calib_plot_tab_index)
+        elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
+        self.elog_and_H5(elog_text, [self.structure_calib_fig], 'Streaker center calibration', basename, full_dict)
+        self.tabWidget.setCurrentIndex(self.structure_calib_plot_tab_index)
 
-    def _analyze_streaker_calib(self, result_dict):
+    def _analyze_structure_calib(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
         tracker = self.get_tracker(result_dict['meta_data_begin'])
         structure_calib_options = self.get_structure_calib_options()
@@ -497,7 +503,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         sc.fit()
         if self.ForwardBlmeasCheck.isChecked():
-            bp_dict = blmeas.load_avg_blmeas(blmeasfile)
+            bp_dict = blmeas.load_avg_blmeas(blmeasfile)[1]
             bp = beam_profile.BeamProfile(bp_dict['time'], bp_dict['current_reduced'], tracker.energy_eV, tracker.total_charge, self.logger)
             forward_options = self.get_forward_options()
             bp.reshape(forward_options['len_screen'])
@@ -509,8 +515,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = sc.fit_dicts['centroid']['calibration']
         self.calib_to_gui(calib)
-        plot_results.plot_structure_calib(self.structure_calib_plot_handles)
-        self.streaker_calib_canvas.draw()
+        plot_results.plot_structure_position0_fit(sc.fit_dicts, self.structure_calib_plot_handles)
+        self.structure_calib_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.structure_calib_plot_tab_index)
         return sc.fit_dicts
 
     def gap_reconstruction(self):
@@ -538,10 +545,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         if 'raw_data' in saved_dict:
             saved_dict = saved_dict['raw_data']
-        self._analyze_streaker_calib(saved_dict)
+        self._analyze_structure_calib(saved_dict)
 
     def obtain_reconstruction(self):
-        n_images = int(self.ReconNumberImages.text())
+        n_images = w2i(self.ReconNumberImages)
         screen_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
@@ -566,9 +573,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def obtainLasing(self, lasing_on_off):
         if lasing_on_off:
-            n_images = int(self.LasingOnNumberImages.text())
+            n_images = w2i(self.LasingOnNumberImages)
         else:
-            n_images = int(self.LasingOffNumberImages.text())
+            n_images = w2i(self.LasingOffNumberImages)
 
         image_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
         date = datetime.now()
@@ -594,7 +601,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def reconstruct_all_lasing(self):
         self.clear_all_lasing_plots()
 
-        pulse_energy = float(self.LasingEnergyInput.text())*1e-6
+        pulse_energy = w2f(self.LasingEnergyInput)*1e-6
 
         file_on = self.LasingOnDataLoad.text()
         file_off = self.LasingOffDataLoad.text()

@@ -145,7 +145,7 @@ def clear_gauss_recon(sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_n
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def streaker_calibration_figure(figsize=None):
+def structure_calibration_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
@@ -153,10 +153,10 @@ def streaker_calibration_figure(figsize=None):
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+6)))
-    clear_streaker_calibration(*plot_handles)
+    clear_structure_calibration(*plot_handles)
     return fig, plot_handles
 
-def clear_streaker_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
+def clear_structure_calibration(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
     for sp, title, xlabel, ylabel in [
             (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam X centroid (mm)'),
             (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam X rms (mm)'),
@@ -199,7 +199,7 @@ def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit, sp_distances):
 def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blmeas_profile=None, sim_screens=None):
 
     if plot_handles is None:
-        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = streaker_calibration_figure(figsize)
+        fig, (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = structure_calibration_figure(figsize)
     else:
         (sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current) = plot_handles
 
@@ -305,7 +305,7 @@ def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
 
 def plot_calib(calib_dict, fig=None, plot_handles=None):
     delta_gap_range = calib_dict['delta_gap_range']
-    delta_streaker0_range = calib_dict['delta_streaker0_range']
+    delta_structure0_range = calib_dict['delta_structure0_range']
     fit_coefficients2 = calib_dict['fit_coefficients2']
     mean_rms_arr = calib_dict['mean_rms']
     diff_sides = calib_dict['diff_sides']
@@ -326,7 +326,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
         sp_raw.plot(distance_plot[sort]*1e6, rms_arr[sort]*1e15, label=label, marker='.')
 
     x_axis = delta_gap_range
-    y_axis = delta_streaker0_range
+    y_axis = delta_structure0_range
     x_factor = y_factor = 1e6
     extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[-1]*y_factor, y_axis[0]*y_factor]
     #extent = None
@@ -345,19 +345,19 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
     fig.colorbar(plot, label='Optimization function (arb. units)', ax=sp_comb)
 
     n12_pairs = []
-    for n1 in [0, len(delta_streaker0_range)-1]:
+    for n1 in [0, len(delta_structure0_range)-1]:
         for n2 in [0, len(delta_gap_range)-1]:
             n12_pairs.append([n1, n2])
     n12_pairs.append(argmin)
     mask_pos, mask_neg = beam_positions > 0, beam_positions < 0
 
     for n1, n2 in n12_pairs:
-        delta_streaker0 = delta_streaker0_range[n1]
+        delta_structure0 = delta_structure0_range[n1]
         delta_gap = delta_gap_range[n2]
         fit_dict = calib_dict['all_fit_dicts'][n1][n2]
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
-        label = '%i / %i / %i' % (round(delta_streaker0*1e6), delta_gap*1e6, new_rms.mean()*1e15)
+        label = '%i / %i / %i' % (round(delta_structure0*1e6), delta_gap*1e6, new_rms.mean()*1e15)
         color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color()
         sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=color, ls='None', marker='o')
         xx_fit = np.array(new_distances)

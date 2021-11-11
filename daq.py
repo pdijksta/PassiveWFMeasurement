@@ -1,7 +1,7 @@
 import itertools
 import time
 import numpy as np
-import logging
+#import logging
 import datetime
 
 import pyscan
@@ -19,7 +19,6 @@ def get_readables(beamline):
             'bs://y_axis',
             config.beamline_chargepv[beamline],
             ]
-
 
 def pyscan_result_to_dict(readables, result, scrap_bs=False):
     """
@@ -54,6 +53,8 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
     return output
 
 def get_images(screen, n_images, beamline, dry_run=None):
+    if dry_run:
+        screen = 'simulation'
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
     def dummy_func(*args):
@@ -74,7 +75,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
     pyscan.config.bs_default_host = stream_host
     pyscan.config.bs_default_port = stream_port
 
-    logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+    #logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 
     readables = get_readables(beamline)
 
@@ -105,13 +106,13 @@ def get_images(screen, n_images, beamline, dry_run=None):
     print('End get_images')
     return output_dict
 
-def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
+def data_structure_offset(structure, offset_range, screen, n_images, dry_run, beamline):
 
-    print('Start data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
+    print('Start data_structure_offset for structure %s, screen %s, beamline %s, dry_run %s' % (structure, screen, beamline, dry_run))
     meta_dict_1 = get_meta_data(screen, dry_run, beamline)
 
     pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
-    offset_pv = streaker+':CENTER'
+    offset_pv = structure+':CENTER'
 
     current_val = caget(offset_pv+'.RBV')
 
@@ -139,7 +140,7 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
     pyscan.config.bs_default_host = stream_host
     pyscan.config.bs_default_port = stream_port
 
-    logging.getLogger('mflow.mflow').setLevel(logging.ERROR)
+    #logging.getLogger('mflow.mflow').setLevel(logging.ERROR)
 
     settings = pyscan.scan_settings(settling_time=1, n_measurements=n_images, write_timeout=60)
 
@@ -165,11 +166,11 @@ def data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beam
             'screen': screen,
             'n_images': n_images,
             'dry_run': dry_run,
-            'streaker': streaker,
+            'structure': structure,
             'meta_data_begin': meta_dict_1,
             'meta_data_end': meta_dict_2,
             }
-    print('End data_streaker_offset')
+    print('End data_structure_offset')
     return output
 
 def move_pv(pv, value, timeout, tolerance):

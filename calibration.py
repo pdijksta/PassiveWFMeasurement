@@ -366,21 +366,23 @@ class StructureCalibrator(LogMsgBase):
         b = self.fit_type('centroid')
         return a, b
 
-    def forward_propagate(self, blmeas_profile, force_gap=None, force_streaker_offset=None):
+    def forward_propagate(self, blmeas_profile, force_gap=None, force_structure_offset=None):
         sim_screens = []
         forward_dicts = []
         beam_positions = []
         tracker = self.tracker
-        if force_streaker_offset is None:
+        if force_structure_offset is None:
             structure_position0 = tracker.calib.structure_position0
         if force_gap is None:
             gap = tracker.structure_gap
         else:
             gap = force_gap
 
-        for s_offset in self.raw_struct_positions:
-            beam_positions.append(-(s_offset-structure_position0))
-            forward_dict = tracker.forward_propagate_forced(gap, beam_position)
+        beam = tracker.gen_beam(blmeas_profile)
+
+        for raw_position in self.raw_struct_positions:
+            beam_positions.append(-(raw_position-structure_position0))
+            forward_dict = tracker.forward_propagate_forced(gap, beam_positions[-1], beam)
             forward_dicts.append(forward_dict)
             sim_screen = forward_dict['screen']
             sim_screens.append(sim_screen)
@@ -533,7 +535,7 @@ class StructureCalibrator(LogMsgBase):
         n_positions = len(use_n_positions) if use_n_positions is not None else len(self.raw_struct_positions)-1
         delta_gap_scan_range = self.structure_calib_options['delta_gap_scan_range']
         delta_gap_range = self.structure_calib_options['delta_gap_range']
-        delta_streaker0_range = self.structure_calib_options['delta_streaker0_range']
+        delta_structure0_range = self.structure_calib_options['delta_structure0_range']
         gap0 = self.tracker.structure_gap0
         structure_position0 = self.tracker.structure_position0
 
@@ -559,10 +561,10 @@ class StructureCalibrator(LogMsgBase):
             sort = np.argsort(distance_plot)
             distance_rms_dict[n] = [distance_arr[sort], rms_arr[sort]]
 
-        def get_fit_param(delta_streaker0, delta_gap):
+        def get_fit_param(delta_structure0, delta_gap):
             new_distances = np.zeros_like(distances0)
-            new_distances[mask_pos] = distances0[mask_pos] - delta_streaker0 + delta_gap/2.
-            new_distances[mask_neg] = distances0[mask_neg] + delta_streaker0 + delta_gap/2.
+            new_distances[mask_pos] = distances0[mask_pos] - delta_structure0 + delta_gap/2.
+            new_distances[mask_neg] = distances0[mask_neg] + delta_structure0 + delta_gap/2.
             new_rms_list = []
             for n, new_distance in enumerate(new_distances):
                 distance_arr = distance_rms_dict[n][0]
@@ -582,17 +584,17 @@ class StructureCalibrator(LogMsgBase):
                     }
             return outp
 
-        fit_coefficients = np.zeros([len(delta_streaker0_range), len(delta_gap_range)])
+        fit_coefficients = np.zeros([len(delta_structure0_range), len(delta_gap_range)])
         mean_rms_arr = fit_coefficients.copy()
         mean_rms_pos = fit_coefficients.copy()
         mean_rms_neg = fit_coefficients.copy()
 
         all_fit_dicts = {}
 
-        for n1, delta_streaker0 in enumerate(delta_streaker0_range):
+        for n1, delta_structure0 in enumerate(delta_structure0_range):
             all_fit_dicts[n1] = {}
             for n2, delta_gap in enumerate(delta_gap_range):
-                fit_dict = get_fit_param(delta_streaker0, delta_gap)
+                fit_dict = get_fit_param(delta_structure0, delta_gap)
                 fit_coefficients[n1, n2] = fit_dict['fit'][1] / np.mean(fit_dict['new_rms'])
                 mean_rms_arr[n1, n2] = np.mean(fit_dict['new_rms'])
                 mean_rms_pos[n1, n2] = np.mean(fit_dict['new_rms'][mask_pos])
@@ -608,7 +610,7 @@ class StructureCalibrator(LogMsgBase):
         combined_target /= combined_target.max()
 
         argmin = np.argwhere(combined_target == np.nanmin(combined_target))[0]
-        structure_position0 = delta_streaker0_range[argmin[0]]
+        structure_position0 = delta_structure0_range[argmin[0]]
         delta_gap = delta_gap_range[argmin[1]]
         new_gap = gap0 + delta_gap
         fit_dict = get_fit_param(structure_position0, delta_gap)
@@ -626,7 +628,7 @@ class StructureCalibrator(LogMsgBase):
                 'distance_rms_arr': distance_rms_arr,
                 'beam_positions': beam_positions,
                 'delta_gap_range': delta_gap_range,
-                'delta_streaker0_range': delta_streaker0_range,
+                'delta_structure0_range': delta_structure0_range,
                 'mean_rms': mean_rms_arr,
                 'best_index': argmin,
                 'all_fit_dicts': all_fit_dicts,

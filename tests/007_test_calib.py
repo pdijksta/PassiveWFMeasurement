@@ -19,11 +19,6 @@ structure_name = 'SARUN18-UDCP020'
 file_ = './data/2021_10_24-19_34_36_Calibration_SARUN18-UDCP020.h5'
 dict_ = h5_storage.loadH5Recursive(file_)['raw_data']
 meta_data = dict_['meta_data_begin']
-forward_options = config.get_default_forward_options()
-backward_options = config.get_default_backward_options()
-reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()
-beam_options = config.get_default_beam_spec()
-beam_optics = config.default_optics[beamline]
 structure_calib_options = config.get_default_structure_calibrator_options()
 
 delta_gap = 0
@@ -31,7 +26,8 @@ structure_position0 = 360e-6
 screen_center = 0
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.Tracker(beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics, force_charge=180e-12)
+
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, force_charge=180e-12)
 
 calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, dict_)
 calibrator.fit()

@@ -22,18 +22,13 @@ structure_name = 'SARUN18-UDCP020'
 file_ = './data/2021_05_19-14_59_24_Lasing_True_SARBD02-DSCR050.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
 meta_data = dict_['meta_data_begin']
-forward_options = config.get_default_forward_options()
-backward_options = config.get_default_backward_options()
-reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()
-beam_options = config.get_default_beam_spec()
-beam_optics = config.default_optics[beamline]
 
 delta_gap = -70e-6
 structure_position0 = 360e-6
 screen_center = -600e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_options, beam_optics)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
 
 sig_t = 20e-15
 tt_range = 10*sig_t
@@ -47,7 +42,7 @@ x_axis = dict_['pyscan_result']['x_axis_m'][::-1]
 
 screen_raw = beam_profile.ScreenDistribution(x_axis-screen_center, projx, total_charge=total_charge)
 
-screen = tracker.prepare_screen(screen_raw)
+screen = tracker.prepare_screen(screen_raw)['screen']
 
 backward_dict = tracker.backward_propagate(screen, bp, plot_details=True)
 

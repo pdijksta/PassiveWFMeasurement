@@ -29,15 +29,13 @@ structure_name = 'SARUN18-UDCP020'
 file_ = './data/2021_05_19-14_59_24_Lasing_True_SARBD02-DSCR050.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
 meta_data = dict_['meta_data_begin']
-forward_options = config.get_default_forward_options()
-backward_options = None
 
 delta_gap = -70e-6
 structure_position0 = 360e-6
 screen_center = 1044e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, None, None, None)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
 
 beam_spec = config.get_default_beam_spec()
 beam_spec.update(config.default_optics['Aramis'])

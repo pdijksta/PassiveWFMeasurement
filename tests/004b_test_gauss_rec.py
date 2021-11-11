@@ -44,15 +44,11 @@ offset_index = 0
 meta_data = dict_['meta_data_begin']
 structure_position = dict_['streaker_offsets'][offset_index]*1e3
 meta_data[structure_name+':CENTER'] = structure_position
-forward_options = config.get_default_forward_options()
-backward_options = config.get_default_backward_options()
-gauss_options = config.get_default_reconstruct_gauss_options()
-beam_options = config.get_default_beam_spec()
-beam_optics = config.default_optics['Aramis']
 
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.Tracker('Aramis', screen_name, structure_name, meta_data, calib, forward_options, backward_options, gauss_options, beam_options, beam_optics, force_charge=total_charge)
+
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
 
 image = dict_['pyscan_result']['image'][offset_index][10].astype(np.float64)
 projx = image.sum(axis=0)[::-1]

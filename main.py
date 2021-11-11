@@ -351,7 +351,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         return outp
 
     def get_reconstruct_gauss_options(self):
-        outp = config.get_default_reconstruct_gauss_options
+        outp = config.get_default_reconstruct_gauss_options()
         outp['sig_t_range'] = np.array([float(self.SigTfsMin.text())*1e-15, float(self.SigTfsMax.text())*1e-15])
         outp['max_iterations'] = int(self.GaussReconMaxIter.text())
         outp['gauss_profile_t_range'] = float(self.ProfileExtent.text())*1e-15
@@ -562,10 +562,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     @property
     def screen(self):
-        if self.dry_run:
-            return 'simulation'
-        else:
-            return self.ScreenSelect.currentText()
+        return self.ScreenSelect.currentText()
 
     def obtainLasing(self, lasing_on_off):
         if lasing_on_off:

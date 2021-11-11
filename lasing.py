@@ -4,7 +4,6 @@ from collections import OrderedDict
 
 from . import h5_storage
 from . import beam_profile
-from . import config
 from . import myplotstyle as ms
 from . import image_analysis
 from . import plot_results
@@ -301,7 +300,7 @@ class LasingReconstruction:
         #sp_lasing_spread.legend()
 
         for label, recon_image in [('Lasing On', self.images_on), ('Lasing Off', self.images_off)]:
-            delta_distance = recon_image.beam_offsets - (-recon_image.streaker_center)
+            delta_distance = recon_image.beam_positions - (-recon_image.streaker_center)
             mean_x = np.array([abs(x.mean()) for x in recon_image.meas_screens])
             sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
         sp_orbit.legend()
@@ -310,6 +309,7 @@ class LasingReconstruction:
 class LasingReconstructionImages:
     def __init__(self, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
         self.tracker = tracker
+        self.charge = tracker.total_charge
         self.profile = profile
 
         self.subtract_quantile = lasing_options['subtract_quantile']
@@ -320,7 +320,7 @@ class LasingReconstructionImages:
         self.ref_y = ref_y
 
         self.do_recon_plot = False
-        self.beam_offsets = None
+        self.beam_positions = None
         self.index_median = None
 
     @property
@@ -345,18 +345,13 @@ class LasingReconstructionImages:
         images = data_dict['pyscan_result']['image'].astype(float)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
-        if self.charge is None:
-            self.charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
         self.add_images(meta_data, images, x_axis, y_axis, max_index)
 
     def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
         self.meta_data = meta_data
-        self.epics_gap = meta_data[self.streaker+':GAP']*1e-3
-        self.epics_center = meta_data[self.streaker+':CENTER']*1e-3
-        self.gap = self.epics_gap + self.delta_gap
-        self.streaker_center = self.epics_center - self.streaker_offset
+        self.gap = self.tracker.structure_gap
         self.x_axis0 = x_axis
-        self.x_axis = x_axis - self.screen_x0
+        self.x_axis = x_axis - self.tracker.calib.screen_center
         self.y_axis = y_axis
         self.raw_images = images
         self.raw_image_objs = []
@@ -369,7 +364,7 @@ class LasingReconstructionImages:
             img[img < 0] = 0
             image = image_analysis.Image(img, self.x_axis, y_axis)
             self.raw_image_objs.append(image)
-            screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), charge=self.charge)
+            screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)
             self.meas_screens.append(screen)
             rms_arr.append(screen.rms())
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
@@ -389,28 +384,20 @@ class LasingReconstructionImages:
         self.profile = self.profiles[self.index_median]
 
     def get_streaker_offsets(self):
-        offset0 = -(self.epics_center - self.streaker_offset)
-        tt_halfrange = self.recon_kwargs['tt_halfrange']
-        offset_dicts = []
-        gaps = [10e-3, 10e-3]
-        gaps[self.n_streaker] = self.gap
-        beam_offsets = []
+        beam_positions = []
+        position_dicts = []
         for meas_screen in self.meas_screens:
-            #offset_dict = self.tracker.find_best_offset(offset0,, tt_halfrange, meas_screen, gaps, self.profile, self.n_streaker, self.charge)
-            offset_dicts.append(offset_dict)
-            beam_offsets.append(offset_dict['beam_offset'])
-        self.beam_offsets = np.array(beam_offsets)
-        return offset_dicts
+            offset_dict = self.tracker.find_beam_position(self.tracker.beam_position, meas_screen, self.profile)
+            position_dicts.append(offset_dict)
+            beam_positions.append(offset_dict['beam_offset'])
+        self.beam_positions = np.array(beam_positions)
+        return position_dicts
 
-    def calc_wake(self, beam_offset=None):
-        streaker = config.streaker_names[self.beamline][self.n_streaker]
-        if beam_offset is None:
-            beam_offset = -(self.epics_center - self.streaker_offset)
-        gap = self.epics_gap + self.delta_gap
-        streaker_length = config.streaker_lengths[streaker]
-        r12 = self.tracker.calcR12()[self.n_streaker]
-        #print('gap, beam_offsets xt', gap, beam_offset)
-        wake_t, wake_x = self.profile.get_x_t(gap, beam_offset, streaker_length, r12)
+    def calc_wake(self, beam_position=None):
+        r12 = self.tracker.r12
+        wake_dict = self.tracker.calc_wake(self.profile, 'Dipole', force_beam_position=beam_position)
+        wake_t = wake_dict['wake_time']
+        wake_x = wake_dict['wake_potential'] / self.tracker.energy_eV * r12
         return wake_t, wake_x
 
     def convert_axes(self):
@@ -435,11 +422,11 @@ class LasingReconstructionImages:
             self.ref_y_list.append(ref_y)
 
         for ctr, img in enumerate(images_E):
-            if self.beam_offsets is None:
+            if self.beam_positions is None:
                 img_cut = img.cut(x_min, x_max)
                 img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
             else:
-                wake_t, wake_x = self.calc_wake(self.beam_offsets[ctr])
+                wake_t, wake_x = self.calc_wake(self.beam_positions[ctr])
                 img_cut = img.cut(wake_x.min(), wake_x.max())
                 img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
             self.images_tE.append(img_tE)

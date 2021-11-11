@@ -75,6 +75,7 @@ beamline_screens = {
 
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
+        'Athos': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         }
 
 default_optics = {

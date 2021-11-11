@@ -113,6 +113,17 @@ class Tracker(LogMsgBase):
         beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam
 
+    def calc_wake(self, profile, type_, force_gap=None, force_beam_position=None):
+        if force_gap is None:
+            gap = self.structure_gap
+        else:
+            gap = force_gap
+        if force_beam_position is None:
+            beam_position = self.beam_position
+        else:
+            beam_position = force_beam_position
+        return profile.calc_wake(self.structure, gap, beam_position, type_)
+
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
         beam: must be beam corresponding to beginning of self.lat
@@ -122,13 +133,13 @@ class Tracker(LogMsgBase):
         beam_before_streaker = beam.linear_propagate(mat0)
         wake_time = beam_init.beamProfile.time
         energy_eV = beam_init.energy_eV
-        wake_dict_dipole = beam_init.beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
+        wake_dict_dipole = self.calc_wake(beam_init.beamProfile, 'Dipole')
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
 
         if quad_wake:
-            wake_dict_quadrupole = beam_init.beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Quadrupole')
+            wake_dict_quadrupole = self.calc_wake(beam_init.beamProfile, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
             delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam['x']-beam['x'].mean())
         else:
@@ -511,15 +522,15 @@ class Tracker(LogMsgBase):
             forward(beam_position)
         index = get_index_min(output='index')
         beam_position = beam_position_list[index]
-        delta_offset = beam_position - position0
+        delta_position = beam_position - position0
 
         output = {
                 'sim_screens': sim_screens,
                 'meas_screen': meas_screen,
                 'sim_screen': sim_screens[index],
                 'beam_position': beam_position,
-                'beam_offsets': np.array(beam_position_list),
-                'delta_offset': delta_offset,
+                'beam_positions': np.array(beam_position_list),
+                'delta_position': delta_position,
                 'gap': self.structure_gap,
                 'structure_name': self.structure_name,
                 'beam_offset0': position0,
@@ -529,12 +540,13 @@ class Tracker(LogMsgBase):
         return output
 
 
-def get_default_tracker(beamline, structure_name, meta_data, calib, logger=None):
+def get_default_tracker(beamline, structure_name, meta_data, calib, **kwargs):
     screen = config.beamline_screens[beamline]
     forward_options = config.get_default_forward_options()
     backward_options = config.get_default_backward_options()
-    reconstruct_gauss_options = config.get_default_reconstruct_gauss_options
+    reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()
     beam_spec = config.get_default_beam_spec()
     beam_optics = config.default_optics[beamline]
-    return Tracker(beamline, screen, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, logger=logger)
+    find_beam_position_options = config.get_default_find_beam_position_options()
+    return Tracker(beamline, screen, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, **kwargs)
 

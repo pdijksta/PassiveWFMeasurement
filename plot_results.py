@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from . import myplotstyle as ms
 from . import config
+from . import data_loader
+from . import image_analysis
+from . import beam_profile
 
 class dummy_plot:
     def __init__(self, *args, **kwargs):
@@ -528,4 +531,31 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
         sp_.axvline(gauss_sigma*1e15, color='black')
 
     return gauss_dict
+
+def plot_simple_daq(data_dict):
+    fig = ms.figure('Data acquisition')
+    subplot = ms.subplot_factory(1, 2, False)
+    sp_ctr = 1
+    sp_img = subplot(sp_ctr, title='Median image', xlabel='x (mm)', ylabel='y (mm)')
+    sp_ctr += 1
+
+    sp_proj = subplot(sp_ctr, title='Horizontal projetions', xlabel='x (mm)', ylabel='Intensity (arb. units)')
+    sp_ctr += 1
+
+    images = data_dict['pyscan_result']['image'].astype(np.float64)
+    proj = images.sum(axis=-2)
+    x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+    y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
+    median_index = data_loader.get_median(proj, 'mean', 'index')
+    image = image_analysis.Image(images[median_index], x_axis, y_axis)
+    image.plot_img_and_proj(sp_img)
+
+    for index in len(proj):
+        if index == median_index:
+            color, lw = 'black', 3
+        else:
+            color, lw = None, None
+        screen = beam_profile.ScreenDistribution(x_axis, proj[index])
+        screen.plot_standard(sp_proj, color=color, lw=lw)
+    return fig, (sp_img, sp_proj)
 

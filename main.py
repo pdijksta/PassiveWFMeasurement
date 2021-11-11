@@ -568,7 +568,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
-        self.elog_and_H5(elog_text, [], 'Screen data', basename, screen_dict)
+        fig, _ = plot_results.plot_simple_daq(screen_dict)
+        self.elog_and_H5(elog_text, [fig], 'Screen data', basename, screen_dict)
 
     @property
     def structure_name(self):
@@ -601,7 +602,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             elog_text = 'Saved lasing ON'
         else:
             elog_text = 'Saved lasing OFF'
-        filename = self.elog_and_H5(elog_text, [], 'Saved lasing images', basename, image_dict)
+        fig, _ = plot_results.plot_simple_daq(image_dict)
+        filename = self.elog_and_H5(elog_text, [fig], 'Saved lasing images', basename, image_dict)
         if lasing_on_off:
             self.LasingOnDataLoad.setText(filename)
         else:

@@ -317,7 +317,7 @@ class BeamProfile(Profile):
             raise ValueError
         return wf_dict
 
-    def to_dict(self):
+    def to_dict_custom(self):
         return {'time': self.time,
                 'charge_dist': self.charge_dist,
                 'energy_eV': self.energy_eV,

@@ -132,7 +132,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
         self.DestroyLasing.clicked.connect(self.destroy_lasing)
-        self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
+        self.RestoreLasing.clicked.connect(self.restore_lasing)
+
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
@@ -693,14 +694,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         filename = os.path.join(self.save_dir, basename)
         h5_storage.saveH5Recursive(filename, data_dict)
-        print('Saved %s' % filename)
+        self.logMsg('Saved %s' % filename)
 
         attachments = []
         for num, fig in enumerate(figs):
             fig_title = filename.replace('.h5', '_%i.png' % num)
             fig_filename = os.path.join(self.save_dir, fig_title)
             fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
-            print('Saved %s' % fig_filename)
+            self.logMsg('Saved %s' % fig_filename)
             attachments.append(fig_filename)
 
         text += '\nData saved in %s' % filename
@@ -718,7 +719,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
             print('ELOG entry saved.')
         else:
-            print('Save to ELOG is not checked in GUI')
+            self.logMsg('Save to ELOG is not checked in GUI. Not saving.')
         return filename
 
     def elog_and_H5_button(self):

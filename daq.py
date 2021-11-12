@@ -56,9 +56,9 @@ def get_undulator_K(beamline):
     pvs = config.beamline_undulators[beamline]
     return pvs, np.array([caget(pv) for pv in pvs])
 
-def destroy_lasing(beamline, dry_run, max_deltaK=0.01):
+def destroy_lasing(beamline, dry_run, max_deltaK=0.2):
     pvs, old_vals = get_undulator_K(beamline)
-    randoms = np.random.rand(len(pvs))
+    randoms = np.random.rand(len(pvs)) - 0.5
     new_vals = old_vals + randoms * max_deltaK
     for pv, new_val in zip(pvs, new_vals):
         if dry_run:

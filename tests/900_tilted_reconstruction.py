@@ -52,10 +52,8 @@ xProfile = beam_profile.AnyProfile(x_axis, projX)
 yProfile.aggressive_cutoff(y_cutoff)
 yProfile.crop()
 
-print(xProfile.xx.min(), xProfile.yy.min())
 xProfile.aggressive_cutoff(x_cutoff)
 xProfile.crop()
-print(xProfile.xx.min(), xProfile.yy.min())
 
 img_cut1 = image.cut(xProfile.xx[0], xProfile.xx[-1])
 img_cut = img_cut1.cutY(yProfile.xx[0], yProfile.xx[-1])
@@ -63,7 +61,7 @@ img_cut = img_cut1.cutY(yProfile.xx[0], yProfile.xx[-1])
 
 fig = ms.figure('Test tilted reconstruction')
 fig.subplots_adjust(hspace=0.3)
-subplot = ms.subplot_factory(2, 2, grid=False)
+subplot = ms.subplot_factory(2, 3, grid=False)
 sp_ctr = 1
 
 sp_img = subplot(sp_ctr, title='Image', xlabel='x (mm)', ylabel='y (mm)')
@@ -93,10 +91,60 @@ for nx in range(len(img_cut.x_axis)):
 
 centroids = np.array(centroids)
 
-sp_centroid = subplot(sp_ctr, title='X to Y', xlabel='x (mm)', ylabel='y(mm)')
+sp_centroid = subplot(sp_ctr, title='X to Y', xlabel='x (mm)', ylabel='y (mm)')
 sp_ctr += 1
 
-sp_centroid.plot(xx*1e3, centroids*1e3)
+sp_centroid.plot(xx*1e3, centroids*1e3, label='Initial')
+
+gf_projY = gaussfit.GaussFit(y_axis, projY)
+mean_y = gf_projY.mean
+where_mean = int(np.argmin((mean_y - img_cut.y_axis)**2).squeeze())
+
+centroids2 = centroids.copy()
+for y_index in range(where_mean, len(centroids)-1):
+    old_val = centroids2[y_index]
+    new_val = centroids2[y_index+1]
+    max_val = max(old_val, new_val)
+    centroids2[y_index+1] = max_val
+for y_index in range(where_mean, 0, -1):
+    old_val = centroids2[y_index]
+    new_val = centroids2[y_index-1]
+    centroids2[y_index-1] = min(old_val, new_val)
+
+sp_centroid.plot(xx*1e3, centroids2*1e3, label='Corrected')
+
+
+sp_centroid.legend()
+
+if np.all(np.diff(centroids2) <= 0):
+    centroids2 = centroids2[::-1]
+    xx = xx[::-1]
+
+rel_time = (centroids2 - centroids2[0]) / (centroids2[-1] - centroids2[0])
+
+sp_rel_time = subplot(sp_ctr, title='X to relative time', xlabel='x (mm)', ylabel='Relative time')
+sp_ctr += 1
+
+sp_rel_time.plot(xx*1e3, rel_time)
+
+img_converted = img_cut.x_to_t(xx, rel_time)
+
+sp_converted = subplot(sp_ctr, title='Converted image', xlabel='Relative time', ylabel='y (mm)')
+sp_ctr += 1
+
+for y_index in range(len(img_converted.y_axis)):
+    old_sum = img_cut.image[y_index,:].sum()
+    img_converted.image[y_index,:] *= old_sum / img_converted.image[y_index,:].sum()
+
+img_converted.image[:,-2:] = 0
+img_converted.plot_img_and_proj(sp_converted)
+
+
+# DAQ 12.11.2021 approx 21:40
+# 1. lasing Off
+# 2. tail lasing 34 uJ
+# 3. head lasing 82.5 uJ
+# 4. both lasing 117 uJ (gas detector 87 uJ)
 
 
 

@@ -204,6 +204,8 @@ class Image(LogMsgBase):
         return self.child(self.image, self.x_axis*factor, self.y_axis, x_unit='fs', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
+        diff = np.diff(wake_time)
+        assert np.all(diff >= 0) or np.all(diff <= 0)
         if wake_time[1] < wake_time[0]:
             wake_x = wake_x[::-1]
             wake_time = wake_time[::-1]
@@ -221,12 +223,10 @@ class Image(LogMsgBase):
                 to_print.append('%i %i %.1f %.1f' % (t_index, x_index, t*1e15, x*1e6))
         if print_:
             print('\n'.join(to_print))
-
         diff_x = np.concatenate([np.diff(x_interp), [0]])
 
         new_img = new_img0 * np.abs(diff_x)
         new_img = new_img / new_img.sum() * self.image.sum()
-
 
         output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
 

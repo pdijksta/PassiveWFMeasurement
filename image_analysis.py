@@ -49,6 +49,13 @@ class Image(LogMsgBase):
         new_x_axis = x_axis[x_mask]
         return self.child(new_image, new_x_axis, self.y_axis)
 
+    def cutY(self, y_min, y_max):
+        y_axis = self.y_axis
+        y_mask = np.logical_and(y_axis >= y_min, y_axis <= y_max)
+        new_image = self.image[y_mask,:]
+        new_y_axis = y_axis[y_mask]
+        return self.child(new_image, self.x_axis, new_y_axis)
+
     def reshape_x(self, new_length):
         """
         If new length is larger than current length

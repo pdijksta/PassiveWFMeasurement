@@ -755,14 +755,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def destroy_lasing(self):
         beamline = self.beamline
-        self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], _ = daq.destroy_lasing(self.beamline)
+        self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], _ = daq.destroy_lasing(self.beamline, self.dry_run)
         self.LasingStatus.setText('Lasing in %s destroyed' % beamline)
 
     def restore_lasing(self):
         beamline = self.beamline
         pvs = self.undulator_pvs[beamline]
         vals = self.lasing_undulator_vals[beamline]
-        daq.restore_lasing(pvs, vals)
+        daq.restore_lasing(pvs, vals, self.dry_run)
         self.LasingStatus.setText('Lasing in %s restored' % beamline)
 
 

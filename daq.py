@@ -56,17 +56,23 @@ def get_undulator_K(beamline):
     pvs = config.beamline_undulators[beamline]
     return pvs, np.array([caget(pv) for pv in pvs])
 
-def destroy_lasing(beamline, max_deltaK=0.01):
+def destroy_lasing(beamline, dry_run, max_deltaK=0.01):
     pvs, old_vals = get_undulator_K(beamline)
     randoms = np.random.rand(len(pvs))
     new_vals = old_vals + randoms * max_deltaK
     for pv, new_val in zip(pvs, new_vals):
-        caput(pv, new_val)
+        if dry_run:
+            print('I would caput %s %.6f' % (pv, new_val))
+        else:
+            caput(pv, new_val)
     return pvs, old_vals, new_vals
 
-def restore_lasing(pvs, vals):
+def restore_lasing(pvs, vals, dry_run):
     for pv, val in zip(pvs, vals):
-        caput(pv, val)
+        if dry_run:
+            print('I would caput %s %.6f' % (pv, val))
+        else:
+            caput(pv, val)
 
 def get_images(screen, n_images, beamline, dry_run=None):
     if dry_run:

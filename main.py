@@ -251,19 +251,19 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             return tab_index, canvas
 
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
-        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I Rec.')
+        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I rec.')
 
         self.structure_fit_fig, self.structure_fit_plot_handles = plot_results.structure_fit_figure()
-        self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'Calib.')
+        self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'Gap fit')
 
         self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.calib_figure()
         self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
 
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
-        self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'All lasing')
+        self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'Lasing rec.')
 
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
-        self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Resolution')
+        self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Res.')
 
         # Init ELOG
         self.elog_button_title = 'Empty'

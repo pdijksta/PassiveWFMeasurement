@@ -52,6 +52,22 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
+def get_undulator_K(beamline):
+    pvs = config.beamline_undulators[beamline]
+    return pvs, np.array([caget(pv) for pv in pvs])
+
+def destroy_lasing(beamline, max_deltaK=0.01):
+    pvs, old_vals = get_undulator_K(beamline)
+    randoms = np.random.rand(len(pvs))
+    new_vals = old_vals + randoms * max_deltaK
+    for pv, new_val in zip(pvs, new_vals):
+        caput(pv, new_val)
+    return pvs, old_vals, new_vals
+
+def restore_lasing(pvs, vals):
+    for pv, val in zip(pvs, vals):
+        caput(pv, val)
+
 def get_images(screen, n_images, beamline, dry_run=None):
     if dry_run:
         screen = 'simulation'

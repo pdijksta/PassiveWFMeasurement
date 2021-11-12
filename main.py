@@ -131,6 +131,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
+        self.DestroyLasing.clicked.connect(self.destroy_lasing)
+        self.ReconstructLasing.clicked.connect(self.reconstruct_lasing)
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
@@ -270,6 +272,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_figures = []
         self.elog_button_save_dict = None
         self.elog_button_save_name = 'Empty'
+
+        self.undulator_pvs = {}
+        self.lasing_undulator_vals = {}
+        self.LasingStatus.setText('Undulator K values not stored')
 
         self.logMsg('Main window initialized')
 
@@ -747,6 +753,17 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.logbook.post(auto_text+'\n'+manual_text, attributes=dict_att, attachments=attachments)
             self.logMsg('Elog entry generated')
 
+    def destroy_lasing(self):
+        beamline = self.beamline
+        self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], _ = daq.destroy_lasing(self.beamline)
+        self.LasingStatus.setText('Lasing in %s destroyed' % beamline)
+
+    def restore_lasing(self):
+        beamline = self.beamline
+        pvs = self.undulator_pvs[beamline]
+        vals = self.lasing_undulator_vals[beamline]
+        daq.restore_lasing(pvs, vals)
+        self.LasingStatus.setText('Lasing in %s restored' % beamline)
 
 
 if __name__ == '__main__':

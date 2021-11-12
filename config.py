@@ -58,6 +58,11 @@ beamline_quads = {
             ],
         }
 
+beamline_undulators = {
+        'Aramis': ['SARUN%02i-UIND030:K_SET' % x for x in range(3, 16)],
+        'Athos': ['SATUN%02i-UIND030:K_SET' % x for x in list(range(6, 14))+list(range(15, 22))],
+            }
+
 beamline_chargepv = {
         'Aramis': 'SINEG01-DICT215:B1_CHARGE-OP',
         'Athos': 'SINEG01-DICT215:B2_CHARGE-OP',

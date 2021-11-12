@@ -120,7 +120,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
         #self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
-        #self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
         self.SaveElogGUI.clicked.connect(self.elog_and_H5_button)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.FitStreaker.clicked.connect(self.daq_calibration)
@@ -238,10 +237,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
 
-        self.current_rec_dict = None
-        self.lasing_rec_dict = None
-
         ## Init plots
+
         def get_new_tab(fig, title):
             new_tab = QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
@@ -361,10 +358,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\nCurrent profile from: %s' % bp_file
         self.ELOGtextAuto.insertPlainText(elog_text)
 
-    @property
-    def delta_gap(self):
-        return w2f(self.StructureGapDelta)*1e-6
-
     def get_forward_options(self):
         outp = config.get_default_forward_options()
         outp['screen_bins'] = w2i(self.ScreenBins)
@@ -434,7 +427,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.clear_rec_plots()
         filename = self.ReconstructionDataLoad.text().strip()
 
-
         screen_data = h5_storage.loadH5Recursive(filename)
         if 'meta_data' in screen_data:
             meta_data = screen_data['meta_data']
@@ -446,8 +438,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         tracker = self.get_tracker(meta_data)
 
-
-
         if self.ShowBlmeasCheck.isChecked():
             blmeas_file = self.BunchLengthMeasFile.text()
             time_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
@@ -458,32 +448,30 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'])
         x_axis = x_axis - tracker.calib.screen_center
         meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
-        self.current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
+        current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
 
-        plot_results.plot_rec_gauss(self.current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=[blmeas_profile])
+        plot_results.plot_rec_gauss(current_rec_dict, plot_handles=self.reconstruction_plot_handles, blmeas_profiles=[blmeas_profile])
 
         self.logMsg('Current profile reconstructed.')
 
         self.rec_canvas.draw()
         self.tabWidget.setCurrentIndex(self.rec_plot_tab_index)
 
-    def save_current_rec_data(self):
-        if self.current_rec_dict is None:
-            raise ValueError('No current reconstruction to save!')
+        self.elog_button_title = 'Current profile reconstructed'
+        self.elog_button_figures = [self.reconstruction_fig]
+        self.elog_button_save_dict = current_rec_dict
+        self.elog_button_save_name = '%s_current_profile_reconstruction' % self.structure_name
 
-        save_path = self.save_dir
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        date = datetime.now()
-        basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
-        elog_text = 'Passive current reconstruction'
-        self.elog_and_H5_auto(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
+        elog_text = 'Current profile reconstructed'
+        elog_text += '\nstructure:  %s' % tracker.structure_name
+        self.ELOGtextAuto.insertPlainText(elog_text)
 
     @property
     def save_dir(self):
         return os.path.expanduser(self.SaveDir.text())
 
     def daq_calibration(self):
+        self.logMsg('DAQ for calibration started.')
         self.clear_structure_fit_plots()
         start, stop, step = w2f(self.Range1Begin), w2f(self.Range1Stop), w2i(self.Range1Step)
         range1 = np.linspace(start, stop, step)
@@ -523,6 +511,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         filename = self.elog_and_H5_auto(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
         self.LoadCalibrationFilename.setText(filename)
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
+        self.logMsg('DAQ for calibration ended.')
 
     def _analyze_structure_fit(self, result_dict):
         forward_blmeas = self.ForwardBlmeasCheck.isChecked()
@@ -555,6 +544,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         return sc.fit_dicts
 
     def calibrate_gap(self):
+        self.logMsg('Start gap calibration')
         self.clear_structure_calib_plots()
 
         filename = self.LoadCalibrationFilename.text().strip()
@@ -572,6 +562,20 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         plot_results.plot_calib(calib_dict, self.structure_calib_fig, self.structure_calib_plot_handles)
         self.structure_calib_canvas.draw()
         self.tabWidget.setCurrentIndex(self.structure_calib_tab_index)
+
+        self.elog_button_title = 'Structure gap and center calibrated'
+        self.elog_button_figures = [self.structure_calib_fig]
+        self.elog_button_save_dict = calib_dict
+        self.elog_button_save_name = '%s_calibration' % self.structure_name
+
+        elog_text = 'Structure gap and center calibrated'
+        elog_text += '\nstructure: %s' % tracker.structure_name
+        elog_text += '\ndelta gap: %.3f um' % (new_calib.delta_gap*1e6)
+        elog_text += '\nstructure center: %.3f um' % (new_calib.structure_position0*1e6)
+        elog_text += '\nscreen center: %.3f um' % (new_calib.screen_center*1e6)
+        self.ELOGtextAuto.insertPlainText(elog_text)
+
+        self.logMsg('End gap calibration')
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()
@@ -636,6 +640,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         return self.obtainLasing(False)
 
     def reconstruct_all_lasing(self):
+        self.logMsg('Lasing reconstruction start')
         self.clear_all_lasing_plots()
 
         pulse_energy = w2f(self.LasingEnergyInput)*1e-6
@@ -667,16 +672,16 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
 
-    def save_lasing_rec_data(self):
-        if self.lasing_rec_dict is None:
-            raise ValueError('No lasing reconstruction data to save')
-        elog_text = 'Lasing reconstruction'
-        #elog_text +='\nComment: %s' % self.LasingElogComment.text()
-        date = datetime.now()
-        screen_str = self.screen.replace('.','_')
-        basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str
-        filename = self.elog_and_H5_auto(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
-        self.ReconstructionDataLoad.setText(filename)
+        self.elog_button_title = 'FEL power profile reconstructed'
+        self.elog_button_figures = [self.all_lasing_fig]
+        self.elog_button_save_dict = las_rec.result_dict()
+        self.elog_button_save_name = '%s_FEL_power_profile_reconstruction' % self.structure_name
+
+        elog_text = 'FEL power profile reconstructed'
+        elog_text += '\nstructure:  %s' % tracker.structure_name
+        self.ELOGtextAuto.insertPlainText(elog_text)
+
+        self.logMsg('Lasing reconstruction end')
 
     def elog_and_H5_auto(self, text, figs, title, basename, data_dict):
 
@@ -717,6 +722,11 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         figures = self.elog_button_figures
         save_dict = self.elog_button_save_dict
         save_name = self.elog_button_save_name
+        if not save_name.endswith('.h5'):
+            save_name += '.h5'
+        date = datetime.now()
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction_')
+        save_name = basename + save_name
         h5_filename = os.path.join(self.SaveDir.text(), save_name)
         h5_storage.saveH5Recursive(h5_filename, save_dict)
         auto_text += '\nData saved in %s' % h5_filename

@@ -305,6 +305,14 @@ class LasingReconstruction:
             sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
         sp_orbit.legend()
 
+    def result_dict(self):
+        outp = {
+                'lasing_dict': self.lasing_dict,
+                'all_slice_dict': self.all_slice_dict,
+                'mean_slice_dict': self.mean_slice_dict,
+                }
+        return outp
+
 
 class LasingReconstructionImages:
     def __init__(self, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):

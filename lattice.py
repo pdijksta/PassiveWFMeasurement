@@ -74,7 +74,7 @@ class Lattice:
                 else:
                     name2 = name
                     length2 = length
-                k1 = quad_k1l_dict[name2]/length2
+                k1 = quad_k1l_dict[name2.replace('-','.')]/length2
                 ele_matrix = transferMatrixQuad66(length, k1)
             else:
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):

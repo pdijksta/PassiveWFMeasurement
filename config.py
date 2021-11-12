@@ -40,21 +40,21 @@ structure_parameters = {
 
 beamline_quads = {
         'Aramis': [
-            'SARUN18.MQUA080',
-            'SARUN19.MQUA080',
-            'SARUN20.MQUA080',
-            'SARBD01.MQUA020',
-            'SARBD02.MQUA030',
+            'SARUN18-MQUA080',
+            'SARUN19-MQUA080',
+            'SARUN20-MQUA080',
+            'SARBD01-MQUA020',
+            'SARBD02-MQUA030',
             ],
         'Athos': [
-            'SATMA02.MQUA050',
-            'SATMA02.MQUA070',
-            'SATBD01.MQUA010',
-            'SATBD01.MQUA030',
-            'SATBD01.MQUA050',
-            'SATBD01.MQUA070',
-            'SATBD01.MQUA090',
-            'SATBD02.MQUA030',
+            'SATMA02-MQUA050',
+            'SATMA02-MQUA070',
+            'SATBD01-MQUA010',
+            'SATBD01-MQUA030',
+            'SATBD01-MQUA050',
+            'SATBD01-MQUA070',
+            'SATBD01-MQUA090',
+            'SATBD02-MQUA030',
             ],
         }
 

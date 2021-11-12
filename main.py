@@ -86,7 +86,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Fix systematic current profile reconstruction differences
 
 try:
-    from . import daq
+    from PassiveWFMeasurement import daq
     always_dryrun = False
 except ImportError:
     print('Cannot import daq. Always dry_run True')
@@ -121,6 +121,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
         #self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
         #self.SaveLasingRecData.clicked.connect(self.save_lasing_rec_data)
+        self.SaveElogGUI.clicked.connect(self.elog_and_H5_button)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.FitStreaker.clicked.connect(self.daq_calibration)
         self.ClearStructureFitPlots.clicked.connect(self.clear_structure_fit_plots)
@@ -267,6 +268,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
         self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Resolution')
 
+        # Init ELOG
+        self.elog_button_title = 'Empty'
+        self.elog_button_figures = []
+        self.elog_button_save_dict = None
+        self.elog_button_save_name = 'Empty'
+
         self.logMsg('Main window initialized')
 
     def clear_rec_plots(self):
@@ -329,17 +336,30 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def plot_resolution(self):
         # Not ideal but ok for now
-        bp_dict = h5_storage.loadH5Recursive(os.path.join(os.path.dirname(__file__), './example_current_profile.h5'))
+        bp_file = os.path.join(os.path.dirname(__file__), './example_current_profile.h5')
+        bp_dict = h5_storage.loadH5Recursive(bp_file)
         gap = 10e-3
-        beam_offset = gap/2 - w2f(self.PlotResolutionDistance)*1e-6
+        beam_position = gap/2 - w2f(self.PlotResolutionDistance)*1e-6
         meta_data = daq.get_meta_data(self.screen, False, self.beamline)
         tracker = self.get_tracker(meta_data)
         beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], tracker.energy_eV, tracker.total_charge, self.logger)
-        res_dict = resolution.calc_resolution(beamprofile, gap, beam_offset, tracker)
+        res_dict = resolution.calc_resolution(beamprofile, gap, beam_position, tracker)
 
         plot_results.clear_resolution_figure(*self.resolution_plot_handles)
         resolution.plot_resolution(res_dict, *self.resolution_plot_handles)
         self.resolution_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.resolution_tab_index)
+
+        self.elog_button_title = 'Resolution calculated'
+        self.elog_button_figures = [self.resolution_fig]
+        self.elog_button_save_dict = res_dict
+        self.elog_button_save_name = '%s_resolution' % self.structure_name
+
+        elog_text = 'Resolution calculated for'
+        elog_text += '\ngap: %.3f mm' % (gap*1e3)
+        elog_text += '\nbeam position: %.3f mm' % (beam_position*1e3)
+        elog_text += '\nCurrent profile from: %s' % bp_file
+        self.ELOGtextAuto.insertPlainText(elog_text)
 
     @property
     def delta_gap(self):
@@ -457,7 +477,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction.h5')
         elog_text = 'Passive current reconstruction'
-        self.elog_and_H5(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
+        self.elog_and_H5_auto(elog_text, [self.reconstruction_fig], 'Passive current reconstruction', basename, self.current_rec_dict)
 
     @property
     def save_dir(self):
@@ -500,7 +520,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = fit_dicts['centroid']['calibration']
         elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
-        filename = self.elog_and_H5(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
+        filename = self.elog_and_H5_auto(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
         self.LoadCalibrationFilename.setText(filename)
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
 
@@ -569,7 +589,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
         fig, _ = plot_results.plot_simple_daq(screen_dict)
-        self.elog_and_H5(elog_text, [fig], 'Screen data', basename, screen_dict)
+        self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict)
 
     @property
     def structure_name(self):
@@ -603,7 +623,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         else:
             elog_text = 'Saved lasing OFF'
         fig, _ = plot_results.plot_simple_daq(image_dict)
-        filename = self.elog_and_H5(elog_text, [fig], 'Saved lasing images', basename, image_dict)
+        filename = self.elog_and_H5_auto(elog_text, [fig], 'Saved lasing images', basename, image_dict)
         if lasing_on_off:
             self.LasingOnDataLoad.setText(filename)
         else:
@@ -655,10 +675,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Lasing_reconstruction_%s.h5' % screen_str
-        filename = self.elog_and_H5(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
+        filename = self.elog_and_H5_auto(elog_text, self.lasing_figs, 'Lasing reconstruction', basename, self.lasing_rec_dict)
         self.ReconstructionDataLoad.setText(filename)
 
-    def elog_and_H5(self, text, figs, title, basename, data_dict):
+    def elog_and_H5_auto(self, text, figs, title, basename, data_dict):
 
         filename = os.path.join(self.save_dir, basename)
         h5_storage.saveH5Recursive(filename, data_dict)
@@ -689,6 +709,35 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         else:
             print('Save to ELOG is not checked in GUI')
         return filename
+
+    def elog_and_H5_button(self):
+        auto_text = self.ELOGtextAuto.toPlainText()
+        manual_text = self.ELOGtextInput.toPlainText()
+        title = self.elog_button_title
+        figures = self.elog_button_figures
+        save_dict = self.elog_button_save_dict
+        save_name = self.elog_button_save_name
+        h5_filename = os.path.join(self.SaveDir.text(), save_name)
+        h5_storage.saveH5Recursive(h5_filename, save_dict)
+        auto_text += '\nData saved in %s' % h5_filename
+        attachments = []
+
+        for n_fig, fig in enumerate(figures, 1):
+            fig_filename = h5_filename.replace('.h5', '_%i.png' % n_fig)
+            fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
+            attachments.append(fig_filename)
+            auto_text += '\nFigure %i saved in %s' % (n_fig, fig_filename)
+
+        dict_att = {'Author': 'Application: PostUndulatorStreakerAnalysis', 'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
+        if elog is None:
+            self.logMsg('I would post to ELOG:')
+            self.logMsg(auto_text)
+            self.logMsg(manual_text)
+        else:
+            self.logbook.post(auto_text+'\n'+manual_text, attributes=dict_att, attachments=attachments)
+            self.logMsg('Elog entry generated')
+
+
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

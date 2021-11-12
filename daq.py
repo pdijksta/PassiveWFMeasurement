@@ -339,9 +339,9 @@ def get_quad_strengths(beamline):
     return k1l_dict
 
 def get_meta_data(screen, dry_run, beamline):
-    all_streakers = config.all_streakers
+    all_structures = config.all_structures
     meta_dict = {}
-    for streaker, suffix1, suffix2 in itertools.product(all_streakers, [':GAP', ':CENTER'], ['', '.RBV']):
+    for streaker, suffix1, suffix2 in itertools.product(all_structures, [':GAP', ':CENTER'], ['', '.RBV']):
         pv = streaker+suffix1+suffix2
         meta_dict[pv] = caget(pv)
     meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})

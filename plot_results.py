@@ -534,7 +534,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
 
 def plot_simple_daq(data_dict):
     fig = ms.figure('Data acquisition')
-    subplot = ms.subplot_factory(1, 2, False)
+    subplot = ms.subplot_factory(2, 2, False)
     sp_ctr = 1
     sp_img = subplot(sp_ctr, title='Median image', xlabel='x (mm)', ylabel='y (mm)')
     sp_ctr += 1
@@ -542,15 +542,23 @@ def plot_simple_daq(data_dict):
     sp_proj = subplot(sp_ctr, title='Horizontal projetions', xlabel='x (mm)', ylabel='Intensity (arb. units)')
     sp_ctr += 1
 
-    images = data_dict['pyscan_result']['image'].astype(np.float64)
+    images = data_dict['pyscan_result']['image'].astype(np.float64).squeeze()
+    x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64).squeeze()
+    y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64).squeeze()
+    reverse_x = x_axis[1] < x_axis[0]
+    reverse_y = y_axis[1] < y_axis[0]
+    if reverse_x:
+        x_axis = x_axis[::-1]
+        images = images[:,::-1]
+    if reverse_y:
+        y_axis = y_axis[::-1]
+        images = images[::-1,:]
     proj = images.sum(axis=-2)
-    x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
-    y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
     median_index = data_loader.get_median(proj, 'mean', 'index')
     image = image_analysis.Image(images[median_index], x_axis, y_axis)
     image.plot_img_and_proj(sp_img)
 
-    for index in len(proj):
+    for index in range(len(proj)):
         if index == median_index:
             color, lw = 'black', 3
         else:

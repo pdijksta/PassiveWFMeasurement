@@ -675,13 +675,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             #rec_obj.plot_images('tE', title)
 
         las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
-        las_rec.plot(plot_handles=self.all_lasing_plot_handles)
+        result_dict = las_rec.get_result_dict()
+        plot_results.plot_lasing(result_dict, plot_handles=self.all_lasing_plot_handles)
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
 
         self.elog_button_title = 'FEL power profile reconstructed'
         self.elog_button_figures = [self.all_lasing_fig]
-        self.elog_button_save_dict = las_rec.result_dict()
+        self.elog_button_save_dict = result_dict
         self.elog_button_save_name = '%s_FEL_power_profile_reconstruction' % self.structure_name
 
         elog_text = 'FEL power profile reconstructed'

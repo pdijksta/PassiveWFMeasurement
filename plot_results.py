@@ -636,5 +636,6 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None):
         delta_distance = result_dict[key]['delta_distances']
         mean_x = result_dict[key]['meas_screen_centroids']
         sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
+
     sp_orbit.legend()
 

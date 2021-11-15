@@ -15,12 +15,10 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
     power = slice_current * delta_E
     power[power<0] = 0
     energy = np.trapz(power, slice_time)
-
     err_sq_1 = (delta_E * slice_current_err)**2
     err_sq_2 = (slice_current * slice_E_on_err)**2
     err_sq_3 = (slice_current * slice_E_off_err)**2
     power_err = np.sqrt(err_sq_1+err_sq_2+err_sq_3)
-
     return {
             'time': slice_time,
             'power': power,
@@ -42,7 +40,6 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on, slice_Espread_of
     """
     Takes squared values of energy spread
     """
-
     slice_Espread_sqr_increase = slice_Espread_on - slice_Espread_off
     power0 = slice_current**(2/3) * slice_Espread_sqr_increase
     power0[power0 < 0] = 0
@@ -50,15 +47,12 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on, slice_Espread_of
     if norm_factor is None:
         norm_factor = E_total/integral
     power = power0*norm_factor
-
     power0_err_1 = (slice_current**(-1/3) * slice_Espread_sqr_increase * slice_current_err)**2
     power0_err_2 = slice_current**(2/3) * slice_Espread_off_err
     power0_err_3 = slice_current**(2/3) * slice_Espread_on_err
     power0_err = np.sqrt(power0_err_1+power0_err_2+power0_err_3)
-
     power_err = power0_err*norm_factor
     energy = np.trapz(power, slice_t)
-
     return {
             'time': slice_t,
             'power': power,
@@ -289,9 +283,6 @@ class LasingReconstructionImages:
         ref_y0 = self.ref_y
         for ctr, img in enumerate(self.raw_image_objs):
             image_E, ref_y = img.y_to_eV(dispersion, self.tracker.energy_eV, ref_y=ref_y0)
-            #if ref_y0 is None:
-            #    ref_y0 = 100000
-            #print(ctr, int(ref_y0*1e6), int(ref_y*1e6))
             if ctr == 0:
                 ref_y0 = ref_y
             images_E.append(image_E)
@@ -388,5 +379,4 @@ def interpolate_slice_dicts(ref, alter):
         elif type(arr) is np.ndarray:
             new_dict[key] = np.interp(xx_ref, xx_alter, arr)
     return new_dict
-
 

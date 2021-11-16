@@ -340,6 +340,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         plot_results.clear_resolution_figure(*self.resolution_plot_handles)
         resolution.plot_resolution(res_dict, *self.resolution_plot_handles)
         self.resolution_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.resolution_tab_index)
 
     @property
     def delta_gap(self):

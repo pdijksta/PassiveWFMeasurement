@@ -35,7 +35,6 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - handle feedback in user interface
 # - detune undulator button
 # - Plot centroid of forward propagated
-# - Calibration based on TDC
 
 #Problematic / cannot be done easily:
 # - save BPM data also
@@ -83,6 +82,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Fix non converging calibration
 # - Fix erronous gap calibration
 # - Fix systematic current profile reconstruction differences
+# - Calibration based on TDC
 
 try:
     from PassiveWFMeasurement import daq

@@ -8,7 +8,7 @@ if path not in sys.path:
 import PassiveWFMeasurement.h5_storage as h5_storage
 import PassiveWFMeasurement.image_analysis as image_analysis
 import PassiveWFMeasurement.beam_profile as beam_profile
-from PassiveWFMeasurement import myplotstyle as ms
+import PassiveWFMeasurement.myplotstyle as ms
 
 ms.closeall()
 
@@ -65,22 +65,27 @@ def cut_imageX(raw_image, x_len, y_cutoff):
     projX -= projX.min()
     xProfile = beam_profile.AnyProfile(raw_image.x_axis, projX)
     xProfile.aggressive_cutoff(0.15)
-    x_mean = xProfile.mean()
+    x_mean = xProfile.gaussfit.mean
 
     yProfile.aggressive_cutoff(y_cutoff)
     yProfile.crop()
 
     img_cut1 = raw_image.cutY(yProfile.xx[0], yProfile.xx[-1])
-    img_cut1.x_axis = img_cut1.x_axis - x_mean
-    mask_x = np.ones_like(img_cut1.x_axis, dtype=bool)
-    zero_left = (len(mask_x) - x_len)//2
-    zero_right = len(mask_x) - x_len - zero_left
-    mask_x[:zero_left] = 0
-    mask_x[-zero_right:] = 0
+    old_x_axis = img_cut1.x_axis
+    img_cut1.x_axis = old_x_axis - x_mean
+    mask_x = np.zeros_like(img_cut1.x_axis, dtype=bool)
+    where0 = int(np.argmin(img_cut1.x_axis**2).squeeze())
+
+    one_left = x_len//2
+    one_right = x_len - one_left
+
+    mask_x[where0-one_left:where0+one_right] = 1
+
     assert mask_x.sum() == x_len
 
     img_cut1.x_axis = img_cut1.x_axis[mask_x]
     img_cut1.image = img_cut1.image[:,mask_x]
+    #import pdb; pdb.set_trace()
     return img_cut1
 
 def center_image(image):
@@ -107,36 +112,6 @@ def get_img(dict_, index):
     y_axis = dict_['y_axis_m'].astype(np.float64).squeeze()
     return raw_data_to_img(image_data, x_axis, y_axis)
 
-
-
-lasing_off_file = '/sf/data/measurements/2021/11/12/2021_11_12-23_22_11_Lasing_False_SATBD02-DSCR050.h5'
-lasing_on_file = '/sf/data/measurements/2021/11/12/2021_11_12-23_15_06_Lasing_True_SATBD02-DSCR050.h5'
-
-lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)['pyscan_result']
-lasing_on_dict = h5_storage.loadH5Recursive(lasing_on_file)['pyscan_result']
-
-
-energy_eV = 3.17e9
-charge = 200e-12
-y_cutoff = 0.15
-x_cutoff = 0.15
-
-raw_img = get_img(lasing_off_dict, 0)
-img_cut0 = cutoff_image(raw_img, x_cutoff, y_cutoff)
-#img_cut1 = img_cut0.cut(-0.1e-3, 1000)
-img_cut1 = img_cut0
-img_cut = y_to_t(img_cut1)
-
-fig = ms.figure('Test tilted reconstruction')
-fig.subplots_adjust(hspace=0.3)
-subplot = ms.subplot_factory(2, 3, grid=False)
-sp_ctr = 1
-
-sp_img = subplot(sp_ctr, title='Calib image (x,t)', xlabel='x (mm)', ylabel='t (arb. units)')
-sp_ctr += 1
-
-img_cut.plot_img_and_proj(sp_img, y_factor=1, plot_gauss=False, log=False)
-
 def x_to_t(img, calib_image):
     new_image = np.zeros_like(img.image)
     int_image = img.image.astype(int)*10
@@ -159,24 +134,54 @@ def x_to_t(img, calib_image):
     img_converted = img.child(new_image, new_x, img.y_axis)
     return img_converted
 
-    #if x_index == len(img_cut.x_axis)//2:
-    #    sp = subplot(sp_ctr)
-    #    sp_ctr += 1
-    #    sp.plot(cdf)
-    #    sp = subplot(sp_ctr)
-    #    sp_ctr += 1
-    #    sp.plot(new_x, add)
-    #    sp = subplot(sp_ctr)
-    #    sp_ctr += 1
-    #    sp.plot(img_cut.y_axis, y_dist)
+
+dir_ = '/sf/data/measurements/2021/11/12/'
+dir_ = '/mnt/data/data_2021-11-12/'
+
+lasing_off_file = dir_+'2021_11_12-23_22_11_Lasing_False_SATBD02-DSCR050.h5'
+lasing_on_file = dir_+'2021_11_12-23_15_06_Lasing_True_SATBD02-DSCR050.h5'
+
+lasing_off_dict = h5_storage.loadH5Recursive(lasing_off_file)['pyscan_result']
+lasing_on_dict = h5_storage.loadH5Recursive(lasing_on_file)['pyscan_result']
+
+energy_eV = 3.17e9
+charge = 200e-12
+y_cutoff = 0.15
+x_cutoff = 0.15
+
+raw_img = get_img(lasing_off_dict, 0)
+img_cut0 = cutoff_image(raw_img, x_cutoff, y_cutoff)
+#img_cut1 = img_cut0.cut(-0.1e-3, 1000)
+img_cut1 = img_cut0
+img_cut = y_to_t(img_cut1)
+
+fig = ms.figure('Test tilted reconstruction')
+fig.subplots_adjust(hspace=0.3)
+subplot = ms.subplot_factory(2, 4, grid=False)
+sp_ctr = 1
+
+sp_img = subplot(sp_ctr, title='Calib image (x,y)', xlabel='x (mm)', ylabel='y (mm)')
+sp_ctr += 1
+
+raw_img.plot_img_and_proj(sp_img)
+
+sp_img = subplot(sp_ctr, title='Calib image (x,t)', xlabel='x (mm)', ylabel='t (arb. units)')
+sp_ctr += 1
 
 
-sp_img_converted = subplot(sp_ctr, title='Calib image (t,t)', xlabel='t (arb. units)', ylabel='y (mm)')
+img_cut.plot_img_and_proj(sp_img, y_factor=1, plot_gauss=False, log=False)
+
+sp_img_converted = subplot(sp_ctr, title='Calib image (t,y)', xlabel='t (arb. units)', ylabel='y (mm)')
+sp_ctr += 1
+
+sp_espread = subplot(sp_ctr, title='Energy spread', xlabel='t (arb. units)', ylabel='Slice rms size (mm)')
 sp_ctr += 1
 
 img_converted = x_to_t(img_cut, img_cut)
 
-img_converted.plot_img_and_proj(sp_img_converted, x_factor=1, plot_gauss=False, log=False)
+img_converted2 = img_converted.child(img_converted.image, img_converted.x_axis, img_cut0.y_axis)
+
+img_converted2.plot_img_and_proj(sp_img_converted, x_factor=1, plot_gauss=False, log=False)
 
 raw_on = get_img(lasing_on_dict, 0)
 img_on = cut_imageX(raw_on, len(img_converted.x_axis), 0.15)
@@ -189,16 +194,32 @@ sp_ctr += 1
 raw_on.plot_img_and_proj(sp_raw_on, plot_gauss=False)
 
 
-
 sp_on = subplot(sp_ctr, title='Lasing  cut (x,y)', xlabel='x (mm)', ylabel='y (mm)')
 sp_ctr += 1
 
-img_on.plot_img_and_proj(sp_on, plot_gauss=False)
+img_on.plot_img_and_proj(sp_on, plot_gauss=True)
 
 sp_on_converted = subplot(sp_ctr, title='Image on', xlabel='t (arb. units)', ylabel='y (mm)')
 sp_ctr += 1
 
 img_on_converted.plot_img_and_proj(sp_on_converted, x_factor=1, plot_gauss=False)
+
+def get_espread(image):
+    yy = image.y_axis
+    im = image.image
+    divisor = np.sum(im, axis=0)
+    divisor[divisor==0] = np.inf
+    mean = np.sum(im*yy[:,np.newaxis], axis=0) / divisor
+    std = np.sqrt(np.sum(im*(yy[:,np.newaxis]-mean)**2, axis=0) / divisor)
+    return std
+
+espread_on = get_espread(img_on_converted)
+espread_off = get_espread(img_converted2)
+
+sp_espread.plot(img_on_converted.x_axis, espread_on*1e3, label='Lasing on')
+sp_espread.plot(img_converted2.x_axis, espread_off*1e3, label='Lasing off')
+
+sp_espread.legend()
 
 ms.show()
 

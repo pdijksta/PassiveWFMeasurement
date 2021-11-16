@@ -42,6 +42,9 @@ class Image(LogMsgBase):
         ylabel = self.ylabel if ylabel is None else ylabel
         return Image(new_i, new_x, new_y, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
+    def transpose(self):
+        return self.child(self.image.T.copy(), self.y_axis.copy(), self.x_axis.copy(), self.y_unit, self.x_unit, self.ylabel, self.xlabel)
+
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)

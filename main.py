@@ -160,16 +160,19 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         structure_position0 = 364e-6
         delta_gap = -62e-6
         pulse_energy = 180e-6
+        tdc_calib_delta_position = 150e-6
 
         self.ScreenCenterCalib.setText('%i' % round(screen_center*1e6))
         self.StructureCenter.setText('%i' % round(structure_position0*1e6))
         self.StructureGapDelta.setText('%i' % round(delta_gap*1e6))
         self.LasingEnergyInput.setText('%i' % round(pulse_energy*1e6))
+        self.TdcCalibrationPositionDelta.setText('%i' % round(tdc_calib_delta_position*1e6))
 
         self.ReconstructionDataLoad.setText(lasing_file_off)
         self.BunchLengthMeasFile.setText(bunch_length_meas_file)
         self.LasingOnDataLoad.setText(lasing_file_on)
         self.LasingOffDataLoad.setText(lasing_file_off)
+        self.TdcCalibrationFilename.setText(lasing_file_off)
         self.LoadCalibrationFilename.setText(structure_calib_file)
         self.ForwardBlmeasFilename.setText(bunch_length_meas_file)
 
@@ -266,6 +269,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
         self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Res.')
+
+        self.tdc_calibration_fig, self.tdc_calibration_plot_handles = plot_results.tdc_calib_figure()
+        self.tdc_calibration_tab_index, self.tdc_calibration_canvas = get_new_tab(self.tdc_calibration_fig, 'TDC cal.')
+
 
         # Init ELOG
         self.elog_button_title = 'Empty'
@@ -575,14 +582,25 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logMsg('End gap calibration')
 
     def tdc_calibration(self):
-        meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
+        data_file = self.TdcCalibrationFilename.text()
+        data_dict = h5_storage.loadH5Recursive(data_file)
+        pyscan_result = data_dict['pyscan_result']
+        meta_data = data_dict['meta_data_begin']
         tracker = self.get_tracker(meta_data)
         tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
         bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
-
-        # TODO
-        calibration.tdc_calibration(tracker, bp, )
+        x_axis, proj = data_loader.screen_data_to_median(pyscan_result)
+        screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
+        delta_position = float(self.TdcCalibrationPositionDelta.text())*1e-6
+        result_dict = calibration.tdc_calibration(tracker, bp, screen_raw, delta_position)
+        new_calib = result_dict['calib']
+        self.calib_to_gui(new_calib)
+        plot_results.clear_tdc_calib_figure(*self.tdc_calibration_plot_handles)
+        plot_results.plot_tdc_calibration(result_dict, plot_handles=self.tdc_calibration_plot_handles)
+        self.tdc_calibration_canvas.draw()
+        self.tabWidget.setCurrentIndex(self.tdc_calibration_tab_index)
+        self.logMsg('New calibration: %s' % new_calib)
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()
@@ -617,6 +635,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     @property
     def screen(self):
         return self.ScreenSelect.currentText()
+
+    @property
+    def screen_center(self):
+        return float(self.ScreenCenterCalib.text())*1e-6
 
     def obtainLasing(self, lasing_on_off):
         if lasing_on_off:

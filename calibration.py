@@ -18,6 +18,9 @@ class StructureCalibration:
         self.delta_gap = delta_gap
         self.structure_position0 = structure_position0
 
+    def __str__(self):
+        return 'Structure %s: Screen center %.1f um; Structure position0 %i um; Delta gap %i um' % (self.structure_name, self.screen_center*1e6, self.structure_position0*1e6, self.delta_gap*1e6)
+
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
         gap = gap0 + self.delta_gap
@@ -47,7 +50,6 @@ class StructureCalibration:
     @staticmethod
     def from_dict(dict_):
         return StructureCalibration(**dict_)
-
 
 class MeasScreens:
     def __init__(self, meas_screens, beam_positions, streaking_factors):

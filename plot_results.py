@@ -639,3 +639,43 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None):
 
     sp_orbit.legend()
 
+def tdc_calib_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.set_window_title('TDC calibration')
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(2,2)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]
+    clear_tdc_calib_figure(*subplots)
+    return fig, subplots
+
+def clear_tdc_calib_figure(sp_profile, sp_screen, sp_wake):
+
+    for sp, title, xlabel, ylabel in [
+            (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
+            (sp_screen, 'Screen distribution', 'x (mm)', config.rho_label),
+            (sp_wake, 'Wake effect', 't (fs)', 'x (mm)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
+def plot_tdc_calibration(tdc_dict, plot_handles=None, figsize=None):
+    if plot_handles is None:
+        _, plot_handles = tdc_calib_figure(figsize)
+    sp_profile, sp_screen, sp_wake = plot_handles
+
+    blmeas_profile = tdc_dict['blmeas_profile']
+    raw_screen = tdc_dict['meas_screen_raw']
+    blmeas_profile.plot_standard(sp_profile, label='Measured')
+    raw_screen.plot_standard(sp_screen, label='Measured')
+    tdc_dict['forward_screen'].plot_standard(sp_screen, label='Reconstructed')
+    tdc_dict['backward_dict']['profile'].plot_standard(sp_profile, label='Backward propagated')
+    tdc_dict['backward_dict']['screen'].plot_standard(sp_screen, label='Backward propagation')
+    wake_t = tdc_dict['backward_dict']['wake_time']
+    wake_x = tdc_dict['backward_dict']['wake_x']
+    sp_wake.plot(wake_x*1e3, wake_t*1e15)
+    sp_profile.legend()
+    sp_screen.legend()
+

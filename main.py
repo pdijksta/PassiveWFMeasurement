@@ -26,7 +26,6 @@ from PassiveWFMeasurement import beam_profile
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import resolution
 from PassiveWFMeasurement import data_loader
-from PassiveWFMeasurement import blmeas
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
@@ -119,7 +118,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logger = logger
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
-        #self.SaveCurrentRecData.clicked.connect(self.save_current_rec_data)
         self.SaveElogGUI.clicked.connect(self.elog_and_H5_button)
         self.CloseAll.clicked.connect(self.clear_rec_plots)
         self.FitStreaker.clicked.connect(self.daq_calibration)
@@ -133,6 +131,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ReconstructLasing.clicked.connect(self.reconstruct_all_lasing)
         self.DestroyLasing.clicked.connect(self.destroy_lasing)
         self.RestoreLasing.clicked.connect(self.restore_lasing)
+        self.TdcCalibration.clicked.connect(self.tdc_calibration)
 
         self.PlotResolution.clicked.connect(self.plot_resolution)
 
@@ -158,12 +157,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
         structure_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
         screen_center = 898.02e-6
-        structure_center = 364e-6
+        structure_position0 = 364e-6
         delta_gap = -62e-6
         pulse_energy = 180e-6
 
         self.ScreenCenterCalib.setText('%i' % round(screen_center*1e6))
-        self.StructureCenter.setText('%i' % round(structure_center*1e6))
+        self.StructureCenter.setText('%i' % round(structure_position0*1e6))
         self.StructureGapDelta.setText('%i' % round(delta_gap*1e6))
         self.LasingEnergyInput.setText('%i' % round(pulse_energy*1e6))
 
@@ -521,25 +520,16 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logMsg('DAQ for calibration ended.')
 
     def _analyze_structure_fit(self, result_dict):
-        forward_blmeas = self.ForwardBlmeasCheck.isChecked()
         tracker = self.get_tracker(result_dict['meta_data_begin'])
         structure_calib_options = self.get_structure_calib_options()
-        if forward_blmeas:
-            blmeasfile = self.ForwardBlmeasFilename.text()
-        else:
-            blmeasfile = None
 
         sc = calibration.StructureCalibrator(tracker, structure_calib_options, result_dict, self.logger)
 
         sc.fit()
         if self.ForwardBlmeasCheck.isChecked():
-            bp_dict = blmeas.load_avg_blmeas(blmeasfile)[1]
-            bp = beam_profile.BeamProfile(bp_dict['time'], bp_dict['current_reduced'], tracker.energy_eV, tracker.total_charge, self.logger)
-            forward_options = self.get_forward_options()
-            bp.reshape(forward_options['len_screen'])
-            bp.aggressive_cutoff(forward_options['screen_cutoff'])
-            bp.crop()
-            bp.reshape(forward_options['len_screen'])
+            blmeasfile = self.ForwardBlmeasFilename.text()
+            tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
+            bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
 
             sc.forward_propagate(bp)
 
@@ -583,6 +573,16 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ELOGtextAuto.insertPlainText(elog_text)
 
         self.logMsg('End gap calibration')
+
+    def tdc_calibration(self):
+        meta_data = daq.get_meta_data(self.screen, self.dry_run, self.beamline)
+        tracker = self.get_tracker(meta_data)
+        tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
+        blmeasfile = self.ForwardBlmeasFilename.text()
+        bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
+
+        # TODO
+        calibration.tdc_calibration(tracker, bp, )
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()

@@ -304,6 +304,7 @@ class Tracker(LogMsgBase):
 
         outp_dict = {
                 'profile': bp,
+                'screen': screen,
                 'wake_time': wake_time,
                 'wake_x': wake_x,
                 }
@@ -467,9 +468,9 @@ class Tracker(LogMsgBase):
         return output
 
 
-    def find_beam_position(self, position0, meas_screen_raw, profile):
-
-        position_explore = self.find_beam_position_options['position_explore']
+    def find_beam_position(self, position0, meas_screen_raw, profile, position_explore=None):
+        if position_explore is None:
+            position_explore = self.find_beam_position_options['position_explore']
         prec = self.find_beam_position_options['precision']
         method = self.find_beam_position_options['method']
         max_iterations = self.find_beam_position_options['max_iterations']

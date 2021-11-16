@@ -52,6 +52,28 @@ def pyscan_result_to_dict(readables, result, scrap_bs=False):
 
     return output
 
+def get_undulator_K(beamline):
+    pvs = config.beamline_undulators[beamline]
+    return pvs, np.array([caget(pv) for pv in pvs])
+
+def destroy_lasing(beamline, dry_run, max_deltaK=0.2):
+    pvs, old_vals = get_undulator_K(beamline)
+    randoms = np.random.rand(len(pvs)) - 0.5
+    new_vals = old_vals + randoms * max_deltaK
+    for pv, new_val in zip(pvs, new_vals):
+        if dry_run:
+            print('I would caput %s %.6f' % (pv, new_val))
+        else:
+            caput(pv, new_val)
+    return pvs, old_vals, new_vals
+
+def restore_lasing(pvs, vals, dry_run):
+    for pv, val in zip(pvs, vals):
+        if dry_run:
+            print('I would caput %s %.6f' % (pv, val))
+        else:
+            caput(pv, val)
+
 def get_images(screen, n_images, beamline, dry_run=None):
     if dry_run:
         screen = 'simulation'
@@ -339,9 +361,9 @@ def get_quad_strengths(beamline):
     return k1l_dict
 
 def get_meta_data(screen, dry_run, beamline):
-    all_streakers = config.all_streakers
+    all_structures = config.all_structures
     meta_dict = {}
-    for streaker, suffix1, suffix2 in itertools.product(all_streakers, [':GAP', ':CENTER'], ['', '.RBV']):
+    for streaker, suffix1, suffix2 in itertools.product(all_structures, [':GAP', ':CENTER'], ['', '.RBV']):
         pv = streaker+suffix1+suffix2
         meta_dict[pv] = caget(pv)
     meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})

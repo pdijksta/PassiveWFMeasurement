@@ -42,12 +42,22 @@ class Image(LogMsgBase):
         ylabel = self.ylabel if ylabel is None else ylabel
         return Image(new_i, new_x, new_y, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
+    def transpose(self):
+        return self.child(self.image.T.copy(), self.y_axis.copy(), self.x_axis.copy(), self.y_unit, self.x_unit, self.ylabel, self.xlabel)
+
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
         new_image = self.image[:,x_mask]
         new_x_axis = x_axis[x_mask]
         return self.child(new_image, new_x_axis, self.y_axis)
+
+    def cutY(self, y_min, y_max):
+        y_axis = self.y_axis
+        y_mask = np.logical_and(y_axis >= y_min, y_axis <= y_max)
+        new_image = self.image[y_mask,:]
+        new_y_axis = y_axis[y_mask]
+        return self.child(new_image, self.x_axis, new_y_axis)
 
     def reshape_x(self, new_length):
         """
@@ -197,6 +207,8 @@ class Image(LogMsgBase):
         return self.child(self.image, self.x_axis*factor, self.y_axis, x_unit='fs', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
+        diff = np.diff(wake_time)
+        assert np.all(diff >= 0) or np.all(diff <= 0)
         if wake_time[1] < wake_time[0]:
             wake_x = wake_x[::-1]
             wake_time = wake_time[::-1]
@@ -214,12 +226,10 @@ class Image(LogMsgBase):
                 to_print.append('%i %i %.1f %.1f' % (t_index, x_index, t*1e15, x*1e6))
         if print_:
             print('\n'.join(to_print))
-
         diff_x = np.concatenate([np.diff(x_interp), [0]])
 
         new_img = new_img0 * np.abs(diff_x)
         new_img = new_img / new_img.sum() * self.image.sum()
-
 
         output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
 

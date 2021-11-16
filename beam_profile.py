@@ -265,8 +265,16 @@ class AnyProfile(Profile):
     def __init__(self, xx, yy, logger=None):
         super().__init__()
         self.logger = logger
-        self.xx = self._xx = xx
-        self.yy = self._yy = yy
+        self._xx = xx
+        self._yy = yy
+
+    @property
+    def xx(self):
+        return self._xx
+
+    @property
+    def yy(self):
+        return self._yy
 
 def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_charge=1):
     """
@@ -317,7 +325,7 @@ class BeamProfile(Profile):
             raise ValueError
         return wf_dict
 
-    def to_dict(self):
+    def to_dict_custom(self):
         return {'time': self.time,
                 'charge_dist': self.charge_dist,
                 'energy_eV': self.energy_eV,

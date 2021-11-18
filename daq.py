@@ -1,7 +1,7 @@
 import itertools
 import time
 import numpy as np
-#import logging
+import logging
 import datetime
 
 import pyscan
@@ -97,7 +97,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
     pyscan.config.bs_default_host = stream_host
     pyscan.config.bs_default_port = stream_port
 
-    #logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
+    logging.getLogger("mflow.mflow").setLevel(logging.ERROR)
 
     readables = get_readables(beamline)
 
@@ -162,7 +162,7 @@ def data_structure_offset(structure, offset_range, screen, n_images, dry_run, be
     pyscan.config.bs_default_host = stream_host
     pyscan.config.bs_default_port = stream_port
 
-    #logging.getLogger('mflow.mflow').setLevel(logging.ERROR)
+    logging.getLogger('mflow.mflow').setLevel(logging.ERROR)
 
     settings = pyscan.scan_settings(settling_time=1, n_measurements=n_images, write_timeout=60)
 

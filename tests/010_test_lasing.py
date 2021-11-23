@@ -9,10 +9,10 @@ import PassiveWFMeasurement.lasing as lasing
 import PassiveWFMeasurement.tracking as tracking
 import PassiveWFMeasurement.calibration as calibration
 import PassiveWFMeasurement.config as config
+import PassiveWFMeasurement.plot_results as plot_results
 import PassiveWFMeasurement.myplotstyle as ms
 
 ms.closeall()
-
 
 lasing_on_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_13_42_Lasing_True_SARBD02-DSCR050.h5')
 lasing_off_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_11_55_Lasing_False_SARBD02-DSCR050.h5')
@@ -24,12 +24,9 @@ structure_position0 = 361e-6
 pulse_energy = 180e-6
 
 lasing_options = config.get_default_lasing_options()
-
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-
 tracker = tracking.get_default_tracker('Aramis', structure_name, lasing_on_dict['meta_data_begin'], calib)
-
 las_rec_images = {}
 
 for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
@@ -44,8 +41,7 @@ for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), 
     #rec_obj.plot_images('tE', title)
 
 las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
-las_rec.plot()
-
+plot_results.plot_lasing(las_rec.get_result_dict())
 
 ms.show()
 

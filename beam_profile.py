@@ -4,6 +4,7 @@ from scipy.ndimage import gaussian_filter1d
 from .gaussfit import GaussFit
 from .logMsg import LogMsgBase
 from . import blmeas
+from . import config
 
 def find_rising_flank(arr, method='Size'):
     """
@@ -413,7 +414,7 @@ class BeamProfile(Profile):
         return sp.plot(x, y*factor/1e3, **kwargs)
 
 
-def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1):
+def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1, len_profile=config.get_default_backward_options()['len_profile']):
     blmeas_dict = blmeas.load_avg_blmeas(file_or_dict)[zero_crossing]
 
     tt = blmeas_dict['time']
@@ -425,9 +426,12 @@ def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutof
     if tt[1] < tt[0]:
         tt = tt[::-1]
         curr = curr[::-1]
-    bp = BeamProfile(tt, curr, energy_eV, total_charge)
+    bp0 = BeamProfile(tt, curr, energy_eV, total_charge)
+    bp0.center()
+    tt_new = np.linspace(-time_range/2., time_range/2., len_profile)
+    curr_new = np.interp(tt_new, bp0.time, bp0.charge_dist, left=0., right=0.)
+    bp = BeamProfile(tt_new, curr_new, energy_eV, total_charge)
     bp.aggressive_cutoff(cutoff)
-    bp.crop()
     return bp
 
 def get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cutoff=1e-3):

@@ -35,6 +35,18 @@ class Image(LogMsgBase):
         self.xlabel = xlabel
         self.ylabel = ylabel
 
+    def to_dict_custom(self):
+        outp = {
+                'image': self.image,
+                'x_axis': self.x_axis,
+                'y_axis': self.y_axis,
+                'x_unit': self.x_unit,
+                'y_unit': self.y_unit,
+                'xlabel': self.xlabel,
+                'ylabel': self.ylabel,
+                }
+        return outp
+
     def child(self, new_i, new_x, new_y, x_unit=None, y_unit=None, xlabel=None, ylabel=None):
         x_unit = self.x_unit if x_unit is None else x_unit
         y_unit = self.y_unit if y_unit is None else y_unit

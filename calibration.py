@@ -18,6 +18,9 @@ class StructureCalibration:
         self.delta_gap = delta_gap
         self.structure_position0 = structure_position0
 
+    def __str__(self):
+        return 'Structure %s: Screen center %.1f um; Structure position0 %i um; Delta gap %i um' % (self.structure_name, self.screen_center*1e6, self.structure_position0*1e6, self.delta_gap*1e6)
+
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
         gap = gap0 + self.delta_gap
@@ -47,7 +50,6 @@ class StructureCalibration:
     @staticmethod
     def from_dict(dict_):
         return StructureCalibration(**dict_)
-
 
 class MeasScreens:
     def __init__(self, meas_screens, beam_positions, streaking_factors):
@@ -644,4 +646,26 @@ class StructureCalibrator(LogMsgBase):
         distances = gap/2. - np.abs(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
         index_arr = np.arange(len(self.raw_struct_positions))
         return index_arr[distances <= max_distance]
+
+def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, delta_position):
+    position0 = tracker.beam_position
+    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile, delta_position)
+    delta_position = result_dict['delta_position']
+    meas_screen = tracker.prepare_screen(meas_screen_raw)['screen']
+    back_dict = tracker.backward_propagate(meas_screen, blmeas_profile)
+    screen_center = tracker.calib.screen_center
+    delta_gap = tracker.calib.delta_gap
+    structure_position0 = tracker.calib.structure_position0
+    new_structure_center0 = structure_position0 - delta_position
+    new_calib = StructureCalibration(tracker.structure_name, screen_center, delta_gap, new_structure_center0)
+    outp = {
+            'calib': new_calib,
+            'old_calib': tracker.calib,
+            'blmeas_profile': blmeas_profile,
+            'meas_screen_raw': meas_screen_raw,
+            'forward_screen': result_dict['sim_screen'],
+            'find_beam_position_result': result_dict,
+            'backward_dict': back_dict,
+            }
+    return outp
 

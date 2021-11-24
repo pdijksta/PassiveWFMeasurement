@@ -132,11 +132,12 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.DestroyLasing.clicked.connect(self.destroy_lasing)
         self.RestoreLasing.clicked.connect(self.restore_lasing)
         self.TdcCalibration.clicked.connect(self.tdc_calibration)
-
         self.PlotResolution.clicked.connect(self.plot_resolution)
+        self.BeamlineSelect.activated.connect(self.beamline_select)
+        self.StructureSelect.activated.connect(self.streaking_dimension_select)
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
-        self.StructureSelect.addItems(sorted(config.structure_parameters.keys(), reverse=True))
+        self.beamline_select()
 
         # Default strings in gui fields
         hostname = socket.gethostname()
@@ -180,7 +181,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         fs = config.get_default_forward_options()
         backs = config.get_default_backward_options()
         rs = config.get_default_reconstruct_gauss_options()
-        optics = config.get_default_optics(self.beamline)
         gs = config.get_default_structure_calibrator_options()
         fbs = config.get_default_find_beam_position_options()
         ls = config.get_default_lasing_options()
@@ -207,10 +207,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         # Beam specifications
         self.TransEmittanceX.setText('%.4f' % (bs['nemitx']*1e9))
         self.TransEmittanceY.setText('%.4f' % (bs['nemity']*1e9))
-        self.BetaX.setText('%.4f' % optics['betax'])
-        self.AlphaX.setText('%.4f' % optics['alphax'])
-        self.BetaY.setText('%.4f' % optics['betay'])
-        self.AlphaY.setText('%.4f' % optics['alphay'])
 
         # Other
         self.Charge.setText(self.charge_pv_text)
@@ -285,6 +281,28 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingStatus.setText('Undulator K values not stored')
 
         self.logMsg('Main window initialized')
+
+    def beamline_select(self):
+        beamline = self.beamline
+        screens = config.screen_names[beamline]
+        self.ScreenSelect.clear()
+        self.ScreenSelect.addItems(screens)
+        structures = config.structure_names[beamline]
+        self.StructureSelect.clear()
+        self.StructureSelect.addItems(structures)
+        self.streaking_dimension_select()
+        matching_point = config.optics_matching_points[beamline]
+        self.MatchingPointLabel.setText('Beam specifications at matching point %s' % matching_point)
+        optics = config.get_default_optics(beamline)
+        self.BetaX.setText('%.4f' % optics['betax'])
+        self.AlphaX.setText('%.4f' % optics['alphax'])
+        self.BetaY.setText('%.4f' % optics['betay'])
+        self.AlphaY.setText('%.4f' % optics['alphay'])
+
+    def streaking_dimension_select(self):
+        structure_name = self.structure_name
+        dim = config.structure_dimensions[structure_name]
+        self.StreakingPlaneLabel.setText('Streaking plane: %s' % dim)
 
     def clear_rec_plots(self):
         plot_results.clear_reconstruction(*self.reconstruction_plot_handles)

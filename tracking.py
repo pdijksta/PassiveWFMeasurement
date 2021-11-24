@@ -547,8 +547,7 @@ class Tracker(LogMsgBase):
         return output
 
 
-def get_default_tracker(beamline, structure_name, meta_data, calib, **kwargs):
-    screen = config.beamline_screens[beamline]
+def get_default_tracker(beamline, structure_name, meta_data, calib, screen, **kwargs):
     forward_options = config.get_default_forward_options()
     backward_options = config.get_default_backward_options()
     reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()

@@ -22,33 +22,10 @@
 &end
 
 &alter_elements
-	name = "SARUN18.MQUA080.Q[12]"
-	item = "K1"
-	value = 0
-&end
-
-&alter_elements
-	name = "SARUN19.MQUA080.Q[12]"
-	item = "K1"
-	value = 0
-&end
-
-&alter_elements
-	name = "SARUN20.MQUA080.Q[12]"
-	item = "K1"
-	value = 0
-&end
-
-&alter_elements
-	name = "SARBD01.MQUA020.Q[12]"
-	item = "K1"
-	value = 0
-&end
-
-&alter_elements
-	name = "SARBD02.MQUA030"
-	item = "K1"
-	value = 0
+	name = "*",
+	type = "QUAD",
+	item = K1,
+	value = 0,
 &end
 
 ! from Sven's OpticsServer (new version), 06.04.2020
@@ -89,5 +66,4 @@
 
 &track
 &end
-
 

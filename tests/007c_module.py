@@ -27,7 +27,7 @@ structure_position0 = 360e-6
 screen_center = 0
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, force_charge=180e-12)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name, force_charge=180e-12)
 
 calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, dict_)
 calibrator.fit()

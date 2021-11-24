@@ -1,6 +1,5 @@
 import os
 import itertools
-import collections
 import numpy as np
 
 #Important naming convention
@@ -16,13 +15,38 @@ import numpy as np
 logfile = os.path.join(os.path.dirname(__file__), 'passiveWFMeasurement.log')
 
 structure_names = {
-        'Aramis': collections.OrderedDict([
-            (0, 'SARUN18-UDCP010'),
-            (1, 'SARUN18-UDCP020'),
-            ]),
-        'Athos': collections.OrderedDict([
-            (0, 'SATMA02-UDCP045'),
-            ]),
+        'Aramis': [
+             'SARUN18-UDCP010',
+             'SARUN18-UDCP020',
+             ],
+        'Athos': [
+            'SATMA02-UDCP015',
+            'SATMA02-UDCP045',
+            ],
+        'Athos Pre-Undulator': [
+            'SATDI01-UDCP100',
+            'SATDI01-UDCP200',
+            'SATCL02-UDCP100',
+            'SATCL02-UDCP200',
+            'SATCL02-UDCP300',
+            'SATCL02-UDCP400',
+            ],
+        }
+
+screen_names = {
+        'Aramis': [
+            'SARBD01-DSCR050',
+            'SARBD02-DSCR050',
+            'simulation',
+            ],
+        'Athos': [
+            'SATBD01-DSCR120',
+            'SATBD02-DSCR050',
+            'simulation',
+            ],
+        'Athos Pre-Undulator': [
+            'SATMA01-DSCR030',
+            ],
         }
 
 aramis_structure_parameters = {
@@ -36,6 +60,19 @@ structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
         'SATMA02-UDCP045': aramis_structure_parameters,
+        }
+
+structure_dimensions = {
+        'SARUN18-UDCP010': 'X',
+        'SARUN18-UDCP020': 'X',
+        'SATMA02-UDCP045': 'X',
+        'SATMA02-UDCP015': 'Y',
+        'SATDI01-UDCP100': 'Y',
+        'SATDI01-UDCP200': 'X',
+        'SATCL02-UDCP100': 'Y',
+        'SATCL02-UDCP200': 'X',
+        'SATCL02-UDCP300': 'Y',
+        'SATCL02-UDCP400': 'X',
         }
 
 beamline_quads = {
@@ -56,31 +93,40 @@ beamline_quads = {
             'SATBD01-MQUA090',
             'SATBD02-MQUA030',
             ],
+        'Athos Pre-Undulator': [
+            'SATDI01-MQUA040',
+            'SATDI01-MQUA050',
+            'SATDI01-MQUA220',
+            'SATDI01-MQUA230',
+            'SATDI01-MQUA250',
+            'SATDI01-MQUA260',
+            'SATDI01-MQUA280',
+            'SATDI01-MQUA300',
+            ],
         }
 
 beamline_undulators = {
         'Aramis': ['SARUN%02i-UIND030:K_SET' % x for x in range(3, 16)],
         'Athos': ['SATUN%02i-UIND030:K_SET' % x for x in list(range(6, 14))+list(range(15, 22))],
-            }
+        'Athos Pre-Undulator': [],
+        }
 
 beamline_chargepv = {
         'Aramis': 'SINEG01-DICT215:B1_CHARGE-OP',
         'Athos': 'SINEG01-DICT215:B2_CHARGE-OP',
+        'Athos Pre-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         }
 
 beamline_energypv = {
         'Aramis': 'SARBD01-MBND100:ENERGY-OP',
         'Athos': 'SATBD01-MBND200:ENERGY-OP',
-        }
-
-beamline_screens = {
-        'Aramis': 'SARBD02-DSCR050',
-        'Athos': 'SATBD02-DSCR050',
+        'Athos Pre-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         }
 
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
         'Athos': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
+        'Athos Pre-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         }
 
 default_optics = {
@@ -96,6 +142,18 @@ default_optics = {
             'betay': 69.4,
             'alphay': -14.3,
             },
+        'Athos Pre-Undulator': {
+            'betax': 0,
+            'alphax': 0,
+            'betay': 0,
+            'alphay': 0,
+            },
+        }
+
+optics_matching_points = {
+        'Aramis': 'SARUN18.START',
+        'Athos': '',
+        'Athos Pre-Undulator': '',
         }
 
 def get_default_optics(beamline):
@@ -114,8 +172,8 @@ beamline_charge_pvs_bsread = {
         }
 
 all_structures = []
-for beamline, beamline_dict in structure_names.items():
-    all_structures.extend([x for x in beamline_dict.values()])
+for beamline, structure_list in structure_names.items():
+    all_structures.extend(structure_list)
 
 def get_default_forward_options():
     return {

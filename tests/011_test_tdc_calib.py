@@ -17,6 +17,7 @@ ms.closeall()
 
 beamline = 'Aramis'
 structure_name = 'SARUN18-UDCP020'
+screen_name = 'SARBD02-DSCR050'
 screen_center = 898.02e-6
 structure_position0 = 364e-6
 delta_gap = 0
@@ -38,7 +39,7 @@ example_file = default_dir + '2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h
 data = h5_storage.loadH5Recursive(example_file)
 meta_data = data['meta_data_begin']
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
-tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name)
 blmeas_profile = beam_profile.profile_from_blmeas(blmeas_file, 400e-15, tracker.total_charge, tracker.energy_eV, 0.02)
 print(blmeas_profile.time.min(), blmeas_profile.time.max())
 #beam_profile.BeamProfile(blmeas_dict['time'], blmeas_dict['current_reduced'], energy_eV=tracker.energy_eV, total_charge=tracker.total_charge)

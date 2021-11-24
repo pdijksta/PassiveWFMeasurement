@@ -18,7 +18,9 @@ lasing_on_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_13_42_Lasing_T
 lasing_off_dict = h5_storage.loadH5Recursive('./data/2021_10_18-15_11_55_Lasing_False_SARBD02-DSCR050.h5')
 
 structure_name = 'SARUN18-UDCP020'
+screen_name = 'SARBD02-DSCR050'
 screen_center = 1046e-6
+
 delta_gap = -45e-6
 structure_position0 = 361e-6
 pulse_energy = 180e-6
@@ -26,7 +28,7 @@ pulse_energy = 180e-6
 lasing_options = config.get_default_lasing_options()
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.get_default_tracker('Aramis', structure_name, lasing_on_dict['meta_data_begin'], calib)
+tracker = tracking.get_default_tracker('Aramis', structure_name, lasing_on_dict['meta_data_begin'], calib, screen_name)
 las_rec_images = {}
 
 for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):

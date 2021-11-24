@@ -48,7 +48,7 @@ meta_data[structure_name+':CENTER'] = structure_position
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
 
-tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name)
 
 image = dict_['pyscan_result']['image'][offset_index][10].astype(np.float64)
 projx = image.sum(axis=0)[::-1]

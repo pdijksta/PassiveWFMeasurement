@@ -9,10 +9,11 @@ from .logMsg import logMsg
 Z0 = physical_constants['characteristic impedance of vacuum'][0]
 t1 = Z0*c/(4*pi)
 
-@functools.lru_cache(5)
+@functools.lru_cache(10)
 def get_structure(structure_name, logger=None):
     sp = config.structure_parameters[structure_name]
-    return CorrugatedStructure(**sp, logger=logger)
+    dim = config.structure_dimensions[structure_name]
+    return CorrugatedStructure(**sp, dim=dim, logger=logger)
 
 class CorrugatedStructure:
     """
@@ -23,13 +24,14 @@ class CorrugatedStructure:
     w         plate width
     Ls        Length of structure
     """
-    def __init__(self, p, g, w, Ls, logger=None):
+    def __init__(self, p, g, w, Ls, dim, logger=None):
         self.logger = logger
         self.p = p
         self.g = g
         self.w = w
         self.Ls = Ls
         self.alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
+        self.dim = dim
         self.spw_dict = {
                 'Dipole': {},
                 'Quadrupole': {},
@@ -42,6 +44,7 @@ class CorrugatedStructure:
                 self.g == other.g,
                 self.w == other.w,
                 self.Ls == other.Ls,
+                self.dim == other.dim,
                 )
         return all(conditions)
 

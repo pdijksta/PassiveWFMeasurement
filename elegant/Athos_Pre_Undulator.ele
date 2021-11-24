@@ -1,7 +1,7 @@
 &run_setup
 	lattice		= ./Athos.lat,
-	use_beamline	= SATMA02_UNTIL_END
-	rootname	= Athos,
+	use_beamline	= PRE_UNDULATOR
+	rootname	= Athos_Pre_Undulator,
 	output		= %s.out,
 	centroid	= %s.out,
 	sigma		= %s.sig,
@@ -21,6 +21,7 @@
 	n_steps	= 1,
 &end
 
+
 ! from Sven's OpticsServer (new version), 06.04.2020
 ! location: SARUN18.START
 ! This is not the correct location for this simulation but it has no effect on the transport matrix.
@@ -38,8 +39,7 @@
 &end
 
 &alter_elements
-	name = "*",
-	type = "QUAD",
+	type = QUADRUPOLE,
 	item = K1,
 	value = 0,
 &end

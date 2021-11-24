@@ -28,7 +28,7 @@ structure_position0 = 360e-6
 screen_center = -600e-6
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 
-tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib)
+tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name)
 
 sig_t = 20e-15
 tt_range = 10*sig_t

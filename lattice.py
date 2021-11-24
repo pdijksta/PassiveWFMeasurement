@@ -67,6 +67,7 @@ class Lattice:
         all_matrices = []
         for n_element, (type_, name) in enumerate(zip(types, names)):
             if type_ == 'QUAD':
+                assert columns['R21'][n_element] == 0 # Quadrupoles in simulations must be 0
                 length = columns['R12'][n_element]
                 if name.endswith('.Q1') or name.endswith('.Q2'):
                     name2 = name[:-3]
@@ -113,4 +114,6 @@ def get_beamline_lattice(beamline, quad_k1l_dict):
         return aramis_lattice(quad_k1l_dict)
     elif beamline == 'Athos':
         return athos_lattice(quad_k1l_dict)
+    elif beamline == 'Athos Pre-Undulator':
+        raise NotImplementedError
 

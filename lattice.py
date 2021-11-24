@@ -98,6 +98,23 @@ class Lattice:
         r_tot = self.matrix_dict[to]
         return r_tot @ np.linalg.inv(r1)
 
+    def propagate_optics(self, beta0, alpha0, dimension, from_, to):
+        mat = self.get_matrix(from_, to)
+        if dimension == 'X':
+            r11 = mat[0,0]
+            r12 = mat[0,1]
+            r21 = mat[1,0]
+            r22 = mat[1,1]
+        elif dimension == 'Y':
+            r11 = mat[2,2]
+            r12 = mat[2,3]
+            r21 = mat[3,2]
+            r22 = mat[3,3]
+        gamma0 = (1+alpha0**2)/beta0
+        beta1 = r11**2 * beta0 - 2*r11*r12*alpha0 + r12**2 * gamma0
+        alpha1 = -r11*r21 * beta0 + (r11*r22 + r21*r12) * alpha0 - r22*r12 * gamma0
+        return beta1, alpha1
+
 def generated_lattice(h5_file, quad_k1l_dict):
     lat = Lattice(os.path.join(os.path.dirname(__file__), h5_file))
     lat.generate(quad_k1l_dict)

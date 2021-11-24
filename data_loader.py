@@ -38,9 +38,14 @@ def get_median(projx, method, output, cutoff=default_cutoff):
     elif output == 'index':
         return index_median
 
-def screen_data_to_median(pyscan_result):
-    x_axis = pyscan_result['x_axis_m'].astype(np.float64)
-    projx = pyscan_result['image'].astype(np.float64).sum(axis=-2)
+def screen_data_to_median(pyscan_result, dim):
+    if dim == 'X':
+        x_axis = pyscan_result['x_axis_m'].astype(np.float64)
+        projx = pyscan_result['image'].astype(np.float64).sum(axis=-2)
+    elif dim == 'Y':
+        x_axis = pyscan_result['y_axis_m'].astype(np.float64)
+        projx = pyscan_result['image'].astype(np.float64).sum(axis=-1)
+
     proj = get_median(projx, 'mean', 'proj')
 
     if x_axis[1] < x_axis[0]:

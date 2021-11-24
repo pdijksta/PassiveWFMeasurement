@@ -89,6 +89,7 @@ class StructureCalibrator(LogMsgBase):
         self.tracker = tracker
         self.structure_name = tracker.structure_name
         self.structure_calib_options = structure_calib_options
+        self.structure_dim = tracker.structure.dim
         self.gap0 = tracker.structure_gap
         self.beamline = tracker.beamline
         self.total_charge = tracker.total_charge
@@ -145,6 +146,9 @@ class StructureCalibrator(LogMsgBase):
         return self.meas_screens
 
     def add_data(self, raw_struct_positions, images, x_axis, y_axis):
+        if self.structure_dim == 'Y':
+            images = np.transpose(images, axes=(1,2))
+            x_axis, y_axis = y_axis, x_axis
 
         proj_cutoff = self.structure_calib_options['proj_cutoff']
 

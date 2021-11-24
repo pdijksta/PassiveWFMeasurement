@@ -476,7 +476,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         else:
             blmeas_profile = None
 
-        x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'])
+        dim = config.structure_dimensions[self.structure_name]
+        x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'], dim)
         x_axis = x_axis - tracker.calib.screen_center
         meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
         current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
@@ -608,7 +609,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
         bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
-        x_axis, proj = data_loader.screen_data_to_median(pyscan_result)
+        dim = config.structure_dimensions[self.structure_name]
+        x_axis, proj = data_loader.screen_data_to_median(pyscan_result, dim)
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
         delta_position = float(self.TdcCalibrationPositionDelta.text())*1e-6
         result_dict = calibration.tdc_calibration(tracker, bp, screen_raw, delta_position)
@@ -635,7 +637,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
-        fig, _ = plot_results.plot_simple_daq(screen_dict)
+        dim = config.structure_dimensions[self.structure_name]
+        fig, _ = plot_results.plot_simple_daq(screen_dict, dim)
         self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict)
 
     @property
@@ -673,7 +676,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             elog_text = 'Saved lasing ON'
         else:
             elog_text = 'Saved lasing OFF'
-        fig, _ = plot_results.plot_simple_daq(image_dict)
+        dim = config.structure_dimensions[self.structure_name]
+        fig, _ = plot_results.plot_simple_daq(image_dict, dim)
         filename = self.elog_and_H5_auto(elog_text, [fig], 'Saved lasing images', basename, image_dict)
         if lasing_on_off:
             self.LasingOnDataLoad.setText(filename)

@@ -39,7 +39,8 @@
 &end
 
 &alter_elements
-	type = QUADRUPOLE,
+	name = "*",
+	type = "QUAD",
 	item = K1,
 	value = 0,
 &end

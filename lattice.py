@@ -94,9 +94,17 @@ class Lattice:
         self.matrix_dict = {name: matrix for name, matrix in zip(names, all_matrices)}
 
     def get_matrix(self, from_, to):
+        index_from = int(np.argwhere(from_ == self.element_names).squeeze())
+        index_to = int(np.argwhere(to == self.element_names).squeeze())
+        inverse = index_from > index_to
+        if inverse:
+            from_, to = to, from_
         r1 = self.matrix_dict[from_]
         r_tot = self.matrix_dict[to]
-        return r_tot @ np.linalg.inv(r1)
+        outp = r_tot @ np.linalg.inv(r1)
+        if inverse:
+            outp = np.linalg.inv(outp)
+        return outp
 
     def propagate_optics(self, beta0, alpha0, dimension, from_, to):
         mat = self.get_matrix(from_, to)
@@ -129,7 +137,7 @@ def athos_lattice(quad_k1l_dict):
 def get_beamline_lattice(beamline, quad_k1l_dict):
     if beamline == 'Aramis':
         return aramis_lattice(quad_k1l_dict)
-    elif beamline == 'Athos':
+    elif beamline == 'Athos Post-Undulator':
         return athos_lattice(quad_k1l_dict)
     elif beamline == 'Athos Pre-Undulator':
         raise NotImplementedError

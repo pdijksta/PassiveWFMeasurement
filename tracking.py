@@ -109,7 +109,11 @@ class Tracker(LogMsgBase):
 
     def gen_beam(self, beamProfile):
         beam_options = self.beam_spec.copy()
-        beam_options.update(self.beam_optics)
+        betax0, alphax0 = self.beam_optics['betax'], self.beam_optics['alphax']
+        matching_point = config.optics_matching_points[self.beamline]
+        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', matching_point, self.lat.element_names[0])
+        beam_options['betax'] = betax
+        beam_options['alphax'] = alphax
         beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam
 
@@ -129,7 +133,7 @@ class Tracker(LogMsgBase):
         beam: must be beam corresponding to beginning of self.lat
         """
         beam_init = beam
-        mat0 = self.lat.get_matrix(self.lat.element_names[0].replace('-', '.'), self.structure_name.replace('-', '.'))
+        mat0 = self.lat.get_matrix(self.lat.element_names[0], self.structure_name.replace('-', '.'))
         beam_before_streaker = beam.linear_propagate(mat0)
         wake_time = beam_init.beamProfile.time
         energy_eV = beam_init.energy_eV

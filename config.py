@@ -19,7 +19,7 @@ structure_names = {
              'SARUN18-UDCP010',
              'SARUN18-UDCP020',
              ],
-        'Athos': [
+        'Athos Post-Undulator': [
             'SATMA02-UDCP015',
             'SATMA02-UDCP045',
             ],
@@ -39,7 +39,7 @@ screen_names = {
             'SARBD02-DSCR050',
             'simulation',
             ],
-        'Athos': [
+        'Athos Post-Undulator': [
             'SATBD01-DSCR120',
             'SATBD02-DSCR050',
             'simulation',
@@ -83,7 +83,7 @@ beamline_quads = {
             'SARBD01-MQUA020',
             'SARBD02-MQUA030',
             ],
-        'Athos': [
+        'Athos Post-Undulator': [
             'SATMA02-MQUA050',
             'SATMA02-MQUA070',
             'SATBD01-MQUA010',
@@ -107,25 +107,25 @@ beamline_quads = {
 
 beamline_undulators = {
         'Aramis': ['SARUN%02i-UIND030:K_SET' % x for x in range(3, 16)],
-        'Athos': ['SATUN%02i-UIND030:K_SET' % x for x in list(range(6, 14))+list(range(15, 22))],
+        'Athos Post-Undulator': ['SATUN%02i-UIND030:K_SET' % x for x in list(range(6, 14))+list(range(15, 22))],
         'Athos Pre-Undulator': [],
         }
 
 beamline_chargepv = {
         'Aramis': 'SINEG01-DICT215:B1_CHARGE-OP',
-        'Athos': 'SINEG01-DICT215:B2_CHARGE-OP',
+        'Athos Post-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         'Athos Pre-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         }
 
 beamline_energypv = {
         'Aramis': 'SARBD01-MBND100:ENERGY-OP',
-        'Athos': 'SATBD01-MBND200:ENERGY-OP',
+        'Athos Post-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         'Athos Pre-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         }
 
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
-        'Athos': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
+        'Athos Post-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         'Athos Pre-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         }
 
@@ -136,24 +136,25 @@ default_optics = {
             'betay': 16.807,
             'alphay': 1.782,
             },
-        'Athos': {
-            'betax': 30.9,
-            'alphax': 3.8,
-            'betay': 69.4,
-            'alphay': -14.3,
+        # Both Athos Optics / matching points coincide with the values from the Emittance Tool
+        'Athos Post-Undulator': {
+            'betax': 3.15,
+            'alphax': 0.3,
+            'betay': 3.15,
+            'alphay': 0.3,
             },
         'Athos Pre-Undulator': {
-            'betax': 0,
-            'alphax': 0,
-            'betay': 0,
-            'alphay': 0,
+            'betax': 14.5804,
+            'alphax': 0.75,
+            'betay': 14.5804,
+            'alphay': 0.75,
             },
         }
 
 optics_matching_points = {
         'Aramis': 'SARUN18.START',
-        'Athos': '',
-        'Athos Pre-Undulator': '',
+        'Athos Post-Undulator': 'SATBD01.MQUA010',
+        'Athos Pre-Undulator': 'SATCB01.MQUA230',
         }
 
 def get_default_optics(beamline):
@@ -243,6 +244,8 @@ def get_default_find_beam_position_options():
     return outp
 
 default_n_particles = int(1e5)
+
+# For plots
 fontsize = 8
 rho_label = r'$\rho$ (nC/m)'
 

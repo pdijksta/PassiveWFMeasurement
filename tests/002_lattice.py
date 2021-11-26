@@ -11,6 +11,7 @@ import PassiveWFMeasurement.gen_beam as gen_beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.myplotstyle as ms
+import ElegantWrapper.simulation as simulation
 
 ms.closeall()
 
@@ -19,14 +20,14 @@ elegant_matrix.set_tmp_dir(os.path.join(os.path.dirname(os.path.abspath(__file__
 
 file_ = './data/2021_05_19-14_59_24_Lasing_True_SARBD02-DSCR050.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
-meta_data = dict_['meta_data_begin']
+meta_data_ar = dict_['meta_data_begin']
 
 
 
-simulator = elegant_matrix.get_simulator(meta_data)
+simulator = elegant_matrix.get_simulator(meta_data_ar)
 mat_elegant = simulator.get_streaker_matrices(None, 'Aramis')['s2_to_screen']
 
-lat = lattice.aramis_lattice(meta_data)
+lat = lattice.aramis_lattice(meta_data_ar)
 mat_python = lat.get_matrix('MIDDLE_STREAKER_%i' % 2, 'SARBD02.DSCR050')
 
 
@@ -46,7 +47,7 @@ dim2 = ('x', 'y', 't')
 
 for n_d, dimensions in enumerate([dim1, dim2]):
     spec = config.get_default_beam_spec()
-    spec.update(config.default_optics['Athos'])
+    spec.update(config.default_optics['Athos Post-Undulator'])
     n_particles = config.default_n_particles
     sig_t = 20e-15
     tt_range = 200e-15
@@ -72,6 +73,20 @@ for n_d, dimensions in enumerate([dim1, dim2]):
             sp.hist(b[dim], bins=100)
             print('Case', n_d, 'Beam', n_b, dim, b[dim].std())
 
+
+sim = simulation.ElegantSimulation('../elegant/Aramis.ele')
+betax0 = sim.twi['betax'][0]
+alphax0 = sim.twi['alphax'][0]
+meta_data0 = {x:0 for x in meta_data_ar.keys()}
+lat = lattice.aramis_lattice(meta_data0)
+from_ = lat.element_names[0]
+to = lat.element_names[-1]
+
+betax1, alphax1 = lat.propagate_optics(betax0, alphax0, 'X', from_, to)
+betax1_ele, alphax1_ele = sim.twi['betax'][-1], sim.twi['alphax'][-1]
+
+print('lattice.py', betax1, alphax1)
+print('elegant', betax1_ele, alphax1_ele)
 
 ms.show()
 

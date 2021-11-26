@@ -6,7 +6,6 @@ if path not in sys.path:
     sys.path.append(path)
 
 import PassiveWFMeasurement.wf_model as wf_model
-import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.myplotstyle as ms
 import WakefieldAnalysis.wf_model as wf_model_old
@@ -24,7 +23,7 @@ energy_eV = 6e9
 
 bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, charge, energy_eV)
 
-structure = wf_model.CorrugatedStructure(**config.aramis_structure_parameters)
+structure = wf_model.get_structure('SARUN18-UDCP020')
 
 wake_dict = structure.convolve(bp, gap/2., beam_position, 'Dipole')
 

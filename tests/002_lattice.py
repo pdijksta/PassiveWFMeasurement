@@ -27,7 +27,7 @@ meta_data_ar = dict_['meta_data_begin']
 simulator = elegant_matrix.get_simulator(meta_data_ar)
 mat_elegant = simulator.get_streaker_matrices(None, 'Aramis')['s2_to_screen']
 
-lat = lattice.aramis_lattice(meta_data_ar)
+lat = lattice.get_beamline_lattice('Aramis', meta_data_ar)
 mat_python = lat.get_matrix('MIDDLE_STREAKER_%i' % 2, 'SARBD02.DSCR050')
 
 
@@ -38,9 +38,8 @@ meta_data = dict_['meta_data_begin']
 simulator = elegant_matrix.get_simulator(meta_data)
 mat_elegant_athos = simulator.get_streaker_matrices(None, 'Athos')['s1_to_screen']
 
-lat_athos = lattice.athos_lattice(meta_data)
+lat_athos = lattice.get_beamline_lattice('Athos Post-Undulator', meta_data)
 mat_python_athos = lat_athos.get_matrix('MIDDLE_STREAKER_%i' % 1, 'SATBD02.DSCR050')
-
 
 dim1 = ('x', 't')
 dim2 = ('x', 'y', 't')

@@ -157,6 +157,12 @@ optics_matching_points = {
         'Athos Pre-Undulator': 'SATCB01.MQUA230',
         }
 
+beamline_lat_files = {
+        'Aramis': './elegant/Aramis.mat.h5',
+        'Athos Post-Undulator': './elegant/Athos.mat.h5',
+        'Athos Pre-Undulator': './elegant/Athos_Pre_Undulator.mat.h5',
+        }
+
 def get_default_optics(beamline):
     return default_optics[beamline].copy()
 

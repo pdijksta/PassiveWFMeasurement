@@ -6,6 +6,7 @@ import numpy as np
 from scipy.constants import c
 
 from . import h5_storage
+from . import config
 
 def transferMatrixDrift66(Ld):
     Md1 = [[1, Ld, 0, 0, 0, 0],
@@ -128,17 +129,7 @@ def generated_lattice(h5_file, quad_k1l_dict):
     lat.generate(quad_k1l_dict)
     return lat
 
-def aramis_lattice(quad_k1l_dict):
-    return generated_lattice('./elegant/Aramis.mat.h5', quad_k1l_dict)
-
-def athos_lattice(quad_k1l_dict):
-    return generated_lattice('./elegant/Athos.mat.h5', quad_k1l_dict)
-
 def get_beamline_lattice(beamline, quad_k1l_dict):
-    if beamline == 'Aramis':
-        return aramis_lattice(quad_k1l_dict)
-    elif beamline == 'Athos Post-Undulator':
-        return athos_lattice(quad_k1l_dict)
-    elif beamline == 'Athos Pre-Undulator':
-        raise NotImplementedError
+    filename = config.beamline_lat_files[beamline]
+    return generated_lattice(filename, quad_k1l_dict)
 

@@ -83,9 +83,19 @@ class Tracker(LogMsgBase):
         self._meta_data = meta_data
         self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
         self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
-        self.r12 = self.matrix[0,1]
-        self.disp = self.matrix[2,5]
-        self.energy_eV = meta_data[self.screen_name+':ENERGY-OP']*1e6
+        if self.structure.dim == 'X':
+            self.r12 = self.matrix[0,1]
+            self.disp = self.matrix[2,5]
+        elif self.structure.dim == 'Y':
+            self.r12 = self.matrix[2,3]
+            self.disp = self.matrix[0,5]
+        energy_pv = self.screen_name+':ENERGY-OP'
+        if energy_pv in meta_data:
+            self.energy_eV = meta_data[energy_pv]*1e6
+        elif self.beamline in config.fallback_energy_PVs:
+            self.energy_eV = meta_data[config.fallback_energy_PVs[self.beamline]]*1e6
+        else:
+            raise KeyError(meta_data.keys())
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
         self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']

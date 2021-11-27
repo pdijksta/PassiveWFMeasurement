@@ -23,6 +23,12 @@ class Image(LogMsgBase):
             y_axis = y_axis[::-1]
             image = image[::-1,:]
 
+        if np.any(np.diff(y_axis) == 0):
+            raise ValueError
+
+        if np.any(np.diff(x_axis) == 0):
+            raise ValueError
+
         if subtract_median:
             image = image - np.median(image)
             np.clip(image, 0, None, out=image)
@@ -211,7 +217,8 @@ class Image(LogMsgBase):
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):
         if ref_y is None:
             ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
-            #print('y_to_eV', ref_y*1e6, ' [um]')
+        if dispersion == 0:
+            raise ValueError
         E_axis = (self.y_axis-ref_y) * dispersion * energy_eV
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 

@@ -35,18 +35,23 @@ structure_names = {
 
 screen_names = {
         'Aramis': [
-            'SARBD01-DSCR050',
             'SARBD02-DSCR050',
+            'SARBD01-DSCR050',
             'simulation',
             ],
         'Athos Post-Undulator': [
-            'SATBD01-DSCR120',
             'SATBD02-DSCR050',
+            'SATBD01-DSCR120',
             'simulation',
             ],
         'Athos Pre-Undulator': [
             'SATMA01-DSCR030',
             ],
+        }
+
+# for legacy data
+fallback_energy_PVs = {
+        'Aramis': 'SARBD01-MBND100:ENERGY-OP',
         }
 
 aramis_structure_parameters = {

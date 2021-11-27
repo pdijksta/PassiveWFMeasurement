@@ -418,15 +418,14 @@ def reconstruction_figure(figsize=None):
     fig.canvas.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+4)]
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]
     clear_reconstruction(*subplots)
     return fig, subplots
 
-def clear_reconstruction(sp_screen, sp_profile, sp_opt, sp_moments):
+def clear_reconstruction(sp_screen, sp_profile, sp_moments):
     for sp, title, xlabel, ylabel in [
             (sp_screen, 'Screen', 'x (mm)', config.rho_label),
             (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
-            (sp_opt, 'Optimization', 'Gaussian $\sigma$ (fs)', 'Opt value'),
             (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
             ]:
         sp.clear()
@@ -487,10 +486,10 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     gauss_sigma = gauss_dict['gauss_sigma']
 
     if plot_handles is None:
-        fig, (sp_screen, sp_profile, sp_opt, sp_moments) = reconstruction_figure(figsize)
+        fig, (sp_screen, sp_profile, sp_moments) = reconstruction_figure(figsize)
         plt.suptitle('Optimization')
     else:
-        sp_screen, sp_profile, sp_opt, sp_moments = plot_handles
+        sp_screen, sp_profile, sp_moments = plot_handles
 
     rms_arr = np.zeros(len(opt_func_screens))
     centroid_arr = rms_arr.copy()
@@ -514,6 +513,8 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
 
     if blmeas_profiles is not None:
         for blmeas_profile, ls, zero_crossing in zip(blmeas_profiles, ['--', 'dotted'], [1, 2]):
+            if blmeas_profile is None:
+                break
             blmeas_profile.plot_standard(sp_profile, ls=ls, color='black', label='%i' % round(blmeas_profile.rms()*1e15), center='Mean')
             if not both_zero_crossings:
                 break
@@ -527,8 +528,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
     sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
 
-    for sp_ in sp_opt, sp_moments:
-        sp_.axvline(gauss_sigma*1e15, color='black')
+    sp_moments.axvline(gauss_sigma*1e15, color='black')
 
     return gauss_dict
 

@@ -269,7 +269,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.tdc_calibration_fig, self.tdc_calibration_plot_handles = plot_results.tdc_calib_figure()
         self.tdc_calibration_tab_index, self.tdc_calibration_canvas = get_new_tab(self.tdc_calibration_fig, 'TDC cal.')
 
-
         # Init ELOG
         self.elog_button_title = 'Empty'
         self.elog_button_figures = []

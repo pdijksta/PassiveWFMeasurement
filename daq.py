@@ -10,7 +10,7 @@ from cam_server.utils import get_host_port_from_stream_address
 from bsread import source, SUB
 from epics import caget, caput
 
-import config
+from . import config
 
 def get_readables(beamline):
     return [
@@ -361,7 +361,7 @@ def get_quad_strengths(beamline):
     return k1l_dict
 
 def get_meta_data(screen, dry_run, beamline):
-    all_structures = config.all_structures
+    all_structures = config.structure_names[beamline]
     meta_dict = {}
     for streaker, suffix1, suffix2 in itertools.product(all_structures, [':GAP', ':CENTER'], ['', '.RBV']):
         pv = streaker+suffix1+suffix2

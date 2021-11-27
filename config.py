@@ -16,12 +16,12 @@ logfile = os.path.join(os.path.dirname(__file__), 'passiveWFMeasurement.log')
 
 structure_names = {
         'Aramis': [
-             'SARUN18-UDCP010',
              'SARUN18-UDCP020',
+             'SARUN18-UDCP010',
              ],
         'Athos Post-Undulator': [
-            'SATMA02-UDCP015',
             'SATMA02-UDCP045',
+            'SATMA02-UDCP015',
             ],
         'Athos Pre-Undulator': [
             'SATDI01-UDCP100',
@@ -60,6 +60,13 @@ structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
         'SATMA02-UDCP045': aramis_structure_parameters,
+        'SATMA02-UDCP015': aramis_structure_parameters,
+        'SATDI01-UDCP100': aramis_structure_parameters,
+        'SATDI01-UDCP200': aramis_structure_parameters,
+        'SATCL02-UDCP100': aramis_structure_parameters,
+        'SATCL02-UDCP200': aramis_structure_parameters,
+        'SATCL02-UDCP300': aramis_structure_parameters,
+        'SATCL02-UDCP400': aramis_structure_parameters,
         }
 
 structure_dimensions = {

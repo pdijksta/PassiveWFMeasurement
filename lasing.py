@@ -191,6 +191,9 @@ class LasingReconstructionImages:
         self.beam_positions = None
         self.index_median = None
 
+        if tracker.structure.dim == 'Y':
+            raise ValueError('Structure streaking dimension Y not supported for lasing reconstruction!')
+
     @property
     def ref_slice_dict(self):
         return self._ref_slice_dict

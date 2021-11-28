@@ -147,7 +147,7 @@ class StructureCalibrator(LogMsgBase):
 
     def add_data(self, raw_struct_positions, images, x_axis, y_axis):
         if self.structure_dim == 'Y':
-            images = np.transpose(images, axes=(1,2))
+            images = np.transpose(images, axes=(0,2,1))
             x_axis, y_axis = y_axis, x_axis
 
         proj_cutoff = self.structure_calib_options['proj_cutoff']

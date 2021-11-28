@@ -540,7 +540,7 @@ def plot_simple_daq(data_dict, dim):
     ylabel = 'y (mm)'
 
     if dim == 'Y':
-        images = np.transpose(images, axis=(1,2))
+        images = np.transpose(images, axes=(1,2))
         x_axis, y_axis = y_axis, x_axis
         xlabel, ylabel = ylabel, xlabel
 

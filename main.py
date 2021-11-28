@@ -380,7 +380,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Resolution calculated'
         self.elog_button_figures = [self.resolution_fig]
         self.elog_button_save_dict = res_dict
-        self.elog_button_save_name = '%s_resolution' % self.structure_name
+        self.elog_button_save_name = '%s_resolution.h5' % self.structure_name
 
         elog_text = 'Resolution calculated for'
         elog_text += '\ngap: %.3f mm' % (gap*1e3)
@@ -491,7 +491,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Current profile reconstructed'
         self.elog_button_figures = [self.reconstruction_fig]
         self.elog_button_save_dict = current_rec_dict
-        self.elog_button_save_name = '%s_current_profile_reconstruction' % self.structure_name
+        self.elog_button_save_name = '%s_current_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'Current profile reconstructed'
         elog_text += '\nstructure:  %s' % tracker.structure_name
@@ -511,13 +511,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         range_ = np.concatenate([range1, [0], range2])*1e-3 # Convert mm to m
         range_.sort()
         range_ = np.unique(range_)
+        dry_run = self.dry_run
 
         n_images = w2i(self.CalibrateStreakerImages)
 
         if daq is None:
             raise ImportError('Daq not available')
 
-        result_dict = daq.data_structure_offset(self.structure_name, range_, self.screen, n_images, self.dry_run, self.beamline)
+        result_dict = daq.data_structure_offset(self.structure_name, range_, self.screen, n_images, dry_run, self.beamline)
 
         try:
             fit_dicts = self._analyze_structure_fit(result_dict)
@@ -539,7 +540,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         calib = fit_dicts['centroid']['calibration']
         elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
-        filename = self.elog_and_H5_auto(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict)
+        filename = self.elog_and_H5_auto(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict, dry_run)
         self.LoadCalibrationFilename.setText(filename)
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
         self.logMsg('DAQ for calibration ended.')
@@ -588,7 +589,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Structure gap and center calibrated'
         self.elog_button_figures = [self.structure_calib_fig]
         self.elog_button_save_dict = calib_dict
-        self.elog_button_save_name = '%s_calibration' % self.structure_name
+        self.elog_button_save_name = '%s_calibration.h5' % self.structure_name
 
         elog_text = 'Structure gap and center calibrated'
         elog_text += '\nstructure: %s' % tracker.structure_name
@@ -632,13 +633,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def obtain_reconstruction(self):
         n_images = w2i(self.ReconNumberImages)
-        screen_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
+        dry_run = self.dry_run
+        screen_dict = daq.get_images(self.screen, n_images, self.beamline, dry_run)
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Screen_data_%s.h5' % self.screen.replace('.','_')
         elog_text = 'Screen %s data taken' % self.screen
         dim = config.structure_dimensions[self.structure_name]
         fig, _ = plot_results.plot_simple_daq(screen_dict, dim)
-        self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict)
+        self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict, dry_run)
 
     @property
     def structure_name(self):
@@ -666,7 +668,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         else:
             n_images = w2i(self.LasingOffNumberImages)
 
-        image_dict = daq.get_images(self.screen, n_images, self.beamline, self.dry_run)
+        dry_run = self.dry_run
+        image_dict = daq.get_images(self.screen, n_images, self.beamline, dry_run)
         date = datetime.now()
         screen_str = self.screen.replace('.','_')
         lasing_str = str(lasing_on_off)
@@ -677,7 +680,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             elog_text = 'Saved lasing OFF'
         dim = config.structure_dimensions[self.structure_name]
         fig, _ = plot_results.plot_simple_daq(image_dict, dim)
-        filename = self.elog_and_H5_auto(elog_text, [fig], 'Saved lasing images', basename, image_dict)
+        filename = self.elog_and_H5_auto(elog_text, [fig], 'Saved lasing images', basename, image_dict, dry_run)
         if lasing_on_off:
             self.LasingOnDataLoad.setText(filename)
         else:
@@ -726,7 +729,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'FEL power profile reconstructed'
         self.elog_button_figures = [self.all_lasing_fig]
         self.elog_button_save_dict = result_dict
-        self.elog_button_save_name = '%s_FEL_power_profile_reconstruction' % self.structure_name
+        self.elog_button_save_name = '%s_FEL_power_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'FEL power profile reconstructed'
         elog_text += '\nstructure:  %s' % tracker.structure_name
@@ -734,8 +737,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         self.logMsg('Lasing reconstruction end')
 
-    def elog_and_H5_auto(self, text, figs, title, basename, data_dict):
-
+    def elog_and_H5_auto(self, text, figs, title, basename, data_dict, dry_run):
+        if dry_run:
+            basename.replace('.h5', '_dry_run.h5')
         filename = os.path.join(self.save_dir, basename)
         h5_storage.saveH5Recursive(filename, data_dict)
         self.logMsg('Saved %s' % filename)
@@ -773,8 +777,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         figures = self.elog_button_figures
         save_dict = self.elog_button_save_dict
         save_name = self.elog_button_save_name
-        if not save_name.endswith('.h5'):
-            save_name += '.h5'
         date = datetime.now()
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction_')
         save_name = basename + save_name

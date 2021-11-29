@@ -49,6 +49,7 @@ class Tracker(LogMsgBase):
         self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (self.structure_gap*1e6, calib.structure_position0*1e6))
 
     def update_calib(self, calib):
+        assert self.structure_name == calib.structure_name
         self.calib = calib
         self.structure_position0 = calib.structure_position0
         self.screen_center = calib.screen_center

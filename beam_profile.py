@@ -78,7 +78,6 @@ class Profile(LogMsgBase):
             sort = np.argsort(xx)
             x = np.interp(half, xx[sort], yy[sort])
             lims.append(x)
-
         fwhm = abs(lims[0]-lims[1])
         return fwhm
 

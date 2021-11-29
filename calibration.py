@@ -21,6 +21,8 @@ class StructureCalibration:
     def __str__(self):
         return 'Structure %s: Screen center %.1f um; Structure position0 %i um; Delta gap %i um' % (self.structure_name, self.screen_center*1e6, self.structure_position0*1e6, self.delta_gap*1e6)
 
+    __repr__ = __str__
+
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
         gap = gap0 + self.delta_gap
@@ -404,15 +406,7 @@ class StructureCalibrator(LogMsgBase):
                 }
         return output
 
-    def reconstruct_current(self, plot_details=False, force_gap=None, force_struct_position0=None, use_n_positions=None):
-        if force_gap is not None:
-            gap = force_gap
-        else:
-            gap = self.fit_dicts['centroid']['gap_fit']
-        if force_struct_position0 is not None:
-            structure_position0 = force_struct_position0
-        else:
-            structure_position0 = self.fit_dicts['centroid']['structure_position0']
+    def reconstruct_current(self, gap, structure_position0, use_n_positions=None, plot_details=False):
         gauss_dicts = []
         beam_position_list = []
         if use_n_positions is None:
@@ -453,7 +447,7 @@ class StructureCalibrator(LogMsgBase):
                 gap = np.round(gap/precision)*precision
                 if gap in gaps:
                     return
-            beam_position_list, gauss_dicts = self.reconstruct_current(force_gap=gap, force_struct_position0=structure_position0, use_n_positions=use_n_positions)
+            beam_position_list, gauss_dicts = self.reconstruct_current(gap, structure_position0, use_n_positions=use_n_positions)
             distance_arr = gap/2. - np.abs(beam_position_list)
 
             rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
@@ -549,7 +543,7 @@ class StructureCalibrator(LogMsgBase):
 
         for n_delta, delta_gap in enumerate(delta_gap_scan_range):
             gap = gap0 + delta_gap
-            beam_position_list, gauss_dicts = self.reconstruct_current(force_gap=gap, force_struct_position0=structure_position0, use_n_positions=use_n_positions)
+            beam_position_list, gauss_dicts = self.reconstruct_current(gap, structure_position0, use_n_positions=use_n_positions)
             rms_arr = np.array([x['reconstructed_profile'].rms() for x in gauss_dicts])
             distance_arr = gap/2. - np.abs(beam_position_list)
             distance_rms_arr[:,n_delta,0] = distance_arr

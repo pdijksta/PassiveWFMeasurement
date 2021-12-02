@@ -61,6 +61,30 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on, slice_Espread_of
             'norm_factor': norm_factor
             }
 
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy):
+    if type(file_or_dict_off) is dict:
+        lasing_off_dict = file_or_dict_off
+    else:
+        lasing_off_dict = h5_storage.loadH5Recursive(file_or_dict_off)
+    if type(file_or_dict_on) is dict:
+        lasing_on_dict = file_or_dict_on
+    else:
+        lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
+    current_cutoff = lasing_options['current_cutoff']
+    las_rec_images = {}
+    for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+        rec_obj = LasingReconstructionImages(tracker, lasing_options)
+        rec_obj.add_dict(data_dict)
+        if main_ctr == 1:
+            rec_obj.profile = las_rec_images['Lasing Off'].profile
+            rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+        rec_obj.process_data()
+        las_rec_images[title] = rec_obj
+
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    result_dict = las_rec.get_result_dict()
+    return result_dict
+
 class LasingReconstruction:
     def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq', norm_factor=None):
         assert images_off.profile == images_on.profile

@@ -234,6 +234,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
         self.LasingNoiseCut.setText('%.4f' % ls['noise_cut'])
         self.LasingIntensityCut.setText('%.4f' % ls['subtract_quantile'])
+        self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
@@ -451,6 +452,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
         outp['noise_cut'] = w2f(self.LasingNoiseCut)
         outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
+        outp['current_cutoff'] = w2f(self.LasingCurrentCutoff.text())*1e3
         return outp
 
     def reconstruct_current(self):
@@ -703,25 +705,8 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_off_dict = h5_storage.loadH5Recursive(file_off)
         lasing_on_dict = h5_storage.loadH5Recursive(file_on)
 
-        las_rec_images = {}
-
         tracker = self.get_tracker(lasing_off_dict['meta_data_begin'])
-        lasing_options = self.get_lasing_options()
-
-        for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-            rec_obj = lasing.LasingReconstructionImages(tracker, lasing_options)
-
-            rec_obj.add_dict(data_dict)
-            if main_ctr == 1:
-                rec_obj.profile = las_rec_images['Lasing Off'].profile
-                rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
-            rec_obj.process_data()
-            las_rec_images[title] = rec_obj
-            #rec_obj.plot_images('raw', title)
-            #rec_obj.plot_images('tE', title)
-
-        las_rec = lasing.LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff=0.5e3)
-        result_dict = las_rec.get_result_dict()
+        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, self.get_lasing_options(), pulse_energy)
         plot_results.plot_lasing(result_dict, plot_handles=self.all_lasing_plot_handles)
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)

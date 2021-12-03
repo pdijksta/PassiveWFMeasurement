@@ -250,6 +250,8 @@ def get_default_lasing_options():
             'noise_cut': 0.1,
             'slice_factor': 3,
             'current_cutoff': 0.5e3,
+            'x_conversion': 'wake',
+            'x_linear_factor': 1,
             }.copy()
     return outp
 

@@ -37,7 +37,6 @@ class Tracker(LogMsgBase):
         self.beam_optics = beam_optics
         self.find_beam_position_options = find_beam_position_options
 
-        self.update_calib(calib)
         self.structure_name = structure_name
         self.beamline = beamline
         self.screen_name = screen_name
@@ -45,6 +44,7 @@ class Tracker(LogMsgBase):
         self.force_charge = force_charge
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
+        self.update_calib(calib)
         self.meta_data = meta_data
         self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (self.structure_gap*1e6, calib.structure_position0*1e6))
 

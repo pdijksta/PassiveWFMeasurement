@@ -37,8 +37,8 @@ class Tracker(LogMsgBase):
         self.beam_optics = beam_optics
         self.find_beam_position_options = find_beam_position_options
 
-        self.update_calib(calib)
         self.structure_name = structure_name
+        self.update_calib(calib)
         self.beamline = beamline
         self.screen_name = screen_name
         self.n_particles = n_particles

@@ -63,7 +63,7 @@ class GaussFit:
         except RuntimeError:
             try:
                 p0[2] *= 5
-                self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi)
+                self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
             except RuntimeError as e:
                 if raise_:
                     raise

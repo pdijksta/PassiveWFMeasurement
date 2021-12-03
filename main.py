@@ -706,7 +706,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_on_dict = h5_storage.loadH5Recursive(file_on)
 
         tracker = self.get_tracker(lasing_off_dict['meta_data_begin'])
-        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, self.get_lasing_options(), pulse_energy)
+        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, self.get_lasing_options(), pulse_energy)['result_dict']
         plot_results.plot_lasing(result_dict, plot_handles=self.all_lasing_plot_handles)
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)

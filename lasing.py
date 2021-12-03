@@ -81,9 +81,17 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    try:
+        las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    except:
+        import pdb; pdb.set_trace()
     result_dict = las_rec.get_result_dict()
-    return result_dict
+    outp = {
+            'las_rec': las_rec,
+            'result_dict': result_dict,
+            'las_rec_images': las_rec_images,
+            }
+    return outp
 
 class LasingReconstruction:
     def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq', norm_factor=None):
@@ -97,7 +105,6 @@ class LasingReconstruction:
         self.norm_factor = norm_factor
 
         self.generate_all_slice_dict()
-        #self.cap_rms(max_rms)
         self.calc_mean_slice_dict()
         self.lasing_analysis()
 
@@ -207,6 +214,8 @@ class LasingReconstructionImages:
         self.subtract_quantile = lasing_options['subtract_quantile']
         self.noise_cut = lasing_options['noise_cut']
         self.slice_factor = lasing_options['slice_factor']
+        self.x_conversion = lasing_options['x_conversion']
+        self.x_factor = lasing_options['x_linear_factor']
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -214,6 +223,7 @@ class LasingReconstructionImages:
         self.do_recon_plot = False
         self.beam_positions = None
         self.index_median = None
+        self.delta_distances = None
 
         if tracker.structure.dim == 'Y':
             raise ValueError('Structure streaking dimension Y not supported for lasing reconstruction!')
@@ -297,25 +307,11 @@ class LasingReconstructionImages:
         wake_x = wake_dict['wake_potential'] / self.tracker.energy_eV * r12
         return wake_t, wake_x
 
-    def convert_axes(self):
-        #print('convert_axes, self.ref_y', self.ref_y)
-        dispersion = self.tracker.disp
-        self.dispersion = dispersion
+    def convert_x_wake(self):
         self.images_tE = []
-        self.ref_y_list = []
         self.cut_images = []
         x_min, x_max = self.wake_x.min(), self.wake_x.max()
-
-        images_E = []
-        ref_y0 = self.ref_y
-        for ctr, img in enumerate(self.raw_image_objs):
-            image_E, ref_y = img.y_to_eV(dispersion, self.tracker.energy_eV, ref_y=ref_y0)
-            if ctr == 0:
-                ref_y0 = ref_y
-            images_E.append(image_E)
-            self.ref_y_list.append(ref_y)
-
-        for ctr, img in enumerate(images_E):
+        for ctr, img in enumerate(self.images_E):
             if self.beam_positions is None:
                 img_cut = img.cut(x_min, x_max)
                 img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
@@ -325,6 +321,24 @@ class LasingReconstructionImages:
                 img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
             self.images_tE.append(img_tE)
             self.cut_images.append(img_cut)
+
+    def convert_x_linear(self, factor):
+        self.images_tE = self.cut_images = []
+        for ctr, img in enumerate(self.images_E):
+            new_img = img.x_to_t_linear(factor)
+            self.images_tE.append(new_img)
+
+    def convert_y(self):
+        self.ref_y_list = []
+        self.dispersion = self.tracker.disp
+        self.images_E = []
+        ref_y0 = self.ref_y
+        for ctr, img in enumerate(self.raw_image_objs):
+            image_E, ref_y = img.y_to_eV(self.dispersion, self.tracker.energy_eV, ref_y=ref_y0)
+            if ctr == 0:
+                ref_y0 = ref_y
+            self.images_E.append(image_E)
+            self.ref_y_list.append(ref_y)
 
     def slice_x(self):
         if self.slice_factor == 1:
@@ -350,18 +364,27 @@ class LasingReconstructionImages:
         self.slice_dicts = new_slice_dicts
 
     def process_data(self):
-        if self.profile is None:
-            self.get_current_profiles()
-            self.set_profile()
-
-        self.wake_t, self.wake_x = self.calc_wake()
-        self.get_streaker_offsets()
-        self.convert_axes()
+        self.convert_y()
+        if self.x_conversion == 'wake':
+            if self.profile is None:
+                self.get_current_profiles()
+                self.set_profile()
+            self.wake_t, self.wake_x = self.calc_wake()
+            self.get_streaker_offsets()
+            self.convert_x_wake()
+        elif self.x_conversion == 'linear':
+            self.convert_x_linear(self.x_factor)
+        else:
+            raise ValueError(self.x_conversion)
         self.slice_x()
         self.fit_slice()
-        if self.index_median is not None:
-            self.ref_slice_dict = self.slice_dicts[self.index_median]
-        if self.ref_slice_dict is not None:
+        if self.x_conversion == 'wake':
+            if self.index_median is not None:
+                self.ref_slice_dict = self.slice_dicts[self.index_median]
+            if self.ref_slice_dict is not None:
+                self.interpolate_slice(self.ref_slice_dict)
+        elif self.x_conversion == 'linear':
+            self.ref_slice_dict = self.slice_dicts[self.median_meas_screen_index]
             self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title='', **kwargs):

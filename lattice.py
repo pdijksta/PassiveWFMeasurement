@@ -76,7 +76,13 @@ class Lattice:
                 else:
                     name2 = name
                     length2 = length
-                k1 = quad_k1l_dict[name2.replace('-','.')]/length2
+                name3 = name2.replace('.','-')
+                if name3 in quad_k1l_dict:
+                    k1 = quad_k1l_dict[name3]/length2
+                elif name2 in quad_k1l_dict:
+                    k1 = quad_k1l_dict[name2]/length2
+                else:
+                    raise ValueError('%s not in %s' % (name3, quad_k1l_dict.keys()))
                 ele_matrix = transferMatrixQuad66(length, k1)
             else:
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):

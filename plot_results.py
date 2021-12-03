@@ -621,7 +621,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None):
         sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=title, color=mean_color)
         current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
-    result_dict['images_off']['current_profile'].plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed')
+    current_profile = result_dict['images_off']['current_profile']
+    if current_profile is not None:
+        current_profile.plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
     sp_current.legend()
     sp_slice_mean.legend()
@@ -645,7 +647,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None):
     for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
         delta_distance = result_dict[key]['delta_distances']
         mean_x = result_dict[key]['meas_screen_centroids']
-        sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
+        if delta_distance is not None:
+            sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
 
     sp_orbit.legend()
 

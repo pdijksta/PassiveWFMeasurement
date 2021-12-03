@@ -81,7 +81,10 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    try:
+        las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    except:
+        import pdb; pdb.set_trace()
     result_dict = las_rec.get_result_dict()
     outp = {
             'las_rec': las_rec,
@@ -375,12 +378,13 @@ class LasingReconstructionImages:
             raise ValueError(self.x_conversion)
         self.slice_x()
         self.fit_slice()
-        if self.index_median is not None:
-            index_median = self.index_median
-        else:
-            index_median = self.median_meas_screen_index
-        self.ref_slice_dict = self.slice_dicts[index_median]
-        if self.ref_slice_dict is not None:
+        if self.x_conversion == 'wake':
+            if self.index_median is not None:
+                self.ref_slice_dict = self.slice_dicts[self.index_median]
+            if self.ref_slice_dict is not None:
+                self.interpolate_slice(self.ref_slice_dict)
+        elif self.x_conversion == 'linear':
+            self.ref_slice_dict = self.slice_dicts[self.median_meas_screen_index]
             self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title='', **kwargs):

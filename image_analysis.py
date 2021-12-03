@@ -223,7 +223,7 @@ class Image(LogMsgBase):
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
     def x_to_t_linear(self, factor):
-        return self.child(self.image, self.x_axis*factor, self.y_axis, x_unit='fs', xlabel='t (fs)')
+        return self.child(self.image, self.x_axis*factor, self.y_axis, x_unit='s', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         diff = np.diff(wake_time)

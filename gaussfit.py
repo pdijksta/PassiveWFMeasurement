@@ -49,15 +49,6 @@ class GaussFit:
                 self.scale_0, self.mean_0, self.sigma_0 = p0
                 self.const_0 = 0
 
-            #import matplotlib.pyplot as plt
-            #plt.figure()
-            #gf = self
-            #plt.plot(gf.xx, gf.yy)
-            ##plt.plot(gf.xx, gf.reconstruction)
-            #plt.plot(gf.xx, gf.fit_func(gf.xx, *gf.p0))
-            #plt.show()
-            #import pdb; pdb.set_trace()
-
         try:
             self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
         except RuntimeError:
@@ -68,15 +59,18 @@ class GaussFit:
                 if raise_:
                     raise
                 self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
-                print(e)
-                print('Fit did not converge. Using p0 instead!')
+                if print_:
+                    print(e)
+                    print('Fit did not converge. Using p0 instead!')
 
         if fit_const:
             self.scale, self.mean, self.sigma, self.const = self.popt
         else:
             self.scale, self.mean, self.sigma = self.popt
             self.const = 0
+        self.sigma = abs(self.sigma)
         self.reconstruction = self.fit_func(xx, *self.popt)
+        self.fit_integral = self.scale*self.sigma*np.sqrt(2*np.pi)
 
         if print_:
             print(p0, '\t\t', self.popt)
@@ -105,7 +99,9 @@ class GaussFit:
 
     def plot_data_and_fit(self, sp):
         sp.plot(self.xx, self.yy, label='Data', marker='.')
-        sp.plot(self.xx, self.reconstruction, label='Reconstruction', marker='.', ls='--')
+        xx2 = np.linspace(self.xx[0], self.xx[-1], 100)
+        reconstruction2 = self.fit_func(xx2, *self.popt)
+        sp.plot(xx2, reconstruction2, label='Reconstruction', marker='.', ls='--')
         sp.axhline(self.scale_0+self.const_0, label='scale_0+const_0', color='black')
         sp.axhline(self.scale+self.const, label='scale+const', color='black', ls='--')
 

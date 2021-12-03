@@ -261,7 +261,7 @@ def get_default_find_beam_position_options():
             'method': 'centroid',
             'precision': 1e-6,
             'max_iterations': 3,
-            }
+            }.copy()
     return outp
 
 default_n_particles = int(1e5)

@@ -107,7 +107,6 @@ class Image(LogMsgBase):
         x_axis_reshaped = np.linspace(x_axis[0], x_axis[max_x_index-1], n_slices)
 
         output = self.child(new_image, x_axis_reshaped, y_axis)
-        #import pdb; pdb.set_trace()
         return output
 
     def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1):
@@ -282,8 +281,6 @@ class Image(LogMsgBase):
             new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
             new_obj0.plot_img_and_proj(sp)
 
-        #ms.plt.show()
-        #import pdb; pdb.set_trace()
         return output
 
     def force_projection(self, proj_x, proj):

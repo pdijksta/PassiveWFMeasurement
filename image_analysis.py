@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter1d
 
 from .gaussfit import GaussFit
 from . import beam_profile
@@ -109,12 +108,9 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, smoothen_first=True, smoothen=100e-6, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1):
+    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
-
-        pixelsize = abs(y_axis[1] - y_axis[0])
-        smoothen = smoothen/pixelsize
 
         slice_mean = []
         slice_sigma = []
@@ -125,14 +121,8 @@ class Image(LogMsgBase):
         slice_cut_mean = []
         for n_slice in range(n_slices):
             intensity = self.image[:,n_slice]
-            if smoothen_first:
-                yy_conv = gaussian_filter1d(intensity, smoothen)
-                gf0 = GaussFit(y_axis, yy_conv, fit_const=True)
-                p0 = gf0.popt
-            else:
-                p0 = None
             try:
-                gf = GaussFit(y_axis, intensity, fit_const=True, p0=p0, raise_=True)
+                gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
             except RuntimeError:
                 slice_mean.append(np.nan)
                 slice_sigma.append(np.nan)
@@ -152,17 +142,17 @@ class Image(LogMsgBase):
                     mean_rms, rms = 0, 0
                 else:
                     mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
-                    rms = np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms)
+                    rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
 
                 slice_gf.append(gf)
                 slice_mean.append(gf.mean)
                 slice_sigma.append(gf.sigma**2)
-                slice_rms.append(rms)
+                slice_rms.append(rms**2)
                 slice_mean_rms.append(mean_rms)
 
-                intensity = intensity.copy()
-                intensity[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
-                prof_y = intensity-intensity.min()
+                intensity2 = intensity.copy()
+                intensity2[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
+                prof_y = intensity2-intensity2.min()
                 if np.all(prof_y == 0):
                     slice_cut_rms.append(0)
                     slice_cut_mean.append(0)
@@ -175,23 +165,22 @@ class Image(LogMsgBase):
                     slice_cut_mean.append(profile.mean())
 
             # Debug bad gaussfits
-            #if 101e-15 < self.x_axis[n_slice] < 104e-15:
-            #if abs(gf.sigma) < 1e5:
-            #    import matplotlib.pyplot as plt
-            #    num = plt.gcf().number
-            #    plt.figure()
-            #    plt.suptitle('Debug 38 fs')
-            #    sp = plt.subplot(1,1,1)
-            #    gf.plot_data_and_fit(sp)
-            #    sp.legend()
-            #    plt.figure(num)
-            #    plt.show()
-            #    import pdb; pdb.set_trace()
+            if debug:
+                if rms == 0 or slice_cut_rms[-1] == 0:
+                    import matplotlib.pyplot as plt
+                    num = plt.gcf().number
+                    plt.figure()
+                    plt.suptitle('Debug 38 fs')
+                    sp = plt.subplot(1,1,1)
+                    gf.plot_data_and_fit(sp)
+                    sp.legend()
+                    plt.figure(num)
+                    plt.show()
+                    import pdb; pdb.set_trace()
 
         proj = np.sum(self.image, axis=-2)
         proj = proj / np.sum(proj) * charge
         current = proj / (self.x_axis[1] - self.x_axis[0])
-
 
         slice_dict = {
                 'slice_x': self.x_axis,
@@ -218,7 +207,7 @@ class Image(LogMsgBase):
             ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
         if dispersion == 0:
             raise ValueError
-        E_axis = (self.y_axis-ref_y) * dispersion * energy_eV
+        E_axis = (self.y_axis-ref_y) / dispersion * energy_eV
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
     def x_to_t_linear(self, factor):

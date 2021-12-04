@@ -195,7 +195,7 @@ class LasingReconstruction:
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
             outp[key] = d = {}
-            d['raw_images'] = obj.raw_image_objs
+            d['raw_images'] = obj.images_xy
             d['tE_images'] = obj.images_tE
             d['current_profile'] = obj.profile
             d['beam_positions'] = obj.beam_positions
@@ -257,7 +257,7 @@ class LasingReconstructionImages:
         self.x_axis = x_axis - self.tracker.calib.screen_center
         self.y_axis = y_axis
         self.raw_images = images
-        self.raw_image_objs = []
+        self.images_xy = []
         self.meas_screens = []
         rms_arr = []
         for n_image, img in enumerate(images):
@@ -266,7 +266,7 @@ class LasingReconstructionImages:
             img = img - np.quantile(img, self.subtract_quantile)
             img[img < 0] = 0
             image = image_analysis.Image(img, self.x_axis, y_axis)
-            self.raw_image_objs.append(image)
+            self.images_xy.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)
             self.meas_screens.append(screen)
             rms_arr.append(screen.rms())
@@ -331,7 +331,7 @@ class LasingReconstructionImages:
         self.dispersion = self.tracker.disp
         self.images_E = []
         ref_y0 = self.ref_y
-        for ctr, img in enumerate(self.raw_image_objs):
+        for ctr, img in enumerate(self.images_xy):
             image_E, ref_y = img.y_to_eV(self.dispersion, self.tracker.energy_eV, ref_y=ref_y0)
             if ctr == 0:
                 ref_y0 = ref_y
@@ -387,7 +387,7 @@ class LasingReconstructionImages:
 
     def plot_images(self, type_, title='', **kwargs):
         if type_ == 'raw':
-            images = self.raw_image_objs
+            images = self.images_xy
         elif type_ == 'cut':
             images = self.cut_images
         elif type_ == 'tE':

@@ -63,7 +63,6 @@ def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exc
         fit_yy = lin_fit_const[gap_ctr] + lin_fit[gap_ctr]*d_arr2[sort]
         sp_rms.plot(d_arr2[sort]*1e6, fit_yy*1e15, color=color, ls='--')
 
-
     sp_overview.errorbar(gap_arr*1e3, all_rms_arr.mean(axis=-1)*1e15, yerr=all_rms_arr.std(axis=-1)*1e15)
     sp_std.plot(gap_arr*1e3, all_rms_arr.std(axis=-1)/all_rms_arr.mean(axis=-1), marker='.')
     sp_fit.plot(gap_arr*1e3, lin_fit*1e15/1e6, marker='.')

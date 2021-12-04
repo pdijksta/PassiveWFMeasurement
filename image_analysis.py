@@ -108,7 +108,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, noise_cut=0.1, debug=False):
+    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -121,6 +121,7 @@ class Image(LogMsgBase):
         slice_cut_mean = []
         for n_slice in range(n_slices):
             intensity = self.image[:,n_slice]
+            intensity = intensity - intensity.min()
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
             except RuntimeError:
@@ -150,15 +151,13 @@ class Image(LogMsgBase):
                 slice_rms.append(rms**2)
                 slice_mean_rms.append(mean_rms)
 
-                intensity2 = intensity.copy()
-                intensity2[np.logical_or(y_axis<mean_rms-1.5*rms, y_axis>mean_rms+1.5*rms)]=0
-                prof_y = intensity2-intensity2.min()
+                prof_y = intensity.copy()
+                prof_y[np.logical_or(y_axis<mean_rms-2.5*rms, y_axis>mean_rms+2.5*rms)] = 0
                 if np.all(prof_y == 0):
                     slice_cut_rms.append(0)
                     slice_cut_mean.append(0)
                 else:
                     profile = beam_profile.AnyProfile(y_axis, prof_y)
-                    profile.aggressive_cutoff(noise_cut)
                     profile.crop()
 
                     slice_cut_rms.append(profile.rms()**2)

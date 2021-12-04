@@ -210,7 +210,6 @@ class LasingReconstructionImages:
         self.profile = profile
 
         self.subtract_quantile = lasing_options['subtract_quantile']
-        self.noise_cut = lasing_options['noise_cut']
         self.slice_factor = lasing_options['slice_factor']
         self.x_conversion = lasing_options['x_conversion']
         self.x_factor = lasing_options['x_linear_factor']
@@ -351,7 +350,7 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            slice_dict = image.fit_slice(charge=self.charge, noise_cut=self.noise_cut)
+            slice_dict = image.fit_slice(charge=self.charge)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

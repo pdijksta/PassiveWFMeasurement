@@ -232,7 +232,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         # Lasing options
         self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
-        self.LasingNoiseCut.setText('%.4f' % ls['noise_cut'])
         self.LasingIntensityCut.setText('%.4f' % ls['subtract_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
 
@@ -450,7 +449,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def get_lasing_options(self):
         outp = config.get_default_lasing_options()
         outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
-        outp['noise_cut'] = w2f(self.LasingNoiseCut)
         outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
         outp['current_cutoff'] = w2f(self.LasingCurrentCutoff.text())*1e3
         return outp

@@ -2019,22 +2019,6 @@
       <property name="geometry">
        <rect>
         <x>730</x>
-        <y>460</y>
-        <width>121</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="LasingNoiseCut">
-      <property name="geometry">
-       <rect>
-        <x>730</x>
         <y>420</y>
         <width>121</width>
         <height>26</height>
@@ -2045,22 +2029,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_76">
-      <property name="geometry">
-       <rect>
-        <x>540</x>
-        <y>420</y>
-        <width>121</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Noise cut level</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
      <widget class="QLabel" name="label_52">
@@ -2096,7 +2064,7 @@
       <property name="geometry">
        <rect>
         <x>540</x>
-        <y>460</y>
+        <y>420</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -2240,7 +2208,7 @@
       <property name="geometry">
        <rect>
         <x>540</x>
-        <y>500</y>
+        <y>460</y>
         <width>121</width>
         <height>20</height>
        </rect>
@@ -2256,7 +2224,7 @@
       <property name="geometry">
        <rect>
         <x>730</x>
-        <y>500</y>
+        <y>460</y>
         <width>121</width>
         <height>26</height>
        </rect>

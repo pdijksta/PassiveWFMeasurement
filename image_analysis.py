@@ -108,7 +108,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, intensity_cutoff=None, charge=1, rms_sigma=5, debug=False):
+    def fit_slice(self, charge=1, rms_sigma=5, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -194,11 +194,6 @@ class Image(LogMsgBase):
                 'slice_cut_mean': np.array(slice_cut_mean),
                 }
 
-        if intensity_cutoff:
-            mask = proj > proj.max()*intensity_cutoff
-            for key, value in slice_dict.items():
-                if hasattr(value, 'shape') and value.shape == mask.shape:
-                    slice_dict[key] = value[mask]
         return slice_dict
 
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):

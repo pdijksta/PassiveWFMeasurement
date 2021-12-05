@@ -553,7 +553,7 @@ def plot_simple_daq(data_dict, dim):
         images = images[::-1,:]
     proj = images.sum(axis=-2)
     median_index = data_loader.get_median(proj, 'mean', 'index')
-    image = image_analysis.Image(images[median_index], x_axis, y_axis)
+    image = image_analysis.Image(images[median_index], x_axis, y_axis, 1)
 
     fig = ms.figure('Data acquisition')
     subplot = ms.subplot_factory(2, 2, False)

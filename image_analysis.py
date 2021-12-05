@@ -7,7 +7,7 @@ from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
 class Image(LogMsgBase):
-    def __init__(self, image, x_axis, y_axis, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)', logger=None):
+    def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)', logger=None):
 
         self.logger = logger
 
@@ -39,6 +39,7 @@ class Image(LogMsgBase):
         self.y_unit = y_unit
         self.xlabel = xlabel
         self.ylabel = ylabel
+        self.charge = charge
 
     def to_dict_custom(self):
         outp = {
@@ -57,7 +58,7 @@ class Image(LogMsgBase):
         y_unit = self.y_unit if y_unit is None else y_unit
         xlabel = self.xlabel if xlabel is None else xlabel
         ylabel = self.ylabel if ylabel is None else ylabel
-        return Image(new_i, new_x, new_y, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
+        return Image(new_i, new_x, new_y, self.charge, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
     def transpose(self):
         return self.child(self.image.T.copy(), self.y_axis.copy(), self.x_axis.copy(), self.y_unit, self.x_unit, self.ylabel, self.xlabel)
@@ -108,7 +109,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, charge=1, rms_sigma=5, debug=False):
+    def fit_slice(self, rms_sigma=5, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
 
@@ -178,7 +179,7 @@ class Image(LogMsgBase):
                     import pdb; pdb.set_trace()
 
         proj = np.sum(self.image, axis=-2)
-        proj = proj / np.sum(proj) * charge
+        proj = proj / np.sum(proj) * self.charge
         current = proj / (self.x_axis[1] - self.x_axis[0])
 
         slice_dict = {

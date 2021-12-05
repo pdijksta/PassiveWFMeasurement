@@ -264,7 +264,7 @@ class LasingReconstructionImages:
                 break
             img = img - np.quantile(img, self.subtract_quantile)
             img[img < 0] = 0
-            image = image_analysis.Image(img, self.x_axis, y_axis)
+            image = image_analysis.Image(img, self.x_axis, y_axis, self.charge)
             self.images_xy.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)
             self.meas_screens.append(screen)
@@ -350,7 +350,7 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            slice_dict = image.fit_slice(charge=self.charge)
+            slice_dict = image.fit_slice()
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

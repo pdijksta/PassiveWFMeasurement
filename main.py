@@ -29,74 +29,24 @@ from PassiveWFMeasurement import data_loader
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
-#TODO
-#
-# - add tilt option
-# - handle feedback in user interface
-# - detune undulator button
-# - Plot centroid of forward propagated
-
-#Problematic / cannot be done easily:
-# - save BPM data also
-# - One-sided plate
-# - Update load blmeas (need bugfixes by Thomas)
-
-# Probably fixed:
-# - sort out daq pyscan_result_to_dict
-# - debug delay after using BsreadPositioner or any pyscan
-# - Dispersion (?)
-
-# Not so important
-# - add blmeas option to lasing rec
-# - noise reduction from the image
-# - uJ instead of True, False
-# - non blocking daq
-# - One-sided plate
-# - streaker center calibration: repeat with one data point removed at one side
-# - add info of beamsize with / without assumed screen resolution
-
-# Done
-# - Offset based on centroid, offset based on sizes (?)
-# - Mean of square instead of square of mean of squareroot
-# - Athos gas detector
-# - Fix calibration - screen and streaker offset at same time
-# - pulse energy from gas detector in pyscan
-# - yum install libhdf5
-# - streaker calibration fit guess improvements
-# - meta data at begin and end of pyscan
-# - lasing
-# - y scale of optimization
-# - elog
-# - charge from pyscan
-# - Forward propagation from TDC to screen inside tool
-# - plot TDC blmeas next to current reconstruction (optional)
-# - Show sizes
-# - simplify lattice
-# - restructure analysis
-# - Rec plot legends
-# - Comments to elog
-# - optional provide the pulse energy calibration
-# - png.png
-# - R12 in Athos is wrong - does not change when quad is changed
-# - Add resolution to tool
-# - Fix non converging calibration
-# - Fix erronous gap calibration
-# - Fix systematic current profile reconstruction differences
-# - Calibration based on TDC
+if __name__ == '__main__':
+    logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
 
 try:
     from PassiveWFMeasurement import daq
     always_dryrun = False
+    logMsg.logMsg('Daq available', logger=logger)
 except ImportError:
-    print('Cannot import daq. Always dry_run True')
     always_dryrun = True
     daq = None
+    logMsg.logMsg('Daq unavailable. Always dry_run True', logger=logger)
 
 try:
     import elog
+    logMsg.logMsg('Elog available', logger=logger)
 except ImportError:
-    print('ELOG not available')
     elog = None
+    logMsg.logMsg('ELOG unavailable', logger=logger)
 
 ms.set_fontsizes(config.fontsize)
 
@@ -386,7 +336,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\ngap: %.3f mm' % (gap*1e3)
         elog_text += '\nbeam position: %.3f mm' % (beam_position*1e3)
         elog_text += '\nCurrent profile from: %s' % bp_file
-        self.ELOGtextAuto.insertPlainText(elog_text)
+        self.setElogAutoText(elog_text)
 
     def get_forward_options(self):
         outp = config.get_default_forward_options()
@@ -495,7 +445,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         elog_text = 'Current profile reconstructed'
         elog_text += '\nstructure:  %s' % tracker.structure_name
-        self.ELOGtextAuto.insertPlainText(elog_text)
+        self.setElogAutoText(elog_text)
 
     @property
     def save_dir(self):
@@ -596,7 +546,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\ndelta gap: %.3f um' % (new_calib.delta_gap*1e6)
         elog_text += '\nstructure center: %.3f um' % (new_calib.structure_position0*1e6)
         elog_text += '\nscreen center: %.3f um' % (new_calib.screen_center*1e6)
-        self.ELOGtextAuto.insertPlainText(elog_text)
+        self.setElogAutoText(elog_text)
 
         self.logMsg('End gap calibration')
 
@@ -716,7 +666,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         elog_text = 'FEL power profile reconstructed'
         elog_text += '\nstructure:  %s' % tracker.structure_name
-        self.ELOGtextAuto.insertPlainText(elog_text)
+        self.setElogAutoText(elog_text)
 
         self.logMsg('Lasing reconstruction end')
 
@@ -783,6 +733,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.logbook.post(auto_text+'\n'+manual_text, attributes=dict_att, attachments=attachments)
             self.logMsg('Elog entry generated')
 
+    def setElogAutoText(self, txt):
+        self.ELOGtextAuto.clear()
+        self.ELOGtextAuto.insertPlainText(txt)
+
     def destroy_lasing(self):
         beamline = self.beamline
         self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], _ = daq.destroy_lasing(self.beamline, self.dry_run)
@@ -803,7 +757,6 @@ if __name__ == '__main__':
         sys.__excepthook__(type, value, tback)
         print(type, value, tback)
     sys.excepthook = my_excepthook
-    logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
 
     app = QtWidgets.QApplication(sys.argv)
     window = StartMain(logger)

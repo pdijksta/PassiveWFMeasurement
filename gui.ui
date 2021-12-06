@@ -462,9 +462,9 @@
      <widget class="QLabel" name="label_49">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>260</y>
-        <width>201</width>
+        <width>261</width>
         <height>20</height>
        </rect>
       </property>
@@ -494,9 +494,9 @@
      <widget class="QLineEdit" name="LoadCalibrationFilename">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>290</y>
-        <width>601</width>
+        <width>661</width>
         <height>25</height>
        </rect>
       </property>
@@ -542,7 +542,7 @@
      <widget class="QCheckBox" name="ForwardBlmeasCheck">
       <property name="geometry">
        <rect>
-        <x>320</x>
+        <x>250</x>
         <y>340</y>
         <width>321</width>
         <height>20</height>
@@ -558,9 +558,9 @@
      <widget class="QLineEdit" name="ForwardBlmeasFilename">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>400</y>
-        <width>601</width>
+        <width>661</width>
         <height>25</height>
        </rect>
       </property>
@@ -574,9 +574,9 @@
      <widget class="QLabel" name="label_56">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>370</y>
-        <width>291</width>
+        <width>351</width>
         <height>20</height>
        </rect>
       </property>
@@ -1083,9 +1083,9 @@
      <widget class="QLineEdit" name="TdcCalibrationFilename">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>460</y>
-        <width>601</width>
+        <width>661</width>
         <height>25</height>
        </rect>
       </property>
@@ -1173,9 +1173,9 @@
      <widget class="QLabel" name="label_86">
       <property name="geometry">
        <rect>
-        <x>310</x>
+        <x>250</x>
         <y>430</y>
-        <width>291</width>
+        <width>351</width>
         <height>20</height>
        </rect>
       </property>

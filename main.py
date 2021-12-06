@@ -450,7 +450,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp = config.get_default_lasing_options()
         outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
         outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
-        outp['current_cutoff'] = w2f(self.LasingCurrentCutoff.text())*1e3
+        outp['current_cutoff'] = w2f(self.LasingCurrentCutoff)*1e3
         return outp
 
     def reconstruct_current(self):

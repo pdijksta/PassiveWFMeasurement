@@ -74,7 +74,11 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     current_cutoff = lasing_options['current_cutoff']
     las_rec_images = {}
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
-        rec_obj = LasingReconstructionImages(tracker, lasing_options)
+        if main_ctr == 0:
+            ref_y = None
+        else:
+            ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
+        rec_obj = LasingReconstructionImages(tracker, lasing_options, ref_y=ref_y)
         rec_obj.add_dict(data_dict)
         if main_ctr == 1:
             rec_obj.profile = las_rec_images['Lasing Off'].profile

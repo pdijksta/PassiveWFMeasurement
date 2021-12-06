@@ -181,7 +181,6 @@ class Image(LogMsgBase):
         proj = np.sum(self.image, axis=-2)
         proj = proj / np.sum(proj) * self.charge
         current = proj / (self.x_axis[1] - self.x_axis[0])
-
         slice_dict = {
                 'slice_x': self.x_axis,
                 'slice_mean': np.array(slice_mean),
@@ -194,7 +193,6 @@ class Image(LogMsgBase):
                 'slice_cut_rms_sq': np.array(slice_cut_rms),
                 'slice_cut_mean': np.array(slice_cut_mean),
                 }
-
         return slice_dict
 
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):
@@ -220,9 +218,11 @@ class Image(LogMsgBase):
         x_interp = np.interp(new_t_axis, wake_time, wake_x)
 
         to_print = []
+        x_indices = []
         for t_index, (t, x) in enumerate(zip(new_t_axis, x_interp)):
             x_index = np.argmin((self.x_axis - x)**2)
             new_img0[:,t_index] = self.image[:,x_index]
+            x_indices.append(x_index)
 
             if print_:
                 to_print.append('%i %i %.1f %.1f' % (t_index, x_index, t*1e15, x*1e6))
@@ -234,6 +234,7 @@ class Image(LogMsgBase):
         new_img = new_img / new_img.sum() * self.image.sum()
 
         output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
+        output.x_indices = x_indices
 
         if debug:
             ms.figure('Debug x_to_t')

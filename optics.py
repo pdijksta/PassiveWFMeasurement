@@ -1,7 +1,7 @@
 #(Identifier, streaker betax, streaker alphax, screen betax, R12, R11, phase advance, K1Ls
 #('Optics 1', 10, 0, 100, 15, 0, 90, [-0.5, 1.23, 4.09,....])
 #print('(Identifier, streaker betax, streaker alphax, screen betax, R12, R11, phase advance, K1Ls)')
-quadNames=['SARUN15.MQUA080:K1-SET','SARUN16.MQUA080:K1-SET','SARUN17.MQUA080:K1-SET','SARUN18.MQUA080:K1-SET','SARUN19.MQUA080:K1-SET','SARUN20.MQUA080:K1-SET','SARBD01.MQUA020:K1-SET']
+quadNames=['SARUN15.MQUA080','SARUN16.MQUA080','SARUN17.MQUA080','SARUN18.MQUA080','SARUN19.MQUA080','SARUN20.MQUA080','SARBD01.MQUA020']
 
 k1=[-2.675689435128679, 2.507107341321333, 1.534902208915763,1.389193277247406,-2.839259815798751,2.057266014806838,-0.5006955769293514]
 k1a=[-2.849999999974721,2.560985202693461,1.391095627869793,1.336403614777685,-2.417256186871410,1.555253158719475,-0.04304492284097716]
@@ -51,10 +51,6 @@ kL12 = [L1*x for x in k12]
 kL13 = [L1*x for x in k13]
 kL14 = [L1*x for x in k14]
 
-
-
-
-
 ar8=('Optics 8', 2.5,0.3315, 89.89, 15, 0, 90,kL8)
 ar9=('Optics 9', 5.0,0.6657, 45.06, 15, 0, 90,kL9)
 ar10=('Optics 10', 10.0,1.3321, 22.53, 15, 0, 90,kL10)
@@ -62,4 +58,27 @@ ar11=('Optics 11', 15.0,1.999,15.02, 15, 0, 90,kL11)
 ar12=('Optics 12', 20.0,2.668,11.26, 15, 0, 90,kL12)
 ar13=('Optics 13', 25.0,3.335,9.01, 15, 0, 90,kL13)
 ar14=('Optics 14', 30.0,3.999,7.51, 15, 0, 90,kL14)
+
+all_optics = [
+        ar1,
+        ar1a,
+        ar2,
+        ar3,
+        ar4,
+        ar5,
+        ar6,
+        ar7,
+        ar8,
+        ar9,
+        ar10,
+        ar11,
+        ar12,
+        ar13,
+        ar14,
+        ]
+
+quadNames.append('SARBD02.MQUA030')
+for a in all_optics:
+    a[-1].append(0.)
+
 

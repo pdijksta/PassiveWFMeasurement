@@ -22,9 +22,6 @@ kL5 = [L1*x for x in k5]
 kL6 = [L1*x for x in k6]
 kL7 = [L1*x for x in k7]
 
-
-
-
 #alpha_x=0 @ streaker location
 ar1=('Optics 1', 2.5, -0.0008981, 89.99, 15, 0, 90,kL1) #max beta_y=300 m -> 100 um for 500 nm emittance
 ar1a=('Optics 1a', 2.5, 0.0020903, 89.86, 15, 0, 90,kL1a) #larger beta_y at the screen, smaller max beta_y=250 m -> 100 um for 500 nm emittance
@@ -34,13 +31,6 @@ ar4=('Optics 4', 15, 0.0004145, 15.0, 15, 0, 90,kL4)
 ar5=('Optics 5', 20, -0.0006088, 11.25, 15, 0, 90,kL5)
 ar6=('Optics 6', 25, -0.0007742, 9.0, 15, 0, 90,kL6)
 ar7=('Optics 7', 30, -0.0009361, 7.5, 15, 0, 90,kL7)
-print(ar1)
-
-
-
-
-
-
 
 #alpha_x variable at the streaker
 fix=[-0.8215394696441847,-2.627957708897591,1.948805717574930,0.08324019299676864] #R11=2; R12=15 fixed for all cases
@@ -72,13 +62,4 @@ ar11=('Optics 11', 15.0,1.999,15.02, 15, 0, 90,kL11)
 ar12=('Optics 12', 20.0,2.668,11.26, 15, 0, 90,kL12)
 ar13=('Optics 13', 25.0,3.335,9.01, 15, 0, 90,kL13)
 ar14=('Optics 14', 30.0,3.999,7.51, 15, 0, 90,kL14)
-
-#print(ar14)
-#print(ar13)
-#R11=2
-#R12=15
-#beta=30
-#alpha=3.9999
-#check=R11*beta-R12*alpha
-#print(check)
 

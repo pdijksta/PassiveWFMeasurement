@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab_5">
      <attribute name="title">
@@ -1514,7 +1514,7 @@
      <widget class="QLineEdit" name="PlotResolutionDistance">
       <property name="geometry">
        <rect>
-        <x>350</x>
+        <x>310</x>
         <y>460</y>
         <width>91</width>
         <height>26</height>
@@ -1532,7 +1532,7 @@
        <rect>
         <x>280</x>
         <y>430</y>
-        <width>241</width>
+        <width>301</width>
         <height>16</height>
        </rect>
       </property>
@@ -1540,7 +1540,7 @@
        <string>Distance between beam and jaw (μm)</string>
       </property>
       <property name="alignment">
-       <set>Qt::AlignCenter</set>
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
      <widget class="QLabel" name="label_74">

@@ -61,7 +61,7 @@ class Lattice:
         self.names = np.array([x.decode() for x in self.columns['ElementName']])
         self.quad_names = self.names[self.types == 'QUAD'].copy()
 
-    def generate(self, quad_k1l_dict):
+    def generate(self, quad_k1l_dict, fill_zero=False):
         names, types, columns = self.names, self.types, self.columns
         matrix = np.identity(6)
         ele_matrix = np.zeros_like(matrix)
@@ -81,6 +81,9 @@ class Lattice:
                     k1 = quad_k1l_dict[name3]/length2
                 elif name2 in quad_k1l_dict:
                     k1 = quad_k1l_dict[name2]/length2
+                elif fill_zero:
+                    k1 = 0.
+                    print('Warning', name2, 0)
                 else:
                     raise ValueError('%s not in %s' % (name3, quad_k1l_dict.keys()))
                 ele_matrix = transferMatrixQuad66(length, k1)
@@ -141,9 +144,9 @@ class Lattice:
                 'alphay': alphay,
                 }
 
-def generated_lattice(h5_file, quad_k1l_dict):
+def generated_lattice(h5_file, quad_k1l_dict, fill_zero=True):
     lat = Lattice(os.path.join(os.path.dirname(__file__), h5_file))
-    lat.generate(quad_k1l_dict)
+    lat.generate(quad_k1l_dict, fill_zero)
     return lat
 
 def get_beamline_lattice(beamline, quad_k1l_dict):

@@ -149,6 +149,7 @@ default_optics = {
             'alphay': 1.782,
             },
         # Both Athos Optics / matching points coincide with the values from the Emittance Tool
+        # TODO
         'Athos Post-Undulator': {
             'betax': 3.15,
             'alphax': 0.3,

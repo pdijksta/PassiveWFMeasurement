@@ -1,7 +1,7 @@
 &run_setup
 	lattice		= ./Athos.lat,
 	use_beamline	= SATMA02_UNTIL_END
-	rootname	= Athos,
+	rootname	= Athos_Post_Undulator,
 	output		= %s.out,
 	centroid	= %s.out,
 	sigma		= %s.sig,

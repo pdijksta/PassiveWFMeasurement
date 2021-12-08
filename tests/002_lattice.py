@@ -28,7 +28,7 @@ simulator = elegant_matrix.get_simulator(meta_data_ar)
 mat_elegant = simulator.get_streaker_matrices(None, 'Aramis')['s2_to_screen']
 
 lat = lattice.get_beamline_lattice('Aramis', meta_data_ar)
-mat_python = lat.get_matrix('MIDDLE_STREAKER_%i' % 2, 'SARBD02.DSCR050')
+mat_python = lat.get_matrix('SARUN18.UDCP020', 'SARBD02.DSCR050')
 
 
 file_ = './data/2021_09_23-16_28_16_Screen_data_SATBD02-DSCR050.h5'
@@ -39,7 +39,7 @@ simulator = elegant_matrix.get_simulator(meta_data)
 mat_elegant_athos = simulator.get_streaker_matrices(None, 'Athos')['s1_to_screen']
 
 lat_athos = lattice.get_beamline_lattice('Athos Post-Undulator', meta_data)
-mat_python_athos = lat_athos.get_matrix('MIDDLE_STREAKER_%i' % 1, 'SATBD02.DSCR050')
+mat_python_athos = lat_athos.get_matrix('SATMA02.UDCP045', 'SATBD02.DSCR050')
 
 dim1 = ('x', 't')
 dim2 = ('x', 'y', 't')
@@ -58,7 +58,7 @@ for n_d, dimensions in enumerate([dim1, dim2]):
     beam_obj = gen_beam.beam_from_spec(dimensions, spec, n_particles, beamProfile, total_charge, energy_eV)
     beam0 = copy.deepcopy(beam_obj)
 
-    mat6 = lat_athos.get_matrix('MIDDLE_STREAKER_1', 'SATBD02.DSCR050')
+    mat6 = lat_athos.get_matrix('SATMA02.UDCP045', 'SATBD02.DSCR050')
     beam_obj.linear_propagate(mat6)
 
     ms.figure(dimensions)
@@ -77,7 +77,7 @@ sim = simulation.ElegantSimulation('../elegant/Aramis.ele')
 betax0 = sim.twi['betax'][0]
 alphax0 = sim.twi['alphax'][0]
 meta_data0 = {x:0 for x in meta_data_ar.keys()}
-lat = lattice.aramis_lattice(meta_data0)
+lat = lattice.get_beamline_lattice('Aramis', meta_data0)
 from_ = lat.element_names[0]
 to = lat.element_names[-1]
 

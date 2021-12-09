@@ -90,6 +90,9 @@ structure_dimensions = {
 
 beamline_quads = {
         'Aramis': [
+            'SARUN15-MQUA080',
+            'SARUN16-MQUA080',
+            'SARUN17-MQUA080',
             'SARUN18-MQUA080',
             'SARUN19-MQUA080',
             'SARUN20-MQUA080',

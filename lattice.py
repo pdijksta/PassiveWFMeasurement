@@ -128,8 +128,8 @@ class Lattice:
             index_from, index_to = index_to, index_from
         status = self.element_status[index_from:index_to]
         if not np.all(status):
-            not_good = self.element_status == 0
-            bad_elements = self.element_names[not_good]
+            not_good = status == 0
+            bad_elements = self.element_names[index_from:index_to][not_good]
             raise ValueError(bad_elements)
         outp = np.eye(6)
         for index in range(index_from, index_to):

@@ -148,32 +148,30 @@ default_optics = {
             'betay': 16.807,
             'alphay': 1.782,
             },
-        # Both Athos Optics / matching points coincide with the values from the Emittance Tool
-        # TODO
         'Athos Post-Undulator': {
-            'betax': 3.15,
-            'alphax': 0.3,
-            'betay': 3.15,
-            'alphay': 0.3,
+            'betax': 9.391421543948457,
+            'alphax': -1.8121980039001508,
+            'betay': 2.906907300206899,
+            'alphay': 0.5729982645359069,
             },
         'Athos Pre-Undulator': {
-            'betax': 14.5804,
-            'alphax': 0.75,
-            'betay': 14.5804,
-            'alphay': 0.75,
+            'betax': 34.62,
+            'alphax': -1.02,
+            'betay': 28.25,
+            'alphay': 0.82,
             },
         }
 
 optics_matching_points = {
         'Aramis': 'SARUN18.START',
-        'Athos Post-Undulator': 'SATBD01.MQUA010',
-        'Athos Pre-Undulator': 'SATCB01.MQUA230',
+        'Athos Post-Undulator': 'SATUN22.MQUA080.START',
+        'Athos Pre-Undulator': 'SATDI01.MQUA250.START',
         }
 
 beamline_lat_files = {
         'Aramis': './elegant/Aramis.mat.h5',
-        'Athos Post-Undulator': './elegant/Athos.mat.h5',
-        'Athos Pre-Undulator': './elegant/Athos_Pre_Undulator.mat.h5',
+        'Athos Post-Undulator': './elegant/Athos_Full.mat.h5',
+        'Athos Pre-Undulator': './elegant/Athos_Full.mat.h5',
         }
 
 def get_default_optics(beamline):

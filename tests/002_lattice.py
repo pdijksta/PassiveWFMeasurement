@@ -11,7 +11,7 @@ import PassiveWFMeasurement.gen_beam as gen_beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.myplotstyle as ms
-import ElegantWrapper.simulation as simulation
+#import ElegantWrapper.simulation as simulation
 
 ms.closeall()
 
@@ -73,19 +73,19 @@ for n_d, dimensions in enumerate([dim1, dim2]):
             print('Case', n_d, 'Beam', n_b, dim, b[dim].std())
 
 
-sim = simulation.ElegantSimulation('../elegant/Aramis.ele')
-betax0 = sim.twi['betax'][0]
-alphax0 = sim.twi['alphax'][0]
-meta_data0 = {x:0 for x in meta_data_ar.keys()}
-lat = lattice.get_beamline_lattice('Aramis', meta_data0)
-from_ = lat.element_names[0]
-to = lat.element_names[-1]
-
-betax1, alphax1 = lat.propagate_optics(betax0, alphax0, 'X', from_, to)
-betax1_ele, alphax1_ele = sim.twi['betax'][-1], sim.twi['alphax'][-1]
-
-print('lattice.py', betax1, alphax1)
-print('elegant', betax1_ele, alphax1_ele)
+#sim = simulation.ElegantSimulation('../elegant/Aramis.ele')
+#betax0 = sim.twi['betax'][0]
+#alphax0 = sim.twi['alphax'][0]
+#meta_data0 = {x:0 for x in meta_data_ar.keys()}
+#lat = lattice.get_beamline_lattice('Aramis', meta_data0)
+#from_ = lat.element_names[0]
+#to = lat.element_names[-1]
+#
+#betax1, alphax1 = lat.propagate_optics(betax0, alphax0, 'X', from_, to)
+#betax1_ele, alphax1_ele = sim.twi['betax'][-1], sim.twi['alphax'][-1]
+#
+#print('lattice.py', betax1, alphax1)
+#print('elegant', betax1_ele, alphax1_ele)
 
 ms.show()
 

@@ -59,13 +59,15 @@ class Lattice:
         self.columns = mat['columns']
         self.types = np.array([x.decode() for x in self.columns['ElementType']])
         self.names = np.array([x.decode() for x in self.columns['ElementName']])
-        self.quad_names = self.names[self.types == 'QUAD'].copy()
+        self.raw_quad_names = self.names[self.types == 'QUAD'].copy()
+        self.quad_names = np.unique([x.replace('.Q1','').replace('.Q2', '') for x in self.raw_quad_names])
 
     def generate(self, quad_k1l_dict, fill_zero=False):
         names, types, columns = self.names, self.types, self.columns
         matrix = np.identity(6)
         ele_matrix = np.zeros_like(matrix)
         all_matrices = []
+        single_matrices = []
         for n_element, (type_, name) in enumerate(zip(types, names)):
             if type_ == 'QUAD':
                 assert columns['R21'][n_element] == 0 # Quadrupole K1 in elegant simulation must be 0
@@ -87,7 +89,9 @@ class Lattice:
                 else:
                     raise ValueError('%s not in %s' % (name3, quad_k1l_dict.keys()))
                 ele_matrix = transferMatrixQuad66(length, k1)
+                single_matrices.append(ele_matrix)
             else:
+                ele_matrix = np.eye(6)
                 for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):
                     # elegant uses s for the 5th coordinate (S5). Here we transform the matrix to time.
                     factor = 1
@@ -96,12 +100,15 @@ class Lattice:
                     if n_col == 5:
                         factor *= c
                     ele_matrix[n_row-1,n_col-1] = columns['R%i%i' % (n_row, n_col)][n_element] * factor
+                single_matrices.append(ele_matrix)
             matrix = ele_matrix @ matrix
             all_matrices.append(matrix)
 
         self.all_matrices = np.array(all_matrices)
+        self.single_matrices = np.array(single_matrices)
         self.element_names = names
         self.matrix_dict = {name: matrix for name, matrix in zip(names, all_matrices)}
+        self.quad_k1l_dict = quad_k1l_dict
 
     def get_matrix(self, from_, to):
         index_from = int(np.argwhere(from_ == self.element_names).squeeze())
@@ -109,9 +116,12 @@ class Lattice:
         inverse = index_from > index_to
         if inverse:
             from_, to = to, from_
-        r1 = self.matrix_dict[from_]
-        r_tot = self.matrix_dict[to]
-        outp = r_tot @ np.linalg.inv(r1)
+            index_from, index_to = index_to, index_from
+        outp = np.eye(6)
+        for index in range(index_from, index_to):
+            mat = self.single_matrices[index]
+            outp = mat @ outp
+
         if inverse:
             outp = np.linalg.inv(outp)
         return outp

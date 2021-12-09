@@ -20,6 +20,7 @@ structure_names = {
              'SARUN18-UDCP010',
              ],
         'Athos Post-Undulator': [
+            'SATUN22-MQUA080',
             'SATMA02-UDCP045',
             'SATMA02-UDCP015',
             ],
@@ -114,6 +115,10 @@ beamline_quads = {
             'SATDI01-MQUA260',
             'SATDI01-MQUA280',
             'SATDI01-MQUA300',
+            'SATCB01-MQUA230',
+            'SATCB01-MQUA430',
+            'SATCL02-MQUA230',
+            'SATCL02-MQUA430',
             ],
         }
 

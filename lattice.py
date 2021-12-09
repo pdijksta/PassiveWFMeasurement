@@ -68,7 +68,9 @@ class Lattice:
         ele_matrix = np.zeros_like(matrix)
         all_matrices = []
         single_matrices = []
+        element_status = []
         for n_element, (type_, name) in enumerate(zip(types, names)):
+            _element_status = 1
             if type_ == 'QUAD':
                 assert columns['R21'][n_element] == 0 # Quadrupole K1 in elegant simulation must be 0
                 length = columns['R12'][n_element]
@@ -85,7 +87,7 @@ class Lattice:
                     k1 = quad_k1l_dict[name2]/length2
                 elif fill_zero:
                     k1 = 0.
-                    print('Warning', name2, 0)
+                    _element_status = 0
                 else:
                     raise ValueError('%s not in %s' % (name3, quad_k1l_dict.keys()))
                 ele_matrix = transferMatrixQuad66(length, k1)
@@ -103,9 +105,12 @@ class Lattice:
                 single_matrices.append(ele_matrix)
             matrix = ele_matrix @ matrix
             all_matrices.append(matrix)
+            element_status.append(_element_status)
+
 
         self.all_matrices = np.array(all_matrices)
         self.single_matrices = np.array(single_matrices)
+        self.element_status = np.array(element_status)
         self.element_names = names
         self.matrix_dict = {name: matrix for name, matrix in zip(names, all_matrices)}
         self.quad_k1l_dict = quad_k1l_dict
@@ -117,6 +122,11 @@ class Lattice:
         if inverse:
             from_, to = to, from_
             index_from, index_to = index_to, index_from
+        status = self.element_status[index_from:index_to]
+        if not np.all(status):
+            not_good = self.element_status == 0
+            bad_elements = self.element_names[not_good]
+            raise ValueError(bad_elements)
         outp = np.eye(6)
         for index in range(index_from, index_to):
             mat = self.single_matrices[index]

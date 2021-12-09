@@ -1,11 +1,10 @@
 import numpy as np
-from . import gen_beam
 
 def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6):
     #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
     beam_spec = tracker.beam_spec.copy()
     beam_spec.update(tracker.beam_optics)
-    beam = gen_beam.beam_from_spec(['x', 't'], beam_spec, tracker.n_particles, beamprofile, tracker.total_charge, tracker.energy_eV)
+    beam = tracker.gen_beam(beamprofile)
     forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
     beam = forward_dict['beam_at_screen']
     r12 = tracker.r12

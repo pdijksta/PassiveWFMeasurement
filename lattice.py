@@ -61,6 +61,7 @@ class Lattice:
         self.names = np.array([x.decode() for x in self.columns['ElementName']])
         self.raw_quad_names = self.names[self.types == 'QUAD'].copy()
         self.quad_names = np.unique([x.replace('.Q1','').replace('.Q2', '') for x in self.raw_quad_names])
+        self.names_set = set(self.names)
 
     def generate(self, quad_k1l_dict):
         names, types, columns = self.names, self.types, self.columns
@@ -114,6 +115,11 @@ class Lattice:
         self.quad_k1l_dict = quad_k1l_dict
 
     def get_matrix(self, from_, to):
+        if from_ not in self.names_set:
+            raise ValueError('%s not found' % from_)
+        if to not in self.names_set:
+            raise ValueError('%s not found' % to)
+
         index_from = int(np.argwhere(from_ == self.element_names).squeeze())
         index_to = int(np.argwhere(to == self.element_names).squeeze())
         inverse = index_from > index_to

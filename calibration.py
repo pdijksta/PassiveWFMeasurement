@@ -374,7 +374,7 @@ class StructureCalibrator(LogMsgBase):
         b = self.fit_type('centroid')
         return a, b
 
-    def forward_propagate(self, blmeas_profile, force_gap=None, force_structure_offset=None):
+    def forward_propagate(self, blmeas_profile, force_gap=None, force_structure_offset=None, use_n_positions=None):
         sim_screens = []
         forward_dicts = []
         beam_positions = []
@@ -388,7 +388,13 @@ class StructureCalibrator(LogMsgBase):
 
         beam = tracker.gen_beam(blmeas_profile)
 
-        for raw_position in self.raw_struct_positions:
+        if use_n_positions is None:
+            n_positions = range(len(self.raw_struct_positions))
+        else:
+            n_positions = use_n_positions
+
+        for n_position in n_positions:
+            raw_position = self.raw_struct_positions[n_position]
             beam_positions.append(-(raw_position-structure_position0))
             forward_dict = tracker.forward_propagate_forced(gap, beam_positions[-1], beam)
             forward_dicts.append(forward_dict)

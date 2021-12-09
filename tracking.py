@@ -279,7 +279,7 @@ class Tracker(LogMsgBase):
             assert np.all(np.diff(t_interp) >= 0)
             bp = beam_profile.BeamProfile(t_interp, charge_interp, self.energy_eV, self.total_charge)
             bp.smoothen(self.backward_options['profile_smoothen'])
-            bp.aggressive_cutoff(self.backward_options['profile_cutoff'])
+            bp.cutoff(self.backward_options['profile_cutoff'])
             bp.crop()
             bp.reshape(self.backward_options['len_profile'])
             if np.any(np.isnan(bp.charge_dist)):
@@ -398,8 +398,9 @@ class Tracker(LogMsgBase):
                 bp_back0.plot_standard(sp_profile, label='Back0 %i' % n_iter, center='Mean')
                 bp_back1.plot_standard(sp_profile, label='Back1 %i' % n_iter, center='Mean')
                 if n_iter == 0:
-                    color = meas_screen.plot_standard(sp_screen, label='Meas')[0].get_color()
-                    sp_screen.axvline(meas_screen.mean()*1e3, color=color, ls='--')
+                    meas_screen.plot_standard(sp_screen, label='Meas', color='black')
+                    meas_screen_raw.plot_standard(sp_screen, label='Meas raw', color='black', ls='--')
+                    sp_screen.axvline(meas_screen.mean()*1e3, color='black', ls='--')
                 color = screen.plot_standard(sp_screen, label='Rec %i' % n_iter)[0].get_color()
                 sp_screen.axvline(screen.mean()*1e3, color=color, ls='--')
 
@@ -475,9 +476,7 @@ class Tracker(LogMsgBase):
             sp_profile.legend()
             sp_screen.legend()
             ms.plt.figure(fig_number)
-
         return output
-
 
     def find_beam_position(self, position0, meas_screen_raw, profile, position_explore=None):
         if position_explore is None:

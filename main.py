@@ -283,8 +283,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ScreenCenterCalib.setText('%.3f' % (calib.screen_center*1e6))
         self.StructureGapDelta.setText('%.3f' % (calib.delta_gap*1e6))
         self.StructureCenter.setText('%.3f' % (calib.structure_position0*1e6))
+        self.logMsg('New calibration: %s' % calib)
 
-    def get_tracker(self, meta_data, structure_name=None):
+    def get_tracker(self, meta_data, structure_name=None, calib_delta_gap0=False):
         if self.Charge.text() == self.charge_pv_text:
             force_charge = None
         else:
@@ -294,12 +295,16 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if structure_name is None:
             structure_name = self.structure_name
 
+        calib = self.gui_to_calib()
+        if calib_delta_gap0:
+            calib.delta_gap = 0
+
         tracker = tracking.Tracker(
                 self.beamline,
                 self.screen,
                 structure_name,
                 meta_data,
-                self.gui_to_calib(),
+                calib,
                 self.get_forward_options(),
                 self.get_backward_options(),
                 self.get_reconstruct_gauss_options(),
@@ -499,7 +504,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logMsg('DAQ for calibration ended.')
 
     def _analyze_structure_fit(self, result_dict):
-        tracker = self.get_tracker(result_dict['meta_data_begin'])
+        tracker = self.get_tracker(result_dict['meta_data_begin'], calib_delta_gap0=True)
         structure_calib_options = self.get_structure_calib_options()
 
         sc = calibration.StructureCalibrator(tracker, structure_calib_options, result_dict, self.logger)
@@ -511,10 +516,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
 
             sc.forward_propagate(bp)
+            sim_screens = sc.sim_screens
+        else:
+            sim_screens = None
+            bp = None
 
         calib = sc.fit_dicts['centroid']['calibration']
         self.calib_to_gui(calib)
-        plot_results.plot_structure_position0_fit(sc.fit_dicts, self.structure_fit_plot_handles)
+        plot_results.plot_structure_position0_fit(sc.fit_dicts, self.structure_fit_plot_handles, blmeas_profile=bp, sim_screens=sim_screens)
         self.structure_fit_canvas.draw()
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)
         return sc.fit_dicts
@@ -529,7 +538,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if 'raw_data' in saved_dict:
             saved_dict = saved_dict['raw_data']
 
-        tracker = self.get_tracker(saved_dict['meta_data_begin'])
+        tracker = self.get_tracker(saved_dict['meta_data_begin'], calib_delta_gap0=True)
         structure_calib_options = self.get_structure_calib_options()
         calibrator = calibration.StructureCalibrator(tracker, structure_calib_options, saved_dict)
         calib_dict = calibrator.calibrate_gap_and_struct_position()
@@ -558,7 +567,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         data_dict = h5_storage.loadH5Recursive(data_file)
         pyscan_result = data_dict['pyscan_result']
         meta_data = data_dict['meta_data_begin']
-        tracker = self.get_tracker(meta_data)
+        tracker = self.get_tracker(meta_data, calib_delta_gap0=True)
         tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
         bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
@@ -573,7 +582,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         plot_results.plot_tdc_calibration(result_dict, plot_handles=self.tdc_calibration_plot_handles)
         self.tdc_calibration_canvas.draw()
         self.tabWidget.setCurrentIndex(self.tdc_calibration_tab_index)
-        self.logMsg('New calibration: %s' % new_calib)
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()
@@ -694,14 +702,14 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         text += '\nScreen: %s' % self.screen
 
         if elog is None:
-            print('Cannot save to ELOG')
-            print('I would post:')
-            print(text)
+            self.logMsg('Cannot save to ELOG', 'W')
+            self.logMsg('I would post:')
+            self.logMsg(text)
         elif self.ElogSaveCheck.isChecked():
             dict_att = {'Author': 'Application: PostUndulatorStreakerAnalysis', 'Application': 'PostUndulatorStreakerAnalysis', 'Category': 'Measurement', 'Title': title}
             self.logbook.post(text, attributes=dict_att, attachments=attachments)
 
-            print('ELOG entry saved.')
+            self.logMsg('ELOG entry saved.')
         else:
             self.logMsg('Save to ELOG is not checked in GUI. Not saving.')
         return filename

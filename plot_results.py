@@ -265,7 +265,7 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
         if sim_screens is not None:
             plot2_sim = []
             for mask in mask_pos, mask_neg:
-                plot2_sim.extend([(a, np.abs(b)) for a, b in zip(xx_fit2[mask], yy_sim[mask])])
+                plot2_sim.extend([(a, np.abs(b)) for a, b in zip(distances[mask], yy_sim[mask])])
             plot2_sim.sort()
             xx_plot_sim, yy_plot_sim = zip(*plot2_sim)
             xx_plot_sim = np.array(xx_plot_sim)

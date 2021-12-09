@@ -12,7 +12,6 @@ import PyQt5.Qt
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
 
-
 path = os.path.join(os.path.dirname(__file__), '../')
 if path not in sys.path:
     sys.path.append(path)

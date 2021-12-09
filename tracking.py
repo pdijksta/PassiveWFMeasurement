@@ -18,10 +18,11 @@ class Tracker(LogMsgBase):
         screen_name - For example "SARBD02-DSCR050".
         structure_name - For example "SARUN18-UDCP020".
         meta_data - Look at daq.py for format.
-        beam_parameters - Look at config.py for format.
-        delta_gap - Calibrated gap.
-        structure_position0 - Structure position for which the beam is centered inside.
-        screen_center - Position of the unstreaked beam on the screen.
+        calib - StructureCalibration from calibration.py
+        Other args: look at get_default_tracker for an example.
+        force_charge: Override EPICS charge PV
+        n_particles: Number of particles for forward and backward trackiign
+        logger: from logMsg.py
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, n_particles=config.default_n_particles, logger=None):
 

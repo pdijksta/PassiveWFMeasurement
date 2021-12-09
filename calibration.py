@@ -74,15 +74,15 @@ class MeasScreens:
                 screen.plot_standard(sp_pos, color='black')
                 screen.plot_standard(sp_neg, color='black')
             else:
-                if beam_pos > 0:
+                # Inverted sign!
+                if beam_pos < 0:
                     sp = sp_pos
-                elif beam_pos < 0:
+                elif beam_pos > 0:
                     sp = sp_neg
                 screen.plot_standard(sp, label='%.3f' % (beam_pos*1e3))
         sp_pos.legend(title='Beam position (mm)')
         sp_neg.legend(title='Beam position (mm)')
         return (sp_pos, sp_neg)
-
 
 class StructureCalibrator(LogMsgBase):
 

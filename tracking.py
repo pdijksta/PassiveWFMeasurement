@@ -123,7 +123,7 @@ class Tracker(LogMsgBase):
         beam_options = self.beam_spec.copy()
         betax0, alphax0 = self.beam_optics['betax'], self.beam_optics['alphax']
         matching_point = config.optics_matching_points[self.beamline]
-        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', matching_point, self.lat.element_names[0])
+        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', matching_point, self.structure_name.replace('-','.'))
         beam_options['betax'] = betax
         beam_options['alphax'] = alphax
         beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
@@ -142,27 +142,24 @@ class Tracker(LogMsgBase):
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
-        beam: must be beam corresponding to beginning of self.lat
+        beam: must correspond to middle of structure
         """
-        beam_init = beam
-        mat0 = self.lat.get_matrix(self.lat.element_names[0], self.structure_name.replace('-', '.'))
-        beam_before_streaker = beam.linear_propagate(mat0)
-        wake_time = beam_init.beamProfile.time
-        energy_eV = beam_init.energy_eV
-        wake_dict_dipole = self.calc_wake(beam_init.beamProfile, 'Dipole')
+        wake_time = beam.beamProfile.time
+        energy_eV = beam.energy_eV
+        wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
 
         if quad_wake:
-            wake_dict_quadrupole = self.calc_wake(beam_init.beamProfile, 'Quadrupole')
+            wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
             delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam['x']-beam['x'].mean())
         else:
             delta_xp_quadrupole = 0.
             delta_xp_coords_quad = 0.
 
-        beam_after_streaker = beam_before_streaker.child()
+        beam_after_streaker = beam.child()
         beam_after_streaker['xp'] += delta_xp_coords_dip
         beam_after_streaker['xp'] += delta_xp_coords_quad
 
@@ -177,12 +174,10 @@ class Tracker(LogMsgBase):
                 }
         if output_details:
             outp_dict.update({
-                'beam_init': beam_init,
-                'beam_before_streaker': beam_before_streaker,
+                'beam': beam,
                 'beam_after_streaker': beam_after_streaker,
                 'beam_at_screen': beam_at_screen,
                 'wake_dict_dipole': wake_dict_dipole,
-                'transport_matrix0': mat0,
                 'transport_matrix': self.matrix,
                 })
 

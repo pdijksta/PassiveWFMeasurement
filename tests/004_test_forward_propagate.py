@@ -12,6 +12,7 @@ import PassiveWFMeasurement.beam_profile as beam_profile
 import PassiveWFMeasurement.config as config
 import PassiveWFMeasurement.calibration as calibration
 import PassiveWFMeasurement.blmeas as blmeas
+import PassiveWFMeasurement.gen_beam as gen_beam
 import PassiveWFMeasurement.myplotstyle as ms
 import WakefieldAnalysis.tracking as tracking_old
 import WakefieldAnalysis.config as config_old
@@ -47,8 +48,7 @@ bp = beam_profile.get_gaussian_profile(sig_t, tt_range, tt_points, total_charge,
 #beam_obj = gen_beam.beam_from_spec(['x', 't'], beam_spec, n_particles, bp, total_charge, tracker.energy_eV)
 beam_obj = tracker.gen_beam(bp)
 
-beam_obj0 = copy.deepcopy(beam_obj)
-beam_obj0.linear_propagate(tracker.lat.get_matrix(tracker.lat.element_names[0].replace('-', '.'), tracker.structure_name.replace('-', '.')))
+beam_obj0 = gen_beam.beam_from_spec(['x', 't'], beam_spec, tracker.n_particles, bp, total_charge, tracker.energy_eV)
 betax = beam_obj.get_beta_from_beam('x')
 alphax = beam_obj.get_alpha_from_beam('x')
 print('Betax, alphax:', betax, alphax)
@@ -108,14 +108,13 @@ beam_after_s2 = forward_dict_old['beam_after_s2']
 beam_at_screen = forward_dict_old['beam_at_screen']
 
 for beam_old, key_new in [
-        (beam_start, 'beam_init'),
-        (beam_before_s2, 'beam_before_streaker'),
+        (beam_before_s2, 'beam'),
         (beam_after_s2, 'beam_after_streaker'),
         (beam_at_screen, 'beam_at_screen'),
         ]:
     beam_new = forward_dict[key_new]
     print(key_new, beam_old[0,:].std(), beam_new['x'].std())
-    print(beam_new.get_beta_from_beam('x'))
+    print('beta prop', beam_new.get_beta_from_beam('x'))
 # -> Works now
 
 wake_dict_old = forward_dict_old['wake_dict']

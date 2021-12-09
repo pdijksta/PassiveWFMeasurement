@@ -292,7 +292,7 @@ def calib_figure(figsize=None):
 
 def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
     for sp, title, xlabel, ylabel in [
-            (sp_raw, 'Raw data', '$\Delta$ g ($\mu$ m)', 'rms duration (fs)'),
+            (sp_raw, 'Raw data', '$\Delta$ g ($\mu$m)', 'rms duration (fs)'),
             (sp_heat, 'Fit', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
             (sp_heat_rms, 'Rms duration', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
             (sp_heat_diff, 'Rms duration difference', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),

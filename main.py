@@ -489,7 +489,10 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_')+'Calibration_%s.h5' % self.structure_name.replace('.','_')
 
         calib = fit_dicts['centroid']['calibration']
-        elog_text = 'Streaker calibration structure %s\nCenter: %i um' % (self.structure_name, calib.structure_position0*1e6)
+        elog_text = 'Streaker calibration structure %s' % self.structure_name
+        elog_text += '\nStructure position0: %i um' % round(calib.structure_position0*1e6)
+        elog_text += '\nStructure delta gap: %i um' % round(calib.delta_gap*1e6)
+        elog_text += '\nScreen center %i um' % round(calib.screen_center*1e6)
         filename = self.elog_and_H5_auto(elog_text, [self.structure_fit_fig], 'Streaker center calibration', basename, full_dict, dry_run)
         self.LoadCalibrationFilename.setText(filename)
         self.tabWidget.setCurrentIndex(self.structure_fit_plot_tab_index)

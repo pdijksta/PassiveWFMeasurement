@@ -65,6 +65,8 @@ ar12=('Optics 12', 20.0,2.668,11.26, 15, 0, 90,kL12)
 ar13=('Optics 13', 25.0,3.335,9.01, 15, 0, 90,kL13)
 ar14=('Optics 14', 30.0,3.999,7.51, 15, 0, 90,kL14)
 
+quadNames.append('SARBD02.MQUA030')
+aramis_quads = quadNames
 aramis_optics = [
         ar1,
         ar1a,
@@ -83,7 +85,6 @@ aramis_optics = [
         ar14,
         ]
 
-quadNames.append('SARBD02.MQUA030')
 for a in aramis_optics:
     a[-1].append(0.)
 
@@ -250,6 +251,9 @@ at6=('Optics 6', 20.0, 0.0, 11.1, 15, 0, 90,opt6)
 at7=('Optics 7', 25.0, 0.0, 8.9, 15, 0, 90,opt7)
 at8=('Optics 8', 30.0, 0.0, 7.4, 15, 0, 90,opt8)
 
+quadNames.append('SATBD02.MQUA030')
+
+athos_quads = quadNames
 athos_post_undulator_optics = (
         at1,
         at1A,
@@ -263,4 +267,6 @@ athos_post_undulator_optics = (
         at7,
         at8,
         )
+for a in athos_post_undulator_optics:
+    a[-1].append(0.)
 

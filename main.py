@@ -11,12 +11,14 @@ import numpy as np
 import PyQt5.Qt
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtRemoveInputHook
+from PyQt5.QtWidgets import QTableWidgetItem
 
 path = os.path.join(os.path.dirname(__file__), '../')
 if path not in sys.path:
     sys.path.append(path)
 
 from PassiveWFMeasurement import config
+from PassiveWFMeasurement import optics
 from PassiveWFMeasurement import tracking
 from PassiveWFMeasurement import lasing
 from PassiveWFMeasurement import h5_storage
@@ -84,6 +86,23 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.PlotResolution.clicked.connect(self.plot_resolution)
         self.BeamlineSelect.activated.connect(self.beamline_select)
         self.StructureSelect.activated.connect(self.streaking_dimension_select)
+
+        ## Init Optics
+        self.optics_identifiers = {}
+        for beamline, table, optics_info in [
+                ('Aramis', self.AramisTable, optics.aramis_optics),
+                ('Athos Post-Undulator', self.AthosPostUndTable, optics.athos_post_undulator_optics)
+                ]:
+            table.setRowCount(len(optics_info))
+            table.setColumnCount(7)
+            table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21', 'R11', 'Δψ'])
+            self.optics_identifiers[beamline] = []
+            for n_row, content in enumerate(optics_info):
+                identifier = content[0]
+                table.setItem(n_row, 0, QTableWidgetItem(identifier))
+                self.optics_identifiers[beamline].append(identifier)
+                for n_col in range(1, 6+1):
+                    table.setItem(n_row, n_col, QTableWidgetItem('%.2f' % content[n_col]))
 
         self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
         self.beamline_select()
@@ -188,7 +207,6 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
 
         ## Init plots
-
         def get_new_tab(fig, title):
             new_tab = QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
@@ -246,6 +264,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.AlphaX.setText('%.4f' % optics['alphax'])
         self.BetaY.setText('%.4f' % optics['betay'])
         self.AlphaY.setText('%.4f' % optics['alphay'])
+        self.BeamlineSelect.addItems(self.optics_identifiers[beamline])
 
     def streaking_dimension_select(self):
         structure_name = self.structure_name

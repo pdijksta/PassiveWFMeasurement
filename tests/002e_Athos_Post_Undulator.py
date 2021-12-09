@@ -30,7 +30,7 @@ lat_athos = lattice.Lattice('../elegant/Athos_Full.mat.h5')
 #k1l_dict = {a: np.random.rand()-0.5 for a in lat_athos.quad_names}
 k1l_dict = {a: -20 for a in lat_athos.quad_names}
 k1l_dict.update(quad_kl_dict)
-lat_athos.generate(k1l_dict, False)
+lat_athos.generate(k1l_dict)
 optics_back = lat_athos.propagate_optics_dict(emit_optics, RP, RP0)
 
 print(RP0)

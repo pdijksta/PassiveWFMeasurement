@@ -27,7 +27,7 @@ lat_athos0 = lattice.get_beamline_lattice('Athos Pre-Undulator', quad_kl_dict)
 optics_back0 = lat_athos0.propagate_optics_dict(emit_optics, RP, RP0)
 
 lat_athos = lattice.Lattice('../elegant/Athos_Full.mat.h5')
-lat_athos.generate(quad_kl_dict, True)
+lat_athos.generate(quad_kl_dict)
 optics_back = lat_athos.propagate_optics_dict(emit_optics, RP, RP0)
 
 print(RP0)

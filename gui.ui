@@ -205,6 +205,22 @@ Und</string>
        <number>-1</number>
       </property>
      </widget>
+     <widget class="QCheckBox" name="UseOpticsCheck">
+      <property name="geometry">
+       <rect>
+        <x>310</x>
+        <y>650</y>
+        <width>181</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Use for beam generation</string>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="Calibration">
      <attribute name="title">
@@ -2857,14 +2873,14 @@ Und</string>
      <widget class="QLabel" name="MatchingPointLabel">
       <property name="geometry">
        <rect>
-        <x>460</x>
-        <y>230</y>
-        <width>421</width>
+        <x>440</x>
+        <y>400</y>
+        <width>221</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>Beam specifications at matching point XXXXX</string>
+       <string>Optics reference point</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_38">
@@ -2913,6 +2929,9 @@ Und</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="BetaY">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>770</x>
@@ -2927,8 +2946,14 @@ Und</string>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
      </widget>
      <widget class="QLineEdit" name="BetaX">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>640</x>
@@ -2943,8 +2968,14 @@ Und</string>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
      </widget>
      <widget class="QLineEdit" name="AlphaX">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>640</x>
@@ -2958,6 +2989,9 @@ Und</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_27">
@@ -2974,6 +3008,9 @@ Und</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="AlphaY">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>770</x>
@@ -2987,6 +3024,9 @@ Und</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_48">
@@ -3058,6 +3098,28 @@ Und</string>
       </property>
       <property name="text">
        <string>Exploration range [μm]</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="OpticsReferencePoint">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>640</x>
+        <y>400</y>
+        <width>231</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>

@@ -86,6 +86,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.BeamlineSelect.activated.connect(self.beamline_select)
         self.StructureSelect.activated.connect(self.streaking_dimension_select)
         self.SetOptics.clicked.connect(self.set_optics)
+        self.UseOpticsCheck.stateChanged.connect(self.use_optics_changed)
 
         ## Init Optics
         self.optics_identifiers = {}
@@ -107,7 +108,9 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 table.setItem(n_row, 0, PyQt5.QtWidgets.QTableWidgetItem(identifier))
                 self.optics_identifiers[beamline].append(identifier)
                 for n_col in range(1, 6+1):
-                    table.setItem(n_row, n_col, PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col]))
+                    item = PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col])
+                    item.setFlags(item.flags() ^ PyQt5.QtCore.Qt.ItemIsEditable)
+                    table.setItem(n_row, n_col, item)
             table.horizontalHeader().setSectionResizeMode(PyQt5.QtWidgets.QHeaderView.Stretch)
 
         self.BeamlineSelect.addItems(config.beamlines)
@@ -253,6 +256,21 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         self.logMsg('Main window initialized')
 
+    def use_optics_changed(self):
+        beamline = self.beamline
+        if self.UseOpticsCheck.isChecked():
+            optics = config.custom_optics[beamline]
+            matching_point = config.custom_optics_matching_points[beamline]
+        else:
+            optics = config.get_default_optics(beamline)
+            matching_point = config.optics_matching_points[beamline]
+
+        self.BetaX.setText('%.4f' % optics['betax'])
+        self.AlphaX.setText('%.4f' % optics['alphax'])
+        self.BetaY.setText('%.4f' % optics['betay'])
+        self.AlphaY.setText('%.4f' % optics['alphay'])
+        self.OpticsReferencePoint.setText(matching_point)
+
     def beamline_select(self):
         beamline = self.beamline
         screens = config.screen_names[beamline]
@@ -262,14 +280,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.StructureSelect.clear()
         self.StructureSelect.addItems(structures)
         self.streaking_dimension_select()
-        matching_point = config.optics_matching_points[beamline]
-        self.MatchingPointLabel.setText('Beam specifications at matching point %s' % matching_point)
-        optics = config.get_default_optics(beamline)
-        self.BetaX.setText('%.4f' % optics['betax'])
-        self.AlphaX.setText('%.4f' % optics['alphax'])
-        self.BetaY.setText('%.4f' % optics['betay'])
-        self.AlphaY.setText('%.4f' % optics['alphay'])
         self.OpticsSelect.clear()
+        self.use_optics_changed()
         if beamline in self.optics_identifiers:
             self.OpticsSelect.addItems(self.optics_identifiers[beamline])
 
@@ -347,6 +359,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 self.get_find_beam_position_options(),
                 force_charge,
                 n_particles,
+                self.OpticsReferencePoint.text(),
                 self.logger)
         return tracker
 

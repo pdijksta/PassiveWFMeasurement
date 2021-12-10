@@ -22,8 +22,6 @@ file_ = './data/2021_05_19-14_59_24_Lasing_True_SARBD02-DSCR050.h5'
 dict_ = h5_storage.loadH5Recursive(file_)
 meta_data_ar = dict_['meta_data_begin']
 
-
-
 simulator = elegant_matrix.get_simulator(meta_data_ar)
 mat_elegant = simulator.get_streaker_matrices(None, 'Aramis')['s2_to_screen']
 

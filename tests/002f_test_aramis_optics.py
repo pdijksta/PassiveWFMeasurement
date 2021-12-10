@@ -40,7 +40,7 @@ sat22_mqua80 = 'SATUN22.MQUA080.START'
 structure = 'SATMA02.UDCP045'
 screen = 'SATBD02.DSCR050'
 
-athos_post_info = (lat, optics_sat22_mqua80, sat22_mqua80, structure, screen, optics.athos_post_undulator_optics, optics.athos_quads)
+athos_post_info = (lat, optics_sat22_mqua80, sat22_mqua80, structure, screen, optics.athos_post_undulator_optics, optics.athos_post_undulator_quads)
 
 
 for beamline, (lat, optics0, pos0, structure, screen, optics_info, quads) in [

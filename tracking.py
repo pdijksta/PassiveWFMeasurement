@@ -484,7 +484,6 @@ class Tracker(LogMsgBase):
             sp_screen.legend()
             ms.plt.figure(fig_number)
 
-        ms.plt.show()
         return output
 
     def find_beam_position(self, position0, meas_screen_raw, profile, position_explore=None):

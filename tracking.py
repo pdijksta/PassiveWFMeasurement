@@ -252,6 +252,9 @@ class Tracker(LogMsgBase):
         if self.total_charge != beamProfile.total_charge:
             raise ValueError('Charges are unequal (pC):', self.total_charge*1e12, beamProfile.total_charge*1e12)
 
+        beamProfile = copy.deepcopy(beamProfile)
+        beamProfile.expand(0.3)
+
         wf_dict = beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
         wake_time = wf_dict['wake_time']
         wake_deltaE = wf_dict['wake_potential']
@@ -480,6 +483,8 @@ class Tracker(LogMsgBase):
             sp_profile.legend()
             sp_screen.legend()
             ms.plt.figure(fig_number)
+
+        ms.plt.show()
         return output
 
     def find_beam_position(self, position0, meas_screen_raw, profile, position_explore=None):

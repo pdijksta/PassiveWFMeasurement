@@ -101,7 +101,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             optics_info = self.beamline_optics_tables[beamline][1]
             table.setRowCount(len(optics_info))
             table.setColumnCount(7)
-            table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21', 'R11', 'Δψ'])
+            table.setHorizontalHeaderLabels(['Identifier', 'Struct βx', 'Struct αx', 'Screen βx', 'R21', 'R11', 'Δψx'])
             self.optics_identifiers[beamline] = []
             for n_row, content in enumerate(optics_info):
                 identifier = content[0]

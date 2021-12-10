@@ -42,6 +42,13 @@ class Profile(LogMsgBase):
         self._gf_xx = None
         self._gf_yy = None
 
+    def expand(self, ratio):
+        len_x = self._xx[-1] - self._xx[0]
+        new_xx = np.linspace(self._xx[0], self._xx[-1] + ratio*len_x, int(len(self)*(1+ratio)))
+        new_yy = np.interp(new_xx, self._xx, self._yy, left=0, right=0)
+        self._xx = new_xx
+        self._yy = new_yy
+
     def reshape(self, new_shape):
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
         old_sum = np.sum(self._yy)

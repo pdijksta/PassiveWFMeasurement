@@ -163,10 +163,10 @@ default_optics = {
             'alphay': 1.782,
             },
         'Athos Post-Undulator': {
-            'betax': 9.391421543948457,
-            'alphax': -1.8121980039001508,
-            'betay': 2.906907300206899,
-            'alphay': 0.5729982645359069,
+            'betax': 9.538,
+            'alphax': -2.702,
+            'betay': 2.857,
+            'alphay': 0.819,
             },
         'Athos Pre-Undulator': {
             'betax': 34.62,
@@ -180,6 +180,26 @@ optics_matching_points = {
         'Aramis': 'SARUN18.START',
         'Athos Post-Undulator': 'SATUN22.MQUA080.START',
         'Athos Pre-Undulator': 'SATDI01.MQUA250.START',
+        }
+
+custom_optics = {
+        'Aramis': {
+            'betax': 4.9,
+            'alphax': 0.564,
+            'betay': 15.71,
+            'alphay': -1.731,
+            },
+        'Athos Post-Undulator': {
+            'betax': 9.538,
+            'alphax': -2.702,
+            'betay': 2.857,
+            'alphay': 0.819,
+            },
+        }
+
+custom_optics_matching_points = {
+        'Aramis': 'SARUN15.MQUA080.START',
+        'Athos Post-Undulator': 'SATUN22.MQUA080.START',
         }
 
 beamline_lat_files = {

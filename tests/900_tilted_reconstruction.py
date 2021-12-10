@@ -13,7 +13,7 @@ from PassiveWFMeasurement import gaussfit
 
 ms.closeall()
 
-example_file = '/sf/data/measurements/2021/11/12/20211112_200247_SATBD02-DSCR050_camera_snapshot.h5'
+example_file = './data/20211112_200247_SATBD02-DSCR050_camera_snapshot.h5'
 
 example_data = h5_storage.loadH5Recursive(example_file)['camera1']
 

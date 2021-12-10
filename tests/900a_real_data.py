@@ -137,6 +137,7 @@ def x_to_t(img, calib_image):
 
 dir_ = '/sf/data/measurements/2021/11/12/'
 dir_ = '/mnt/data/data_2021-11-12/'
+dir_ = './data/'
 
 lasing_off_file = dir_+'2021_11_12-23_22_11_Lasing_False_SATBD02-DSCR050.h5'
 lasing_on_file = dir_+'2021_11_12-23_15_06_Lasing_True_SATBD02-DSCR050.h5'

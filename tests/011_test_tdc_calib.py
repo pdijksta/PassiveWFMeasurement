@@ -44,7 +44,7 @@ blmeas_profile = beam_profile.profile_from_blmeas(blmeas_file, 400e-15, tracker.
 print(blmeas_profile.time.min(), blmeas_profile.time.max())
 #beam_profile.BeamProfile(blmeas_dict['time'], blmeas_dict['current_reduced'], energy_eV=tracker.energy_eV, total_charge=tracker.total_charge)
 
-x_axis, proj = data_loader.screen_data_to_median(data['pyscan_result'])
+x_axis, proj = data_loader.screen_data_to_median(data['pyscan_result'], tracker.structure.dim)
 raw_screen = beam_profile.ScreenDistribution(x_axis-calib.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
 raw_screen.aggressive_cutoff(0.02)
 raw_screen.crop()
@@ -62,7 +62,7 @@ sp_ctr += 1
 sp_screen = subplot(sp_ctr, title='Screen')
 sp_ctr += 1
 
-sp_wake = subplot(sp_ctr, title='Wakes')
+sp_wake = subplot(sp_ctr, title='Wakes', xlabel='t (fs)', ylabel='x (mm)')
 sp_ctr += 1
 
 blmeas_profile.plot_standard(sp_profile, label='Measured')
@@ -73,7 +73,7 @@ tdc_dict['backward_dict']['screen'].plot_standard(sp_screen, label='Backward pro
 wake_t = tdc_dict['backward_dict']['wake_time']
 wake_x = tdc_dict['backward_dict']['wake_x']
 
-sp_wake.plot(wake_x*1e3, wake_t*1e15)
+sp_wake.plot(wake_t*1e15, wake_x*1e3)
 
 sp_profile.legend()
 sp_screen.legend()

@@ -253,7 +253,7 @@ at8=('Optics 8', 30.0, 0.0, 7.4, 15, 0, 90,opt8)
 
 quadNames.append('SATBD02.MQUA030')
 
-athos_quads = quadNames
+athos_post_undulator_quads = quadNames
 athos_post_undulator_optics = (
         at1,
         at1A,

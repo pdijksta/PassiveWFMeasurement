@@ -89,14 +89,15 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         ## Init Optics
         self.optics_identifiers = {}
-        self.beamline_tables = {
-                'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis),
-                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost)
+        self.beamline_optics_tables = {
+                'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis, optics.aramis_quads),
+                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads)
                 }
         for beamline in config.beamlines:
-            if beamline not in self.beamline_tables:
+            if beamline not in self.beamline_optics_tables:
                 continue
-            table, optics_info, _ = self.beamline_tables[beamline]
+            table = self.beamline_optics_tables[beamline][0]
+            optics_info = self.beamline_optics_tables[beamline][1]
             table.setRowCount(len(optics_info))
             table.setColumnCount(7)
             table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21', 'R11', 'Δψ'])
@@ -107,10 +108,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 self.optics_identifiers[beamline].append(identifier)
                 for n_col in range(1, 6+1):
                     table.setItem(n_row, n_col, PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col]))
-            #table.resizeColumnsToContents()
             table.horizontalHeader().setSectionResizeMode(PyQt5.QtWidgets.QHeaderView.Stretch)
-
-        #import pdb; pdb.set_trace()
 
         self.BeamlineSelect.addItems(config.beamlines)
         self.beamline_select()
@@ -129,7 +127,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             save_dir = date.strftime('/sf/data/measurements/%Y/%m/%d/')
 
         bunch_length_meas_file = default_dir + '119325494_bunch_length_meas.h5'
-        #recon_data_file = default_dir+'2021_05_18-17_41_02_PassiveReconstruction.h5'
         lasing_file_off = default_dir + '2021_05_18-21_45_00_Lasing_False_SARBD02-DSCR050.h5'
         lasing_file_on = default_dir + '2021_05_18-21_41_35_Lasing_True_SARBD02-DSCR050.h5'
         structure_calib_file = default_dir + '2021_05_18-22_11_36_Calibration_SARUN18-UDCP020.h5'
@@ -276,9 +273,9 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         if beamline in self.optics_identifiers:
             self.OpticsSelect.addItems(self.optics_identifiers[beamline])
 
-        all_labels = [x[2] for x in self.beamline_tables.values()]
+        all_labels = [x[2] for x in self.beamline_optics_tables.values()]
         for w in all_labels:
-            if beamline in self.beamline_tables and w is self.beamline_tables[beamline][2]:
+            if beamline in self.beamline_optics_tables and w is self.beamline_optics_tables[beamline][2]:
                 w.setAutoFillBackground(True)
                 p = w.palette()
                 p.setColor(w.backgroundRole(), PyQt5.QtCore.Qt.blue)
@@ -801,8 +798,26 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingStatus.setText('Lasing in %s restored' % beamline)
 
     def set_optics(self):
-        pass
+        optics_identifier = self.OpticsSelect.currentText()
+        optics_info = self.beamline_optics_tables[self.beamline]
+        quads = optics_info[3]
+        optics = optics_info[1]
+        for n_optics, stuff in enumerate(optics):
+            if stuff[0] == optics_identifier:
+                k1ls = stuff[-1]
+                break
+        else:
+            raise ValueError('%s not found' % optics_identifier)
 
+        if daq is None or self.dry_run:
+            self.logMsg('Optics %s; I would set quads to k1ls' % optics_identifier)
+            self.logMsg(quads)
+            self.logMsg(k1ls)
+        else:
+            self.logMsg('Optics %s; Set quads to k1ls' % optics_identifier)
+            self.logMsg(quads)
+            self.logMsg(k1ls)
+            daq.set_optics(quads, k1ls, self.dry_run)
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):

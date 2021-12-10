@@ -381,3 +381,10 @@ def get_meta_data(screen, dry_run, beamline):
         meta_dict[gas_monitor_energy_pv] = caget(gas_monitor_energy_pv)
     return meta_dict
 
+def set_optics(quads, k1ls, dry_run):
+    for quad, k1l in zip(quads, k1ls):
+        if dry_run:
+            print('I would caput %s %.3f' % (quad, k1l))
+        else:
+            caput(quad.replace('.','-')+':K1L-SET', k1l)
+

@@ -24,7 +24,7 @@ class Tracker(LogMsgBase):
         n_particles: Number of particles for forward and backward trackiign
         logger: from logMsg.py
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, n_particles=config.default_n_particles, logger=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, n_particles=config.default_n_particles, matching_point=None, logger=None):
 
         self.logger = logger
         self.force_gap = None
@@ -44,6 +44,10 @@ class Tracker(LogMsgBase):
         self.screen_name = screen_name
         self.n_particles = n_particles
         self.force_charge = force_charge
+        if matching_point is None:
+            self.matching_point = config.optics_matching_points[self.beamline]
+        else:
+            self.matching_point = matching_point
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.update_calib(calib)
@@ -123,8 +127,7 @@ class Tracker(LogMsgBase):
     def gen_beam(self, beamProfile):
         beam_options = self.beam_spec.copy()
         betax0, alphax0 = self.beam_optics['betax'], self.beam_optics['alphax']
-        matching_point = config.optics_matching_points[self.beamline]
-        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', matching_point, self.structure_name.replace('-','.'))
+        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
         beam_options['betax'] = betax
         beam_options['alphax'] = alphax
         beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)

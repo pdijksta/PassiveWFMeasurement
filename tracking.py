@@ -125,12 +125,12 @@ class Tracker(LogMsgBase):
         return outp
 
     def gen_beam(self, beamProfile):
+        dim = self.structure.dim.lower()
         beam_options = self.beam_spec.copy()
-        betax0, alphax0 = self.beam_optics['betax'], self.beam_optics['alphax']
-        betax, alphax = self.lat.propagate_optics(betax0, alphax0, 'X', self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
-        beam_options['betax'] = betax
-        beam_options['alphax'] = alphax
-        beam = gen_beam.beam_from_spec(['x', 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
+        beam_optics0 = self.beam_optics
+        beam_optics = self.lat.propagate_optics_dict(beam_optics0, self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
+        beam_options.update(beam_optics)
+        beam = gen_beam.beam_from_spec([dim, 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam
 
     def calc_wake(self, profile, type_, force_gap=None, force_beam_position=None):

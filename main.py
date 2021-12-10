@@ -8,10 +8,9 @@ import os
 import socket
 from datetime import datetime
 import numpy as np
+import PyQt5
+import PyQt5.uic
 import PyQt5.Qt
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtRemoveInputHook
-from PyQt5.QtWidgets import QTableWidgetItem
 
 path = os.path.join(os.path.dirname(__file__), '../')
 if path not in sys.path:
@@ -51,7 +50,7 @@ except ImportError:
 
 ms.set_fontsizes(config.fontsize)
 
-pyqtRemoveInputHook() # for pdb to work
+PyQt5.QtCore.pyqtRemoveInputHook() # for pdb to work
 
 def w2f(w):
     return float(w.text())
@@ -59,13 +58,13 @@ def w2f(w):
 def w2i(w):
     return int(round(w2f(w)))
 
-class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
+class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     charge_pv_text = 'Use PV'
 
     def __init__(self, logger=None):
         super(StartMain, self).__init__()
-        uic.loadUi('gui.ui', self)
+        PyQt5.uic.loadUi('gui.ui', self)
         self.logger = logger
 
         self.DoReconstruction.clicked.connect(self.reconstruct_current)
@@ -86,25 +85,34 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.PlotResolution.clicked.connect(self.plot_resolution)
         self.BeamlineSelect.activated.connect(self.beamline_select)
         self.StructureSelect.activated.connect(self.streaking_dimension_select)
+        self.SetOptics.clicked.connect(self.set_optics)
 
         ## Init Optics
         self.optics_identifiers = {}
-        for beamline, table, optics_info in [
-                ('Aramis', self.AramisTable, optics.aramis_optics),
-                ('Athos Post-Undulator', self.AthosPostUndTable, optics.athos_post_undulator_optics)
-                ]:
+        self.beamline_tables = {
+                'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis),
+                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost)
+                }
+        for beamline in config.beamlines:
+            if beamline not in self.beamline_tables:
+                continue
+            table, optics_info, _ = self.beamline_tables[beamline]
             table.setRowCount(len(optics_info))
             table.setColumnCount(7)
             table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21', 'R11', 'Δψ'])
             self.optics_identifiers[beamline] = []
             for n_row, content in enumerate(optics_info):
                 identifier = content[0]
-                table.setItem(n_row, 0, QTableWidgetItem(identifier))
+                table.setItem(n_row, 0, PyQt5.QtWidgets.QTableWidgetItem(identifier))
                 self.optics_identifiers[beamline].append(identifier)
                 for n_col in range(1, 6+1):
-                    table.setItem(n_row, n_col, QTableWidgetItem('%.2f' % content[n_col]))
+                    table.setItem(n_row, n_col, PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col]))
+            #table.resizeColumnsToContents()
+            table.horizontalHeader().setSectionResizeMode(PyQt5.QtWidgets.QHeaderView.Stretch)
 
-        self.BeamlineSelect.addItems(sorted(config.structure_names.keys()))
+        #import pdb; pdb.set_trace()
+
+        self.BeamlineSelect.addItems(config.beamlines)
         self.beamline_select()
 
         # Default strings in gui fields
@@ -208,7 +216,7 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         ## Init plots
         def get_new_tab(fig, title):
-            new_tab = QtWidgets.QWidget()
+            new_tab = PyQt5.QtWidgets.QWidget()
             layout = PyQt5.Qt.QVBoxLayout()
             new_tab.setLayout(layout)
             canvas = FigureCanvasQTAgg(fig)
@@ -264,7 +272,18 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.AlphaX.setText('%.4f' % optics['alphax'])
         self.BetaY.setText('%.4f' % optics['betay'])
         self.AlphaY.setText('%.4f' % optics['alphay'])
-        self.BeamlineSelect.addItems(self.optics_identifiers[beamline])
+        self.OpticsSelect.clear()
+        if beamline in self.optics_identifiers:
+            self.OpticsSelect.addItems(self.optics_identifiers[beamline])
+
+        all_labels = [x[2] for x in self.beamline_tables.values()]
+        for w in all_labels:
+            if beamline in self.beamline_tables and w is self.beamline_tables[beamline][2]:
+                w.setAutoFillBackground(True)
+                p = w.palette()
+                p.setColor(w.backgroundRole(), PyQt5.QtCore.Qt.blue)
+            else:
+                w.setAutoFillBackground(False)
 
     def streaking_dimension_select(self):
         structure_name = self.structure_name
@@ -781,6 +800,9 @@ class StartMain(QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.logMsg('Lasing restored: Undulator K values: %s' % vals)
         self.LasingStatus.setText('Lasing in %s restored' % beamline)
 
+    def set_optics(self):
+        pass
+
 
 if __name__ == '__main__':
     def my_excepthook(type, value, tback):
@@ -790,7 +812,7 @@ if __name__ == '__main__':
         print(type, value, tback)
     sys.excepthook = my_excepthook
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = PyQt5.QtWidgets.QApplication(sys.argv)
     window = StartMain(logger)
     window.show()
     app.exec_()

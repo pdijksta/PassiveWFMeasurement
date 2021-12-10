@@ -14,13 +14,18 @@ import numpy as np
 
 logfile = os.path.join(os.path.dirname(__file__), 'passiveWFMeasurement.log')
 
+beamlines = [
+        'Aramis',
+        'Athos Pre-Undulator',
+        'Athos Post-Undulator',
+        ]
+
 structure_names = {
         'Aramis': [
              'SARUN18-UDCP020',
              'SARUN18-UDCP010',
              ],
         'Athos Post-Undulator': [
-            'SATUN22-MQUA080',
             'SATMA02-UDCP045',
             'SATMA02-UDCP015',
             ],
@@ -100,6 +105,7 @@ beamline_quads = {
             'SARBD02-MQUA030',
             ],
         'Athos Post-Undulator': [
+            'SATUN22-MQUA080',
             'SATMA02-MQUA050',
             'SATMA02-MQUA070',
             'SATBD01-MQUA010',

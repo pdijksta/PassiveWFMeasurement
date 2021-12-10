@@ -30,7 +30,7 @@
      <attribute name="title">
       <string>Optics</string>
      </attribute>
-     <widget class="QLabel" name="label_73">
+     <widget class="QLabel" name="OpticsLabelAramis">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -51,7 +51,7 @@
        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
-     <widget class="QLabel" name="label_81">
+     <widget class="QLabel" name="OpticsLabelAthosPre">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -75,6 +75,9 @@ Und</string>
       </property>
      </widget>
      <widget class="QTableWidget" name="AramisTable">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>90</x>
@@ -84,7 +87,7 @@ Und</string>
        </rect>
       </property>
      </widget>
-     <widget class="QLabel" name="label_88">
+     <widget class="QLabel" name="OpticsLabelAthosPost">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -108,6 +111,9 @@ Und</string>
       </property>
      </widget>
      <widget class="QTableWidget" name="AthosPreUndTable">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>90</x>
@@ -118,6 +124,9 @@ Und</string>
       </property>
      </widget>
      <widget class="QTableWidget" name="AthosPostUndTable">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>90</x>

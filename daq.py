@@ -76,7 +76,9 @@ def restore_lasing(pvs, vals, dry_run):
 
 def get_images(screen, n_images, beamline, dry_run=None):
     if dry_run:
-        screen = 'simulation'
+        daq_screen = 'simulation'
+    else:
+        daq_screen = screen
     print('Start get_images for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
 
     def dummy_func(*args):
@@ -89,7 +91,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=n_images)
 
     pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
-    cam_instance_name = str(screen) + "_sp1"
+    cam_instance_name = str(daq_screen) + "_sp1"
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
     stream_host, stream_port = get_host_port_from_stream_address(stream_address)
 
@@ -149,12 +151,13 @@ def data_structure_offset(structure, offset_range, screen, n_images, dry_run, be
         print('I would set %s to' % offset_pv, args)
 
     if dry_run:
-        screen = 'simulation'
+        daq_screen = 'simulation'
         writables = [pyscan.function_value(dummy_func, 'dummy')]
     else:
         writables = [pyscan.epics_pv(pv_name=offset_pv, readback_pv_name=offset_pv+'.RBV', tolerance=0.005)]
+        daq_screen = screen
 
-    cam_instance_name = screen + '_sp1'
+    cam_instance_name = daq_screen + '_sp1'
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
     stream_host, stream_port = get_host_port_from_stream_address(stream_address)
 

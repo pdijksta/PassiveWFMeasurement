@@ -97,8 +97,8 @@ class Beam:
     def to_profile(self, time_grid):
         return particles_to_profile(self['t'], time_grid, self.total_charge)
 
-    def to_screen_dist(self, screen_bins, screen_smoothen):
-        return beam_profile.getScreenDistributionFromPoints(self['x'], screen_bins, screen_smoothen, total_charge=self.total_charge)
+    def to_screen_dist(self, screen_bins, screen_smoothen, dim):
+        return beam_profile.getScreenDistributionFromPoints(self[dim], screen_bins, screen_smoothen, total_charge=self.total_charge)
 
     def __getitem__(self, dim):
         return self.arr[self.dim_index[dim]]

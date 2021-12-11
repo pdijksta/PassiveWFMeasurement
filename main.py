@@ -668,7 +668,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text = 'Screen %s data taken' % self.screen
         dim = config.structure_dimensions[self.structure_name]
         fig, _ = plot_results.plot_simple_daq(screen_dict, dim)
-        self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict, dry_run)
+        filename = self.elog_and_H5_auto(elog_text, [fig], 'Screen data', basename, screen_dict, dry_run)
+        self.ReconstructionDataLoad.setText(filename)
 
     @property
     def structure_name(self):

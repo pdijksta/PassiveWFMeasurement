@@ -858,7 +858,7 @@ if __name__ == '__main__':
         # log the exception here
         # then call the default handler
         sys.__excepthook__(type, value, tback)
-        print(type, value, tback)
+        logMsg.logMsg(str(type, value, tback), logger, 'E')
     sys.excepthook = my_excepthook
 
     app = PyQt5.QtWidgets.QApplication(sys.argv)

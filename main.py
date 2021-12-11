@@ -31,6 +31,8 @@ from PassiveWFMeasurement import myplotstyle as ms
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
+else:
+    logger = None
 
 try:
     from PassiveWFMeasurement import daq

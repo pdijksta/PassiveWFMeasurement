@@ -87,6 +87,13 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.StructureSelect.activated.connect(self.streaking_dimension_select)
         self.SetOptics.clicked.connect(self.set_optics)
         self.UseOpticsCheck.stateChanged.connect(self.use_optics_changed)
+        self.SelectStructCalibF.clicked.connect(self.select_file(self.LoadCalibrationFilename))
+        self.SelectTDCMeasF.clicked.connect(self.select_file(self.ForwardBlmeasFilename))
+        self.SelectTDCCalibF.clicked.connect(self.select_file(self.TdcCalibrationFilename))
+        self.SelectReconF.clicked.connect(self.select_file(self.ReconstructionDataLoad))
+        self.SelectReconTDCF.clicked.connect(self.select_file(self.BunchLengthMeasFile))
+        self.SelectLasingOffF.clicked.connect(self.select_file(self.LasingOffDataLoad))
+        self.SelectLasingOnF.clicked.connect(self.select_file(self.LasingOnDataLoad))
 
         ## Init Optics
         self.optics_identifiers = {}
@@ -255,6 +262,16 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingStatus.setText('Undulator K values not stored')
 
         self.logMsg('Main window initialized')
+
+    def select_file(self, widget):
+        def f():
+            QFileDialog = PyQt5.QtWidgets.QFileDialog
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            filename, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", self.SaveDir.text(), "Hdf5 files (*.h5);;All Files (*)", options=options)
+            if filename:
+                widget.setText(filename)
+        return f
 
     def use_optics_changed(self):
         beamline = self.beamline

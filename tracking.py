@@ -154,21 +154,22 @@ class Tracker(LogMsgBase):
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
+        dim = self.structure.dim.lower()
 
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
-            delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam['x']-beam['x'].mean())
+            delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam[dim]-beam[dim].mean())
         else:
             delta_xp_quadrupole = 0.
             delta_xp_coords_quad = 0.
 
         beam_after_streaker = beam.child()
-        beam_after_streaker['xp'] += delta_xp_coords_dip
-        beam_after_streaker['xp'] += delta_xp_coords_quad
+        beam_after_streaker[dim+'p'] += delta_xp_coords_dip
+        beam_after_streaker[dim+'p'] += delta_xp_coords_quad
 
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
-        screen = beam_at_screen.to_screen_dist(self.forward_options['screen_bins'], 0)
+        screen = beam_at_screen.to_screen_dist(self.forward_options['screen_bins'], 0, dim)
         screen.smoothen(self.forward_options['screen_smoothen'])
         screen.aggressive_cutoff(self.forward_options['screen_cutoff'])
         screen.crop()

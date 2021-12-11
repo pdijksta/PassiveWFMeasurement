@@ -261,6 +261,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.lasing_undulator_vals = {}
         self.LasingStatus.setText('Undulator K values not stored')
 
+        self.tabWidget.setCurrentIndex(1)
         self.logMsg('Main window initialized')
 
     def select_file(self, widget):

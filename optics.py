@@ -29,14 +29,14 @@ kL6 = [L1*x for x in k6]
 kL7 = [L1*x for x in k7]
 
 #alpha_x=0 @ streaker location
-ar1=('Optics 1', 2.5, -0.0008981, 89.99, 15, 0, 90,kL1) #max beta_y=300 m -> 100 um for 500 nm emittance
-ar1a=('Optics 1a', 2.5, 0.0020903, 89.86, 15, 0, 90,kL1a) #larger beta_y at the screen, smaller max beta_y=250 m -> 100 um for 500 nm emittance
-ar2=('Optics 2', 5, -0.0006851, 44.99, 15, 0, 90,kL2) # max beta_y=100-120 m for all optics from now on
-ar3=('Optics 3', 10, 0.0007783, 22.5, 15, 0, 90,kL3)
-ar4=('Optics 4', 15, 0.0004145, 15.0, 15, 0, 90,kL4)
-ar5=('Optics 5', 20, -0.0006088, 11.25, 15, 0, 90,kL5)
-ar6=('Optics 6', 25, -0.0007742, 9.0, 15, 0, 90,kL6)
-ar7=('Optics 7', 30, -0.0009361, 7.5, 15, 0, 90,kL7)
+ar1=['Optics 1', 2.5, -0.0008981, 89.99, 15, 0, 90,kL1] #max beta_y=300 m -> 100 um for 500 nm emittance
+ar1a=['Optics 1a', 2.5, 0.0020903, 89.86, 15, 0, 90,kL1a] #larger beta_y at the screen, smaller max beta_y=250 m -> 100 um for 500 nm emittance
+ar2=['Optics 2', 5, -0.0006851, 44.99, 15, 0, 90,kL2] # max beta_y=100-120 m for all optics from now on
+ar3=['Optics 3', 10, 0.0007783, 22.5, 15, 0, 90,kL3]
+ar4=['Optics 4', 15, 0.0004145, 15.0, 15, 0, 90,kL4]
+ar5=['Optics 5', 20, -0.0006088, 11.25, 15, 0, 90,kL5]
+ar6=['Optics 6', 25, -0.0007742, 9.0, 15, 0, 90,kL6]
+ar7=['Optics 7', 30, -0.0009361, 7.5, 15, 0, 90,kL7]
 
 #alpha_x variable at the streaker
 fix=[-0.8215394696441847,-2.627957708897591,1.948805717574930,0.08324019299676864] #R11=2; R12=15 fixed for all cases
@@ -57,13 +57,13 @@ kL12 = [L1*x for x in k12]
 kL13 = [L1*x for x in k13]
 kL14 = [L1*x for x in k14]
 
-ar8=('Optics 8', 2.5,0.3315, 89.89, 15, 2, 90,kL8)
-ar9=('Optics 9', 5.0,0.6657, 45.06, 15, 2, 90,kL9)
-ar10=('Optics 10', 10.0,1.3321, 22.53, 15, 2, 90,kL10)
-ar11=('Optics 11', 15.0,1.999,15.02, 15, 2, 90,kL11)
-ar12=('Optics 12', 20.0,2.668,11.26, 15, 2, 90,kL12)
-ar13=('Optics 13', 25.0,3.335,9.01, 15, 2, 90,kL13)
-ar14=('Optics 14', 30.0,3.999,7.51, 15, 2, 90,kL14)
+ar8=['Optics 8', 2.5,0.3315, 89.89, 15, 2, 90,kL8]
+ar9=['Optics 9', 5.0,0.6657, 45.06, 15, 2, 90,kL9]
+ar10=['Optics 10', 10.0,1.3321, 22.53, 15, 2, 90,kL10]
+ar11=['Optics 11', 15.0,1.999,15.02, 15, 2, 90,kL11]
+ar12=['Optics 12', 20.0,2.668,11.26, 15, 2, 90,kL12]
+ar13=['Optics 13', 25.0,3.335,9.01, 15, 2, 90,kL13]
+ar14=['Optics 14', 30.0,3.999,7.51, 15, 2, 90,kL14]
 
 quadNames.append('SARBD02.MQUA030')
 aramis_quads = quadNames
@@ -87,9 +87,10 @@ aramis_optics = [
 
 for a in aramis_optics:
     a[-1].append(0.)
+    a[0] = a[0].replace('Optics', 'SARUN18-UDCP020')
 
 
-# ATHOS
+### ATHOS POST-UNDULATOR
 
 #Identifier, streaker betax, streaker alphax, screen betax, R12, R11, phase advance, K1Ls
 
@@ -239,17 +240,17 @@ opt8=QM8N+QTMA15N+QTBD15N
 opt8R20=QM8N+QTMA20DN+QTBD20DN
 
 #alpha_x=0 @ streaker location
-at1=('Optics 1', 1, 0.0, 220, 15, 0, 90,opt1)
-at1A=('Optics 1A', 1, 0.0, 219, 15, 0, 90,opt1B) #backup with lower quad limits
-at2=('Optics 2', 2.5, 0.0, 88.5, 15, 0, 90,opt2)
-at2A=('Optics 2A', 2.5, 0.0, 88.5, 15, 0, 90,opt2B) #backup with lower quad limits
-at3=('Optics 3', 5.0, 0.0, 44.3, 15, 0, 90,opt3)
-at3A=('Optics 3', 5.0, 0.0, 44.3, 15, 0, 90,opt3B)  #backup with lower quad limits
-at4=('Optics 4', 10.0, 0.0, 22.2, 15, 0, 90,opt4)
-at5=('Optics 5', 15.0, 0.0, 14.8, 15, 0, 90,opt5)
-at6=('Optics 6', 20.0, 0.0, 11.1, 15, 0, 90,opt6)
-at7=('Optics 7', 25.0, 0.0, 8.9, 15, 0, 90,opt7)
-at8=('Optics 8', 30.0, 0.0, 7.4, 15, 0, 90,opt8)
+at1=['Optics 1', 1, 0.0, 220, 15, 0, 90,opt1]
+at1A=['Optics 1A', 1, 0.0, 219, 15, 0, 90,opt1B] #backup with lower quad limits
+at2=['Optics 2', 2.5, 0.0, 88.5, 15, 0, 90,opt2]
+at2A=['Optics 2A', 2.5, 0.0, 88.5, 15, 0, 90,opt2B] #backup with lower quad limits
+at3=['Optics 3', 5.0, 0.0, 44.3, 15, 0, 90,opt3]
+at3A=['Optics 3', 5.0, 0.0, 44.3, 15, 0, 90,opt3B]  #backup with lower quad limits
+at4=['Optics 4', 10.0, 0.0, 22.2, 15, 0, 90,opt4]
+at5=['Optics 5', 15.0, 0.0, 14.8, 15, 0, 90,opt5]
+at6=['Optics 6', 20.0, 0.0, 11.1, 15, 0, 90,opt6]
+at7=['Optics 7', 25.0, 0.0, 8.9, 15, 0, 90,opt7]
+at8=['Optics 8', 30.0, 0.0, 7.4, 15, 0, 90,opt8]
 
 quadNames.append('SATBD02.MQUA030')
 
@@ -269,4 +270,49 @@ athos_post_undulator_optics = (
         )
 for a in athos_post_undulator_optics:
     a[-1].append(0.)
+    a[0] = a[0].replace('Optics', 'SATMA02-UDCP045')
+
+### ATHOS PRE-UNDULATOR
+
+quadNames=['SATDI01.MQUA250', 'SATDI01.MQUA260', 'SATDI01.MQUA280', 'SATDI01.MQUA300', 'SATCB01.MQUA230', 'SATCB01.MQUA430', 'SATCL02.MQUA230', 'SATCL02.MQUA430']
+
+#1.7 m-2 Limits K1
+#screen: SATMA01.DSCR030
+
+#Entrance of SATDI01.MQUA250 (Eduard)
+#   beta_x=35.76124
+#	alpha_x=-1.165823
+#	beta_y=24.08687
+#	alpha_y=0.6483776
+
+#Transport Quads K1 values:
+Fix=[1.017132019081133,-1.7]
+
+AtP1=[-0.3650180611825992,-0.7878955467621285,1.699999979846469,-1.699999999999995,1.076009582611750,-1.200354768784456]+Fix
+AtP2=[-0.7542168391040225,1.284677569722269,0.4186127069889671,-1.070235617849483,0.4518807347712642,-0.4265873011412286]+Fix
+AtP3=[-0.5989575679935852,0.7725074925520736,0.5786288559418530,-0.6530095519272638,0.2307554643234724,-0.2711968944104027]+Fix
+AtP4=[-1.159751987924194,0.7828968144880595,0.6685781036264526,-0.7402563591727538,0.8207555214942440,-0.9193960705233104]+Fix
+
+L1=0.15
+
+opt1= [x * L1 for x in AtP1]
+opt2= [x * L1 for x in AtP2]
+opt3= [x * L1 for x in AtP3]
+opt4= [x * L1 for x in AtP4]
+
+#'(Identifier, streaker betax, streaker alphax, streaker betay, streaker alphay, screen betax, screen betay, R11, R12, R33,R34, phase advance x, phase advance y, K1Ls)'
+aP1=['Optics 1', 5, -0.026, 5.01, 0.03, 45.67,4.89,-0.148,15.123,0.395,4.599,88.68,68.18,opt1]
+aP2=['Optics 2', 9.989, -0.0015, 9.995, -0.0044, 23.10,3.697,-0.148,15.123,0.395,4.599,84.50,49.21,opt2]
+aP3=['Optics 3', 19.982, 0.0084, 19.996, 0.0035, 11.92,4.175,-0.148,15.123,0.395,4.599,78.46,30.26,opt3]
+aP4=['Optics 4', 29.99, 0.0072, 29.80, 0.0065, 8.317,5.35,-0.148,15.123,0.395,4.599,73.24,21.39,opt4]
+
+athos_pre_undulator_quads = quadNames
+athos_pre_undulator_optics = (
+        aP1,
+        aP2,
+        aP3,
+        aP4,
+        )
+for info in athos_pre_undulator_optics:
+    info[0] = info[0].replace('Optics', 'SATCL02-UDCP100/200')
 

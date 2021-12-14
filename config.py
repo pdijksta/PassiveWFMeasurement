@@ -168,11 +168,11 @@ default_optics = {
             'betay': 2.857,
             'alphay': 0.819,
             },
-        'Athos Pre-Undulator': {
-            'betax': 34.62,
-            'alphax': -1.02,
-            'betay': 28.25,
-            'alphay': 0.82,
+        'Athos Pre-Undulator': { # From Eduard / Alexander
+            'betax': 35.76124,
+            'alphax': -1.165823,
+            'betay': 24.08687,
+            'alphay': 0.6483776,
             },
         }
 

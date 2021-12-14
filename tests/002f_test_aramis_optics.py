@@ -7,6 +7,7 @@ if path not in sys.path:
 
 from PassiveWFMeasurement import optics
 from PassiveWFMeasurement import lattice
+from PassiveWFMeasurement import config
 
 def calc_phase_advance(r11, r12, beta0, alpha0):
     gamma0 = (1+alpha0**2)/beta0
@@ -42,23 +43,57 @@ screen = 'SATBD02.DSCR050'
 
 athos_post_info = (lat, optics_sat22_mqua80, sat22_mqua80, structure, screen, optics.athos_post_undulator_optics, optics.athos_post_undulator_quads)
 
+lat = lattice.Lattice('../elegant/Athos_Full.mat.h5')
+optics_satdi01_mqua250 = config.default_optics['Athos Pre-Undulator']
+satdi01_mqua250= 'SATDI01.MQUA250.START'
+structure = 'SATCL02.UDCP100', 'SATCL02.UDCP200'
+screen = 'SATMA01.DSCR030'
 
-for beamline, (lat, optics0, pos0, structure, screen, optics_info, quads) in [
-        ('Aramis', aramis_info),
-        ('Athos Post-Undulator', athos_post_info),
+athos_pre_info = (lat, optics_satdi01_mqua250, satdi01_mqua250, structure, screen, optics.athos_pre_undulator_optics, optics.athos_pre_undulator_quads)
+
+
+
+for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type_ in [
+        ('Aramis', aramis_info, 0),
+        ('Athos Post-Undulator', athos_post_info, 0),
+        ('Athos Pre-Undulator', athos_pre_info, 1),
         ]:
     print('\n\n%s\n' % beamline)
 
-    for identifier, structure_beta, structure_alpha, screen_beta, r12, r11, phase_advance, k1ls in optics_info:
-        k1l_dict = {a: b for a, b in zip(quads, k1ls)}
-        lat.generate(k1l_dict)
-        optics_structure = lat.propagate_optics_dict(optics0, pos0, structure)
-        optics_screen = lat.propagate_optics_dict(optics0, pos0, screen)
-        mat_struct_screen = lat.get_matrix(structure, screen)
-        phase_advance2 = calc_phase_advance(mat_struct_screen[0,0], mat_struct_screen[0,1], optics_structure['betax'], optics_structure['alphax'])
-        print('%s at structure: Beta %.2f / %.2f ; Alpha %.2f / %.2f' % (identifier, structure_beta, optics_structure['betax'], structure_alpha, optics_structure['alphax']))
-        print('%s at screen: Beta %.2f / %.2f' % (identifier, screen_beta, optics_screen['betax']))
-        print('%s R11 %.2f / %.2f ; R12 %.2f / %.2f ; phi %.2f / %.2f' % (identifier, r11, mat_struct_screen[0,0], r12, mat_struct_screen[0,1], phase_advance, phase_advance2))
+    for struct in optics_info:
+        if type_ == 0:
+            identifier, structure_beta, structure_alpha, screen_beta, r12, r11, phase_advance, k1ls = struct
+            dims = ('x',)
+        else:
+            identifier, structure_beta, structure_alpha, structure_betay, structure_alphay, screen_beta, screen_betay, r11, r12, r33, r34, phase_advance, phase_advance_y, k1ls = struct
+            dims = ('x', 'y')
+        for dim_ctr, dim in enumerate(dims):
+            if type_ == 1:
+                structure = _structure[dim_ctr]
+            else:
+                structure = _structure
+            k1l_dict = {a: b for a, b in zip(quads, k1ls)}
+            lat.generate(k1l_dict)
+            optics_structure = lat.propagate_optics_dict(optics0, pos0, structure)
+            optics_screen = lat.propagate_optics_dict(optics0, pos0, screen)
+            mat_struct_screen = lat.get_matrix(structure, screen)
+            if dim == 'x':
+                phase_advance2 = calc_phase_advance(mat_struct_screen[0,0], mat_struct_screen[0,1], optics_structure['betax'], optics_structure['alphax'])
+                s_beta = structure_beta
+                s_alpha = structure_alpha
+                sc_beta = screen_beta
+                sc_beta2 = optics_screen['betax']
+                phase_advance0 = phase_advance
+            else:
+                phase_advance2 = calc_phase_advance(mat_struct_screen[2,2], mat_struct_screen[2,3], optics_structure['betay'], optics_structure['alphay'])
+                s_beta = structure_betay
+                s_alpha = structure_alphay
+                sc_beta = screen_betay
+                sc_beta2 = optics_screen['betay']
+                phase_advance0 = phase_advance_y
+            print('%s%s at structure: Beta %.2f / %.2f ; Alpha %.2f / %.2f' % (identifier, dim, s_beta, optics_structure['betax'], s_alpha, optics_structure['alphax']))
+            print('%s%s at screen: Beta %.2f / %.2f' % (identifier, dim, sc_beta, sc_beta2))
+            print('%s%s R11 %.2f / %.2f ; R12 %.2f / %.2f ; phi %.2f / %.2f' % (identifier, dim, r11, mat_struct_screen[0,0], r12, mat_struct_screen[0,1], phase_advance0, phase_advance2))
 
 
 

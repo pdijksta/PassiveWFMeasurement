@@ -101,7 +101,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.optics_identifiers = {}
         self.beamline_optics_tables = {
                 'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis, optics.aramis_quads),
-                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads)
+                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads),
+                'Athos Pre-Undulator': (self.AthosPreUndTable, optics.athos_pre_undulator_optics, self.OpticsLabelAthosPre, optics.athos_post_undulator_quads),
                 }
         for beamline in config.beamlines:
             if beamline not in self.beamline_optics_tables:
@@ -120,7 +121,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                     item = PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col])
                     item.setFlags(item.flags() ^ PyQt5.QtCore.Qt.ItemIsEditable)
                     table.setItem(n_row, n_col, item)
-            table.horizontalHeader().setSectionResizeMode(PyQt5.QtWidgets.QHeaderView.Stretch)
+            header = table.horizontalHeader()
+            header.setSectionResizeMode(0, PyQt5.QtWidgets.QHeaderView.Stretch)
 
         self.BeamlineSelect.addItems(config.beamlines)
         self.beamline_select()

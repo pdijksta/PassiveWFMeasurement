@@ -81,6 +81,7 @@ for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type
                 s_alpha = structure_alpha
                 sc_beta = screen_beta
                 sc_beta2 = optics_screen['betax']
+                sc_beta3 = optics_screen['betay']
                 phase_advance0 = phase_advance
             else:
                 phase_advance2 = calc_phase_advance(mat_struct_screen[2,2], mat_struct_screen[2,3], optics_structure['betay'], optics_structure['alphay'])
@@ -88,6 +89,7 @@ for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type
                 s_alpha = structure_alphay
                 sc_beta = screen_betay
                 sc_beta2 = optics_screen['betay']
+                sc_beta3 = optics_screen['betax']
                 phase_advance0 = phase_advance_y
             s_gamma = (1+s_alpha**2)/s_beta
             o_beta = optics_structure['beta'+dim]
@@ -95,6 +97,6 @@ for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type
             o_gamma = (1+o_alpha**2)/o_beta
             mm = 0.5*(s_gamma*o_beta - 2*s_alpha*o_alpha + s_beta*o_gamma)
             print('%s%s at structure: Beta %.2f / %.2f ; Alpha %.2f / %.2f ; mm %.2f' % (identifier, dim, s_beta, o_beta, s_alpha, o_alpha, mm))
-            print('%s%s at screen: Beta %.2f / %.2f' % (identifier, dim, sc_beta, sc_beta2))
+            print('%s%s at screen: Beta %.2f / %.2f ; Other dim: %.2f' % (identifier, dim, sc_beta, sc_beta2, sc_beta3))
             print('%s%s R11 %.2f / %.2f ; R12 %.2f / %.2f ; phi %.2f / %.2f' % (identifier, dim, r11, mat_struct_screen[0,0], r12, mat_struct_screen[0,1], phase_advance0, phase_advance2))
 

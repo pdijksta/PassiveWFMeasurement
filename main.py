@@ -29,6 +29,16 @@ from PassiveWFMeasurement import data_loader
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
+## TODO
+# - Average charge reading
+# - Alternative to Pyscan
+# - Live analysis
+# - plt colorbars :-(
+# - display bunch duration better
+# - display Pre Undulator optics optics
+# - mention input filename in ELOG for analysis plots
+# - look at rounding
+
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
 else:
@@ -860,7 +870,7 @@ if __name__ == '__main__':
         # log the exception here
         # then call the default handler
         sys.__excepthook__(type, value, tback)
-        logMsg.logMsg(str(type, value, tback), logger, 'E')
+        logMsg.logMsg(str((type, value, tback)), logger, 'E')
     sys.excepthook = my_excepthook
 
     app = PyQt5.QtWidgets.QApplication(sys.argv)

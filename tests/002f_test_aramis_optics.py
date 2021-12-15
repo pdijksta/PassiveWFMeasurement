@@ -51,8 +51,6 @@ screen = 'SATMA01.DSCR030'
 
 athos_pre_info = (lat, optics_satdi01_mqua250, satdi01_mqua250, structure, screen, optics.athos_pre_undulator_optics, optics.athos_pre_undulator_quads)
 
-
-
 for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type_ in [
         ('Aramis', aramis_info, 0),
         ('Athos Post-Undulator', athos_post_info, 0),
@@ -91,9 +89,12 @@ for beamline, (lat, optics0, pos0, _structure, screen, optics_info, quads), type
                 sc_beta = screen_betay
                 sc_beta2 = optics_screen['betay']
                 phase_advance0 = phase_advance_y
-            print('%s%s at structure: Beta %.2f / %.2f ; Alpha %.2f / %.2f' % (identifier, dim, s_beta, optics_structure['betax'], s_alpha, optics_structure['alphax']))
+            s_gamma = (1+s_alpha**2)/s_beta
+            o_beta = optics_structure['beta'+dim]
+            o_alpha = optics_structure['alpha'+dim]
+            o_gamma = (1+o_alpha**2)/o_beta
+            mm = 0.5*(s_gamma*o_beta - 2*s_alpha*o_alpha + s_beta*o_gamma)
+            print('%s%s at structure: Beta %.2f / %.2f ; Alpha %.2f / %.2f ; mm %.2f' % (identifier, dim, s_beta, o_beta, s_alpha, o_alpha, mm))
             print('%s%s at screen: Beta %.2f / %.2f' % (identifier, dim, sc_beta, sc_beta2))
             print('%s%s R11 %.2f / %.2f ; R12 %.2f / %.2f ; phi %.2f / %.2f' % (identifier, dim, r11, mat_struct_screen[0,0], r12, mat_struct_screen[0,1], phase_advance0, phase_advance2))
-
-
 

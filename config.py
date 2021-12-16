@@ -189,17 +189,15 @@ custom_optics = {
             'betay': 15.71,
             'alphay': -1.731,
             },
-        'Athos Post-Undulator': {
-            'betax': 9.538,
-            'alphax': -2.702,
-            'betay': 2.857,
-            'alphay': 0.819,
-            },
         }
+for _key in ['Athos Post-Undulator', 'Athos Pre-Undulator']:
+    custom_optics[_key] = default_optics[_key]
+del _key
 
 custom_optics_matching_points = {
         'Aramis': 'SARUN15.MQUA080.START',
         'Athos Post-Undulator': 'SATUN22.MQUA080.START',
+        'Athos Pre-Undulator': 'SATDI01.MQUA250.START',
         }
 
 beamline_lat_files = {
@@ -210,6 +208,9 @@ beamline_lat_files = {
 
 def get_default_optics(beamline):
     return default_optics[beamline].copy()
+
+def get_custom_optics(beamline):
+    return custom_optics[beamline].copy()
 
 _aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.product(range(1, 21), ('X', 'Y'))]
 _aramis_pvs += ['SARBD01-DBPM040:%s1' % dim for dim in ('X', 'Y')]

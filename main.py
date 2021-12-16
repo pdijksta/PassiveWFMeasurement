@@ -38,6 +38,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - display Pre Undulator optics optics
 # - mention input filename in ELOG for analysis plots
 # - look at rounding
+# - operator sets delta k
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
@@ -291,7 +292,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def use_optics_changed(self):
         beamline = self.beamline
         if self.UseOpticsCheck.isChecked():
-            optics = config.custom_optics[beamline]
+            optics = config.get_custom_optics(beamline)
             matching_point = config.custom_optics_matching_points[beamline]
         else:
             optics = config.get_default_optics(beamline)

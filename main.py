@@ -35,7 +35,6 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Live analysis
 # - plt colorbars :-(
 # - display bunch duration better
-# - mention input filename in ELOG for analysis plots
 # - look at rounding
 # - resolution plots, current profile source
 
@@ -86,6 +85,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.ClearStructureFitPlots.clicked.connect(self.clear_structure_fit_plots)
         self.GapCalibration.clicked.connect(self.calibrate_gap)
         self.ClearCalibPlots.clicked.connect(self.clear_structure_calib_plots)
+        self.ClearResolution.clicked.connect(self.clear_resolution_plots)
         self.LoadFit.clicked.connect(self.load_structure_fit)
         self.ObtainReconstructionData.clicked.connect(self.obtain_reconstruction)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
@@ -366,6 +366,11 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def clear_all_lasing_plots(self):
         plot_results.clear_lasing_figure(*self.all_lasing_plot_handles)
+        self.all_lasing_canvas.draw()
+
+    def clear_resolution_plots(self):
+        plot_results.clear_resolution_figure(*self.resolution_plot_handles)
+        self.resolution_canvas.draw()
 
     def gui_to_calib(self):
         return calibration.StructureCalibration(

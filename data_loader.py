@@ -29,10 +29,8 @@ def get_median(projx, method, output, cutoff=default_cutoff):
             all_mean.append(rms)
         else:
             raise ValueError(method)
-
     index_median = np.argsort(all_mean)[len(all_mean)//2]
     projx_median = projx[index_median]
-
     if output == 'proj':
         return projx_median
     elif output == 'index':
@@ -46,10 +44,15 @@ def screen_data_to_median(pyscan_result, dim):
         x_axis = pyscan_result['y_axis_m'].astype(np.float64)
         projx = pyscan_result['image'].astype(np.float64).sum(axis=-1)
 
+    for pv in config.beamline_chargepv.values():
+        if pv in pyscan_result:
+            charge = pyscan_result[pv].mean()*1e-12
+            break
+    else:
+        charge = None
     proj = get_median(projx, 'mean', 'proj')
-
     if x_axis[1] < x_axis[0]:
         x_axis = x_axis[::-1]
         proj = proj[::-1]
-    return x_axis, proj
+    return x_axis, proj, charge
 

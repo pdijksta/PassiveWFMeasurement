@@ -30,6 +30,7 @@ class Tracker(LogMsgBase):
         self.force_gap = None
         self.force_beam_position = None
         self._meta_data = None
+        self.force_charge = force_charge
 
         self.forward_options = forward_options
         self.backward_options = backward_options
@@ -43,7 +44,6 @@ class Tracker(LogMsgBase):
         self.beamline = beamline
         self.screen_name = screen_name
         self.n_particles = n_particles
-        self.force_charge = force_charge
         if matching_point is None:
             self.matching_point = config.optics_matching_points[self.beamline]
         else:
@@ -106,11 +106,14 @@ class Tracker(LogMsgBase):
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
         self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
+        self.meta_charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
 
+    @property
+    def total_charge(self):
         if self.force_charge is None:
-            self.total_charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
+            return self.meta_charge
         else:
-            self.total_charge = self.force_charge
+            return self.force_charge
 
     def forward_propagate_forced(self, gap, beam_position, *args, **kwargs):
         old_gap = self.force_gap

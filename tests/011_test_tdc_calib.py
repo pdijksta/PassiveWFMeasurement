@@ -40,11 +40,11 @@ data = h5_storage.loadH5Recursive(example_file)
 meta_data = data['meta_data_begin']
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name)
+
+x_axis, proj, charge = data_loader.screen_data_to_median(data['pyscan_result'], tracker.structure.dim)
+tracker.force_charge = charge
 blmeas_profile = beam_profile.profile_from_blmeas(blmeas_file, 400e-15, tracker.total_charge, tracker.energy_eV, 0.02)
 print(blmeas_profile.time.min(), blmeas_profile.time.max())
-#beam_profile.BeamProfile(blmeas_dict['time'], blmeas_dict['current_reduced'], energy_eV=tracker.energy_eV, total_charge=tracker.total_charge)
-
-x_axis, proj = data_loader.screen_data_to_median(data['pyscan_result'], tracker.structure.dim)
 raw_screen = beam_profile.ScreenDistribution(x_axis-calib.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
 raw_screen.aggressive_cutoff(0.02)
 raw_screen.crop()

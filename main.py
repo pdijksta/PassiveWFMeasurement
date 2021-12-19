@@ -532,7 +532,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             blmeas_profile = None
 
         dim = config.structure_dimensions[self.structure_name]
-        x_axis, proj = data_loader.screen_data_to_median(screen_data['pyscan_result'], dim)
+        x_axis, proj, charge = data_loader.screen_data_to_median(screen_data['pyscan_result'], dim)
+        tracker.force_charge = charge
         x_axis = x_axis - tracker.calib.screen_center
         meas_screen = beam_profile.ScreenDistribution(x_axis, proj, total_charge=tracker.total_charge)
         current_rec_dict = tracker.reconstruct_profile_Gauss(meas_screen, output_details=True)
@@ -677,7 +678,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         blmeasfile = self.ForwardBlmeasFilename.text()
         bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
         dim = config.structure_dimensions[self.structure_name]
-        x_axis, proj = data_loader.screen_data_to_median(pyscan_result, dim)
+        x_axis, proj, charge = data_loader.screen_data_to_median(pyscan_result, dim)
+        tracker.force_charge = charge
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
         delta_position = float(self.TdcCalibrationPositionDelta.text())*1e-6
         result_dict = calibration.tdc_calibration(tracker, bp, screen_raw, delta_position)

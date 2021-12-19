@@ -38,7 +38,6 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - display Pre Undulator optics optics
 # - mention input filename in ELOG for analysis plots
 # - look at rounding
-# - bugfix optics for Y
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
@@ -111,27 +110,42 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         ## Init Optics
         self.optics_identifiers = {}
         self.beamline_optics_tables = {
-                'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis, optics.aramis_quads),
-                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads),
-                'Athos Pre-Undulator': (self.AthosPreUndTable, optics.athos_pre_undulator_optics, self.OpticsLabelAthosPre, optics.athos_post_undulator_quads),
+                'Aramis': (self.AramisTable, optics.aramis_optics, self.OpticsLabelAramis, optics.aramis_quads, 'X'),
+                'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads, 'X'),
+                'Athos Pre-Undulator': (self.AthosPreUndTable, optics.athos_pre_undulator_optics, self.OpticsLabelAthosPre, optics.athos_post_undulator_quads, 'XY'),
                 }
         for beamline in config.beamlines:
             if beamline not in self.beamline_optics_tables:
                 continue
             table = self.beamline_optics_tables[beamline][0]
             optics_info = self.beamline_optics_tables[beamline][1]
-            table.setRowCount(len(optics_info))
+            dimensions = self.beamline_optics_tables[beamline][4]
+            rows = len(optics_info)
+            if dimensions == 'XY':
+                rows *= 2
+            table.setRowCount(rows)
             table.setColumnCount(7)
-            table.setHorizontalHeaderLabels(['Identifier', 'Struct βx', 'Struct αx', 'Screen βx', 'R21', 'R11', 'Δψx'])
+            table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21 / R34', 'R11 / R33', 'Δψ'])
             self.optics_identifiers[beamline] = []
-            for n_row, content in enumerate(optics_info):
-                identifier = content[0]
-                table.setItem(n_row, 0, PyQt5.QtWidgets.QTableWidgetItem(identifier))
-                self.optics_identifiers[beamline].append(identifier)
-                for n_col in range(1, 6+1):
-                    item = PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col])
-                    item.setFlags(item.flags() ^ PyQt5.QtCore.Qt.ItemIsEditable)
-                    table.setItem(n_row, n_col, item)
+            n_row = 0
+            for ctr, content0 in enumerate(optics_info):
+                for n_dim, dimension in enumerate(dimensions):
+                    if dimensions == 'X':
+                        content = content0
+                    elif dimension == 'X':
+                        content = np.take(content0, [0, 1, 2, 5, 8, 7, 11])
+                    elif dimension == 'Y':
+                        content = np.take(content0, [0, 3, 4, 6, 10, 9, 12])
+
+                    identifier = content[0] + ' ' + dimension
+                    table.setItem(n_row, 0, PyQt5.QtWidgets.QTableWidgetItem(identifier))
+                    if n_dim == 0:
+                        self.optics_identifiers[beamline].append(content[0])
+                    for n_col in range(1, 6+1):
+                        item = PyQt5.QtWidgets.QTableWidgetItem('%.2f' % content[n_col])
+                        item.setFlags(item.flags() ^ PyQt5.QtCore.Qt.ItemIsEditable)
+                        table.setItem(n_row, n_col, item)
+                    n_row += 1
             header = table.horizontalHeader()
             header.setSectionResizeMode(0, PyQt5.QtWidgets.QHeaderView.Stretch)
 

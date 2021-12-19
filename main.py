@@ -30,10 +30,8 @@ from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
 ## TODO
-# - Average charge reading
 # - Alternative to Pyscan
 # - Live analysis
-# - plt colorbars :-(
 # - display bunch duration better
 # - look at rounding
 # - resolution plots, current profile source
@@ -270,9 +268,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.structure_fit_fig, self.structure_fit_plot_handles = plot_results.structure_fit_figure()
         self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'Gap fit')
 
-        self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.calib_figure()
-        self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
-
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'Lasing rec.')
 
@@ -281,6 +276,13 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         self.tdc_calibration_fig, self.tdc_calibration_plot_handles = plot_results.tdc_calib_figure()
         self.tdc_calibration_tab_index, self.tdc_calibration_canvas = get_new_tab(self.tdc_calibration_fig, 'TDC cal.')
+
+        def add_calib_tab():
+            self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.calib_figure()
+            self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
+        self.add_calib_tab = add_calib_tab
+        self.add_calib_tab()
+
 
         # Init ELOG
         self.elog_button_title = 'Empty'
@@ -353,8 +355,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.rec_canvas.draw()
 
     def clear_structure_calib_plots(self):
-        plot_results.clear_calib(*self.structure_calib_plot_handles)
-        self.structure_calib_canvas.draw()
+        self.tabWidget.removeTab(self.structure_calib_tab_index)
+        self.add_calib_tab()
 
     def clear_structure_fit_plots(self):
         plot_results.clear_structure_fit(*self.structure_fit_plot_handles)

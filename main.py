@@ -35,9 +35,9 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Live analysis
 # - plt colorbars :-(
 # - display bunch duration better
-# - display Pre Undulator optics optics
 # - mention input filename in ELOG for analysis plots
 # - look at rounding
+# - resolution plots, current profile source
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
@@ -545,7 +545,10 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_save_name = '%s_current_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'Current profile reconstructed'
-        elog_text += '\nstructure:  %s' % tracker.structure_name
+        elog_text += '\nstructure: %s' % tracker.structure_name
+        elog_text += '\nraw data: %s' % filename
+        if blmeas_profile is not None:
+            elog_text += '\nblmeas file: %s' % blmeas_file
         self.setElogAutoText(elog_text)
 
     @property
@@ -654,6 +657,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\ndelta gap: %.3f um' % (new_calib.delta_gap*1e6)
         elog_text += '\nstructure center: %.3f um' % (new_calib.structure_position0*1e6)
         elog_text += '\nscreen center: %.3f um' % (new_calib.screen_center*1e6)
+        elog_text += '\nraw data: %s' % filename
         self.setElogAutoText(elog_text)
 
         self.logMsg('End gap calibration')
@@ -774,6 +778,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         elog_text = 'FEL power profile reconstructed'
         elog_text += '\nstructure:  %s' % tracker.structure_name
+        elog_text += '\nraw data lasing ON:  %s' % file_on
+        elog_text += '\nraw data lasing OFF:  %s' % file_off
         self.setElogAutoText(elog_text)
 
         self.logMsg('Lasing reconstruction end')

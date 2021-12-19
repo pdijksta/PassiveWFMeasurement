@@ -31,6 +31,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 
 ## TODO
 # - Alternative to Pyscan
+# - Non blocking (...)
 # - Live analysis
 # - display bunch duration better
 # - look at rounding
@@ -282,7 +283,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
         self.add_calib_tab = add_calib_tab
         self.add_calib_tab()
-
 
         # Init ELOG
         self.elog_button_title = 'Empty'

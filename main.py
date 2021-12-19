@@ -38,7 +38,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - display Pre Undulator optics optics
 # - mention input filename in ELOG for analysis plots
 # - look at rounding
-# - operator sets delta k
+# - bugfix optics for Y
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')
@@ -232,6 +232,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
         self.LasingIntensityCut.setText('%.4f' % ls['subtract_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
+
+        self.DeltaUndulatorK.setText('%.4f' % config.default_deltaK)
 
         if elog is not None:
             self.logbook = elog.open('https://elog-gfa.psi.ch/SwissFEL+commissioning+data/', user='robot', password='robot')
@@ -831,7 +833,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def destroy_lasing(self):
         beamline = self.beamline
-        self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], new_vals = daq.destroy_lasing(self.beamline, self.dry_run)
+        delta_k = w2f(self.DeltaUndulatorK)
+        self.undulator_pvs[beamline], self.lasing_undulator_vals[beamline], new_vals = daq.destroy_lasing(self.beamline, self.dry_run, delta_k)
         delta_k = new_vals - self.lasing_undulator_vals[beamline]
         self.logMsg('Lasing destroyed. Delta K values: %s' % delta_k)
         self.LasingStatus.setText('Lasing in %s destroyed' % beamline)

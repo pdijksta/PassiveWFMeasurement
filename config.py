@@ -298,6 +298,7 @@ def get_default_find_beam_position_options():
     return outp
 
 default_n_particles = int(1e5)
+default_deltaK = 0.2
 
 # For plots
 fontsize = 8

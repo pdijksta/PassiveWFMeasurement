@@ -2,7 +2,6 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
 from .gaussfit import GaussFit
-from .logMsg import LogMsgBase
 from . import blmeas
 from . import config
 
@@ -35,7 +34,7 @@ def find_rising_flank(arr, method='Size'):
     end_longest_streak = sorted(pairs)[-1][-1]
     return end_longest_streak
 
-class Profile(LogMsgBase):
+class Profile:
 
     def __init__(self):
         self._gf = None
@@ -215,9 +214,8 @@ class Profile(LogMsgBase):
         self._yy = self._yy[::-1]
 
 class ScreenDistribution(Profile):
-    def __init__(self, x, intensity, real_x=None, subtract_min=True, total_charge=1, meta_data=None, logger=None):
+    def __init__(self, x, intensity, real_x=None, subtract_min=True, total_charge=1, meta_data=None):
         super().__init__()
-        self.logger = logger
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
         self._yy = intensity
@@ -279,9 +277,8 @@ class ScreenDistribution(Profile):
         return ScreenDistribution(dict_['x'], dict_['intensity'], dict_['real_x'], total_charge=dict_['total_charge'])
 
 class AnyProfile(Profile):
-    def __init__(self, xx, yy, logger=None):
+    def __init__(self, xx, yy):
         super().__init__()
-        self.logger = logger
         self._xx = xx
         self._yy = yy
 
@@ -311,10 +308,8 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_cha
     return ScreenDistribution(screen_xx, screen_hist, real_x=x_points, total_charge=total_charge)
 
 class BeamProfile(Profile):
-    def __init__(self, time, charge_dist, energy_eV, total_charge, logger=None):
+    def __init__(self, time, charge_dist, energy_eV, total_charge):
         super().__init__()
-        self.logger = logger
-
         if np.any(np.isnan(time)):
             raise ValueError('nans in time')
         if np.any(np.isnan(charge_dist)):

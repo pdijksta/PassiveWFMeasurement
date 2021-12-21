@@ -426,7 +426,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         beam_position = gap/2 - w2f(self.PlotResolutionDistance)*1e-6
         meta_data = daq.get_meta_data(self.screen, False, self.beamline)
         tracker = self.get_tracker(meta_data)
-        beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], tracker.energy_eV, tracker.total_charge, self.logger)
+        beamprofile = beam_profile.BeamProfile(bp_dict['time_profile'], bp_dict['current'], tracker.energy_eV, tracker.total_charge)
         res_dict = resolution.calc_resolution(beamprofile, gap, beam_position, tracker)
 
         plot_results.clear_resolution_figure(*self.resolution_plot_handles)

@@ -34,7 +34,6 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Non blocking (...)
 # - Live analysis
 # - display bunch duration better
-# - look at rounding
 # - resolution plots, current profile source
 
 if __name__ == '__main__':

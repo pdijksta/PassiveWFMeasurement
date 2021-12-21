@@ -19,7 +19,7 @@ class StructureCalibration:
         self.structure_position0 = structure_position0
 
     def __str__(self):
-        return 'Structure %s: Screen center %.1f um; Structure position0 %i um; Delta gap %i um' % (self.structure_name, self.screen_center*1e6, self.structure_position0*1e6, self.delta_gap*1e6)
+        return 'Structure %s: Screen center %.1f um; Structure position0 %i um; Delta gap %i um' % (self.structure_name, round(self.screen_center*1e6), round(self.structure_position0*1e6), round(self.delta_gap*1e6))
 
     __repr__ = __str__
 
@@ -366,7 +366,7 @@ class StructureCalibrator(LogMsgBase):
                 'rms_std': self.rms_std,
                 }
         self.fit_dicts[type_] = fit_dict
-        self.logMsg('structure_position0 and gap calibrated as %i um, %i um with method %s' % (structure_position0*1e6, gap_fit*1e6, type_))
+        self.logMsg('structure_position0 and gap calibrated as %i um, %i um with method %s' % (round(structure_position0*1e6), round(gap_fit*1e6), type_))
         return fit_dict
 
     def fit(self):

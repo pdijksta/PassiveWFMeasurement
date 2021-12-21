@@ -359,7 +359,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
         fit_dict = calib_dict['all_fit_dicts'][n1][n2]
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
-        label = '%i / %i / %i' % (round(delta_structure0*1e6), delta_gap*1e6, new_rms.mean()*1e15)
+        label = '%i / %i / %i' % (round(delta_structure0*1e6), round(delta_gap*1e6), round(new_rms.mean()*1e15))
         color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color()
         sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=color, ls='None', marker='o')
         xx_fit = np.array(new_distances)

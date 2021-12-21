@@ -52,7 +52,7 @@ class Tracker(LogMsgBase):
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.update_calib(calib)
         self.meta_data = meta_data
-        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (self.structure_gap*1e6, calib.structure_position0*1e6))
+        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
 
     def update_calib(self, calib):
         assert self.structure_name == calib.structure_name
@@ -330,7 +330,6 @@ class Tracker(LogMsgBase):
                 'wake_time': wake_time,
                 'wake_x': wake_x,
                 }
-        #self.logMsg('Backward propagated screen with mean %i um and profile with rms %.1f fs to profile with rms %.1f fs' % (screen.mean()*1e6, beamProfile.rms()*1e15, bp.rms()*1e15))
         return outp_dict
 
     def reconstruct_profile_Gauss_forced(self, forced_gap, forced_beam_position, *args, **kwargs):
@@ -405,7 +404,7 @@ class Tracker(LogMsgBase):
 
             nonlocal n_iter
             if plot_details:
-                bp_gauss.plot_standard(sp_profile, label='Gauss %i %i' % (n_iter, sig_t*1e15), center='Mean')
+                bp_gauss.plot_standard(sp_profile, label='Gauss %i %i' % (n_iter, round(sig_t*1e15)), center='Mean')
                 bp_back0.plot_standard(sp_profile, label='Back0 %i' % n_iter, center='Mean')
                 bp_back1.plot_standard(sp_profile, label='Back1 %i' % n_iter, center='Mean')
                 if n_iter == 0:
@@ -565,7 +564,7 @@ class Tracker(LogMsgBase):
                 'rms_arr': np.array(rms_list),
                 'mean_arr': np.array(mean_list),
                 }
-        self.logMsg('Beam position found. Delta: %i um' % (delta_position*1e6))
+        self.logMsg('Beam position found. Delta: %i um' % round(delta_position*1e6))
         return output
 
 

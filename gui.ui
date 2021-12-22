@@ -1817,12 +1817,12 @@ Und</string>
        <rect>
         <x>180</x>
         <y>430</y>
-        <width>241</width>
+        <width>291</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
-       <string>Resolution plots</string>
+       <string>Resolution plots (partially implemented)</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

@@ -35,6 +35,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - Live analysis
 # - display bunch duration better
 # - resolution plots, current profile source
+# - 0 in TDC calibration
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')

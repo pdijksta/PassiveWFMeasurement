@@ -8,30 +8,22 @@ from .logMsg import LogMsgBase
 
 class Image(LogMsgBase):
     def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)', logger=None):
-
         self.logger = logger
-
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
-
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]
             image = image[:,::-1]
-
         if y_axis[1] < y_axis[0]:
             y_axis = y_axis[::-1]
             image = image[::-1,:]
-
         if np.any(np.diff(y_axis) == 0):
             raise ValueError
-
         if np.any(np.diff(x_axis) == 0):
             raise ValueError
-
         if subtract_median:
             image = image - np.median(image)
             np.clip(image, 0, None, out=image)
-
         self.image = image
         self.x_axis = x_axis - x_offset
         self.y_axis = y_axis
@@ -81,7 +73,6 @@ class Image(LogMsgBase):
         """
         If new length is larger than current length
         """
-
         image2 = np.zeros([len(self.y_axis), new_length])
         x_axis2 = np.linspace(self.x_axis.min(), self.x_axis.max(), new_length)
         # Fast interpolation
@@ -92,27 +83,21 @@ class Image(LogMsgBase):
         index_delta = index_float-index
         np.clip(index, 0, len(self.x_axis)-1, out=index)
         image2 = self.image[:, index] + index_delta * delta_x[:,index]
-
         image2 = image2 / image2.sum() * self.image.sum()
-
         return self.child(image2, x_axis2, self.y_axis)
 
     def slice_x(self, n_slices):
         x_axis, y_axis = self.x_axis, self.y_axis
         max_x_index = len(x_axis) - len(x_axis) % n_slices
-
         image_extra = np.reshape(self.image[:,:max_x_index], [len(y_axis), n_slices, max_x_index//n_slices])
         new_image = np.mean(image_extra, axis=-1)
-
         x_axis_reshaped = np.linspace(x_axis[0], x_axis[max_x_index-1], n_slices)
-
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
     def fit_slice(self, rms_sigma=5, debug=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
-
         slice_mean = []
         slice_sigma = []
         slice_gf = []

@@ -216,6 +216,9 @@ class Tracker(LogMsgBase):
         return outp_dict
 
     def prepare_screen(self, screen):
+        """
+        Returns: dict with screen, mean, rms
+        """
         screen0 = screen
         screen = copy.deepcopy(screen0)
 
@@ -254,7 +257,7 @@ class Tracker(LogMsgBase):
 
     def backward_propagate(self, screen, beamProfile, plot_details=False):
         if self.total_charge != beamProfile.total_charge:
-            raise ValueError('Charges are unequal (pC):', self.total_charge*1e12, beamProfile.total_charge*1e12)
+            raise ValueError('Charges are unequal (pC), tracker/beam_profile:', self.total_charge*1e12, beamProfile.total_charge*1e12)
 
         beamProfile = copy.deepcopy(beamProfile)
         beamProfile.expand(0.3)

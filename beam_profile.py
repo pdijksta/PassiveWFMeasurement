@@ -96,6 +96,13 @@ class Profile:
         fwhm = abs(lims[1]-lims[0])
         return fwhm
 
+    def cut(self, x_min, x_max):
+        x_axis = self._xx
+        x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
+        yy = self._yy[x_mask]
+        xx = x_axis[x_mask]
+        self._yy = yy
+        self._xx = xx
 
     def cutoff(self, cutoff_factor):
         """

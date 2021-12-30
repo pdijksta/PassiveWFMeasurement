@@ -66,7 +66,7 @@ def saveall(basepath, hspace=0.2, wspace=0.2, trim=True, figs=None, ending='.png
         path = os.path.expanduser(basepath)+'_%i%s' % (num, ending)
         fig.savefig(path, transparent=transparent, bbox_inches='tight', pad_inches=0, **kwargs)
 
-        if 'pdf' not in ending and trim:
+        if 'pdf' not in ending and 'svg' not in ending and trim:
             cmd = 'convert -trim %s %s' % (path, path)
             myprint(cmd)
             os.system(cmd)

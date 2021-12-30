@@ -37,6 +37,10 @@ def get_median(projx, method, output, cutoff=default_cutoff):
         return index_median
 
 def screen_data_to_median(pyscan_result, dim):
+    """
+    dim: 'X' or 'Y'
+    Returns: x_axis, proj, charge
+    """
     if dim == 'X':
         x_axis = pyscan_result['x_axis_m'].astype(np.float64)
         projx = pyscan_result['image'].astype(np.float64).sum(axis=-2)

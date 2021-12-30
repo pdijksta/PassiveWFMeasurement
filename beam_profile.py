@@ -324,6 +324,9 @@ class BeamProfile(Profile):
         self.wake_dict = {}
 
     def calc_wake(self, structure, gap, beam_position, wake_type):
+        """
+        wake_type: can be 'Dipole' or 'Quadrupole'
+        """
         #print('calc_wake gap beam_offset %.2e %.2e' % (gap, beam_offset))
         if abs(beam_position) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_position))

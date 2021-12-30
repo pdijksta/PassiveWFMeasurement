@@ -49,7 +49,7 @@ class CorrugatedStructure:
         return all(conditions)
 
     def __hash__(self):
-        return functools.reduce(lambda x, y: x*hash(y), (self.p, self.g, self.w, self.Ls), 1)
+        return hash((self.p, self.g, self.w, self.Ls, self.dim))
 
     def logMsg(self, msg, style='I'):
         return logMsg(msg, self.logger, style)

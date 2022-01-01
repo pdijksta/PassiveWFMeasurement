@@ -337,7 +337,7 @@ class BeamProfile(Profile):
         #print('calc_wake gap beam_offset %.2e %.2e' % (gap, beam_offset))
         if abs(beam_position) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_position))
-        dict_key = gap, beam_position, structure, wake_type
+        dict_key = gap, beam_position, structure, wake_type, len(self._xx)
         if dict_key in self.wake_dict:
             return self.wake_dict[dict_key]
         wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)

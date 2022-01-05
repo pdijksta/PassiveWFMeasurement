@@ -431,6 +431,7 @@ def interpolate_slice_dicts(ref, alter):
         elif type(arr) is dict:
             new_dict[key] = {}
             for key2, arr2 in arr.items():
-                new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2)
+                if type(arr2) is np.ndarray:
+                    new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2)
     return new_dict
 

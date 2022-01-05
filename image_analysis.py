@@ -155,7 +155,7 @@ class Image(LogMsgBase):
                     import matplotlib.pyplot as plt
                     num = plt.gcf().number
                     plt.figure()
-                    plt.suptitle('Debug 38 fs')
+                    plt.suptitle('Debug')
                     sp = plt.subplot(1,1,1)
                     gf.plot_data_and_fit(sp)
                     sp.legend()

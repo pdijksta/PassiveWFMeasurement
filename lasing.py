@@ -96,14 +96,13 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, key_mean='slice_cut_mean', key_sigma='slice_cut_rms_sq'):
+    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method='cut'):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
         self.current_cutoff = current_cutoff
         self.pulse_energy = pulse_energy
-        self.key_mean = key_mean
-        self.key_sigma = key_sigma
+        self.slice_method = slice_method
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
@@ -118,8 +117,8 @@ class LasingReconstruction:
             all_current = all_mean.copy()
 
             for ctr, slice_dict in enumerate(images.slice_dicts):
-                all_mean[ctr] = slice_dict[self.key_mean]
-                all_sigma[ctr] = slice_dict[self.key_sigma]
+                all_mean[ctr] = slice_dict[self.slice_method]['mean']
+                all_sigma[ctr] = slice_dict[self.slice_method]['sigma_sq']
                 all_x[ctr] = slice_dict['slice_x']
                 all_current[ctr] = slice_dict['slice_current']
 
@@ -429,5 +428,9 @@ def interpolate_slice_dicts(ref, alter):
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:
             new_dict[key] = np.interp(xx_ref, xx_alter, arr)
+        elif type(arr) is dict:
+            new_dict[key] = {}
+            for key2, arr2 in arr.items():
+                new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2)
     return new_dict
 

@@ -168,15 +168,21 @@ class Image(LogMsgBase):
         current = proj / (self.x_axis[1] - self.x_axis[0])
         slice_dict = {
                 'slice_x': self.x_axis,
-                'slice_mean': np.array(slice_mean),
-                'slice_sigma_sq': np.array(slice_sigma),
-                'slice_rms_sq': np.array(slice_rms),
-                'slice_mean_rms': np.array(slice_mean_rms),
-                'slice_gf': slice_gf,
                 'slice_intensity': proj,
                 'slice_current': current,
-                'slice_cut_rms_sq': np.array(slice_cut_rms),
-                'slice_cut_mean': np.array(slice_cut_mean),
+                'slice_gf': slice_gf,
+                'gauss': {
+                    'mean': np.array(slice_mean),
+                    'sigma_sq': np.array(slice_sigma),
+                    },
+                'rms': {
+                    'mean': np.array(slice_mean_rms),
+                    'sigma_sq': np.array(slice_rms),
+                    },
+                'cut': {
+                    'mean': np.array(slice_cut_mean),
+                    'sigma_sq': np.array(slice_cut_rms),
+                    },
                 }
         return slice_dict
 
@@ -262,7 +268,7 @@ class Image(LogMsgBase):
 
         return self.child(image2, self.x_axis, self.y_axis)
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', key_sigma='slice_cut_rms_sq', key_mean='slice_cut_mean'):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', slice_method='cut'):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -308,8 +314,8 @@ class Image(LogMsgBase):
             old_lim = sp.get_xlim(), sp.get_ylim()
             mask = slice_dict['slice_current'] > slice_cutoff
             xx = slice_dict['slice_x'][mask]*x_factor
-            yy = slice_dict[key_mean][mask]*y_factor
-            yy_err = np.sqrt(slice_dict[key_sigma][mask])*y_factor
+            yy = slice_dict[slice_method]['mean'][mask]*y_factor
+            yy_err = np.sqrt(slice_dict[slice_method]['sigma_sq'][mask])*y_factor
             sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=1)
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])

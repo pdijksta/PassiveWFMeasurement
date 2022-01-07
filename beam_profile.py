@@ -50,6 +50,8 @@ class Profile:
         self._yy = np.concatenate([self._yy, yy_add])
 
     def reshape(self, new_shape):
+        if len(self) == new_shape:
+            return
         _xx = np.linspace(self._xx.min(), self._xx.max(), int(new_shape))
         old_sum = np.sum(self._yy)
 

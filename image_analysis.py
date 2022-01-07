@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .gaussfit import GaussFit
-from . import beam_profile
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
@@ -105,9 +104,17 @@ class Image(LogMsgBase):
         slice_mean_rms = []
         slice_cut_rms = []
         slice_cut_mean = []
+        slice_full_mean = []
+        slice_full_rms = []
+
         for n_slice in range(n_slices):
             intensity = self.image[:,n_slice]
             intensity = intensity - intensity.min()
+
+            mean_full, rms_full = calc_rms(y_axis, intensity)
+            slice_full_mean.append(mean_full)
+            slice_full_rms.append(rms_full**2)
+
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
             except RuntimeError:
@@ -128,8 +135,7 @@ class Image(LogMsgBase):
                 if np.sum(data_rms) == 0:
                     mean_rms, rms = 0, 0
                 else:
-                    mean_rms = np.sum(y_rms*data_rms)/np.sum(data_rms)
-                    rms = np.sqrt(np.sum((y_rms-mean_rms)**2*data_rms)/np.sum(data_rms))
+                    mean_rms, rms = calc_rms(y_rms, data_rms)
 
                 slice_gf.append(gf)
                 slice_mean.append(gf.mean)
@@ -138,16 +144,14 @@ class Image(LogMsgBase):
                 slice_mean_rms.append(mean_rms)
 
                 prof_y = intensity.copy()
-                prof_y[np.logical_or(y_axis<mean_rms-2.5*rms, y_axis>mean_rms+2.5*rms)] = 0
+                prof_y[np.logical_or(y_axis<mean_rms-(rms_sigma/2)*rms, y_axis>mean_rms+(rms_sigma/2)*rms)] = 0
                 if np.all(prof_y == 0):
                     slice_cut_rms.append(0)
                     slice_cut_mean.append(0)
                 else:
-                    profile = beam_profile.AnyProfile(y_axis, prof_y)
-                    profile.crop()
-
-                    slice_cut_rms.append(profile.rms()**2)
-                    slice_cut_mean.append(profile.mean())
+                    cut_mean, cut_rms = calc_rms(y_axis, prof_y)
+                    slice_cut_rms.append(cut_rms**2)
+                    slice_cut_mean.append(cut_mean)
 
             # Debug bad gaussfits
             if debug:
@@ -164,7 +168,7 @@ class Image(LogMsgBase):
                     import pdb; pdb.set_trace()
 
         proj = np.sum(self.image, axis=-2)
-        proj = proj / np.sum(proj) * self.charge
+        proj = proj / np.sum(proj) * abs(self.charge)
         current = proj / (self.x_axis[1] - self.x_axis[0])
         slice_dict = {
                 'slice_x': self.x_axis,
@@ -182,6 +186,10 @@ class Image(LogMsgBase):
                 'cut': {
                     'mean': np.array(slice_cut_mean),
                     'sigma_sq': np.array(slice_cut_rms),
+                    },
+                'full': {
+                    'mean': np.array(slice_full_mean),
+                    'sigma_sq': np.array(slice_full_rms),
                     },
                 }
         return slice_dict
@@ -338,4 +346,9 @@ class Image(LogMsgBase):
         if revert_x:
             xlim = sp.get_xlim()
             sp.set_xlim(*xlim[::-1])
+
+def calc_rms(xx, yy):
+    mean = np.sum(xx*yy)/np.sum(yy)
+    rms = np.sqrt(np.sum((xx-mean)**2*yy)/np.sum(yy))
+    return mean, rms
 

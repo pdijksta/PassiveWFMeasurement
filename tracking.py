@@ -361,8 +361,8 @@ class Tracker(LogMsgBase):
         rms_meas = prepare_dict['rms']
 
         opt_func_screens = []
+        opt_func_profiles0 = []
         opt_func_profiles = []
-        opt_func_sigmas = []
         opt_func_wake_time = []
         opt_func_wake_x = []
         gauss_profiles = []
@@ -399,8 +399,8 @@ class Tracker(LogMsgBase):
             index = bisect.bisect(sig_t_list, sig_t)
             sig_t_list.insert(index, sig_t)
             opt_func_screens.insert(index, screen)
+            opt_func_profiles0.insert(index, bp_back0)
             opt_func_profiles.insert(index, bp_back1)
-            opt_func_sigmas.insert(index, sig_t)
             opt_func_wake_time.insert(index, back_dict1['wake_time'])
             opt_func_wake_x.insert(index, back_dict1['wake_x'])
             gauss_profiles.insert(index, bp_gauss)
@@ -478,12 +478,14 @@ class Tracker(LogMsgBase):
 
         if output_details:
             output.update({
-                   'opt_func_screens': opt_func_screens,
-                   'opt_func_profiles': opt_func_profiles,
-                   'opt_func_sigmas': np.array(opt_func_sigmas),
-                   'opt_func_wake_time': np.array(opt_func_wake_time),
-                   'opt_func_wake_x': np.array(opt_func_wake_x),
-                   })
+                'opt_func_sigmas': sig_t_list,
+                'opt_func_screens': opt_func_screens,
+                'opt_func_profiles0': opt_func_profiles0,
+                'opt_func_profiles': opt_func_profiles,
+                'opt_func_wake_time': np.array(opt_func_wake_time),
+                'opt_func_wake_x': np.array(opt_func_wake_x),
+                'gauss_profiles': gauss_profiles,
+                })
 
         if plot_details:
             sp_profile.legend()

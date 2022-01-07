@@ -587,6 +587,7 @@ class StructureCalibrator(LogMsgBase):
                     'fit': fit,
                     'new_distances': new_distances,
                     'new_rms': new_rms_arr,
+                    'new_rms_average': np.mean(new_rms_arr),
                     }
             return outp
 
@@ -622,6 +623,7 @@ class StructureCalibrator(LogMsgBase):
         fit_dict = get_fit_param(structure_position0, delta_gap)
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
+        new_rms_average = fit_dict['new_rms_average']
 
         calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap, new_structure_position0)
 
@@ -629,6 +631,7 @@ class StructureCalibrator(LogMsgBase):
                 'diff_sides': diff_sides,
                 'new_distances': new_distances,
                 'new_rms': new_rms,
+                'new_rms_average': new_rms_average,
                 'fit_coefficients': fit_coefficients,
                 'fit_coefficients2': fit_coefficients2,
                 'distance_rms_arr': distance_rms_arr,

@@ -478,7 +478,7 @@ class Tracker(LogMsgBase):
 
         if output_details:
             output.update({
-                'opt_func_sigmas': sig_t_list,
+                'opt_func_sigmas': np.array(sig_t_list),
                 'opt_func_screens': opt_func_screens,
                 'opt_func_profiles0': opt_func_profiles0,
                 'opt_func_profiles': opt_func_profiles,

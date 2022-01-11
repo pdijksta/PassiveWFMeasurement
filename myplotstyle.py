@@ -49,7 +49,7 @@ def colorprog(ctr, max_ctr_or_list, colormap='hsv'):
     else:
         return plt.get_cmap(colormap)(ctr/max_ctr_or_list)
 
-def saveall(basepath, hspace=0.2, wspace=0.2, trim=True, figs=None, ending='.png', transparent=False, empty_suptitle=True, **kwargs):
+def saveall(basepath, hspace=None, wspace=None, trim=True, figs=None, ending='.png', transparent=False, empty_suptitle=True, bottom=None, top=None, left=None, right=None, **kwargs):
 
     if figs is None:
         numbs = plt.get_fignums()
@@ -58,7 +58,7 @@ def saveall(basepath, hspace=0.2, wspace=0.2, trim=True, figs=None, ending='.png
 
     for num in numbs:
         fig = plt.figure(num)
-        fig.subplots_adjust(hspace=hspace, wspace=wspace)
+        fig.subplots_adjust(hspace=hspace, wspace=wspace, bottom=bottom, top=top, left=left, right=right)
 
         title = fig.canvas.get_window_title()
         if empty_suptitle:

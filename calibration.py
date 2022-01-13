@@ -370,8 +370,11 @@ class StructureCalibrator(LogMsgBase):
         return fit_dict
 
     def fit(self):
-        a = self.fit_type('beamsize')
-        b = self.fit_type('centroid')
+        """
+        Returns: fit_dict for beamsize, fit_dict for centroid
+        """
+        a = self.fit_type('centroid')
+        b = self.fit_type('beamsize')
         return a, b
 
     def forward_propagate(self, blmeas_profile, force_gap=None, force_structure_offset=None, use_n_positions=None):

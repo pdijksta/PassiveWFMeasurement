@@ -229,6 +229,8 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
     if forward_propagate_blmeas:
         blmeas_profile.plot_standard(sp_current, color='black', ls='--')
 
+    matplotlib_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
     for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
             (fit_dict_centroid, sp_center, sp_center2, centroids, centroids_std, centroid_sim),
             (fit_dict_rms, sp_sizes, sp_sizes2, rms, rms_std, rms_sim),
@@ -237,23 +239,25 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
         xx_fit = fit_dict['xx_fit']
         reconstruction = fit_dict['reconstruction']
 
-
-        sp1.errorbar(raw_struct_positions*1e3, yy*1e3, yerr=yy_err*1e3, label='Data', ls='None', marker='o')
-        sp1.plot(xx_fit*1e3, reconstruction*1e3, label='Fit')
-        if sim_screens is not None:
-            sp1.plot(raw_struct_positions*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
-        title = sp1.get_title()
-        sp1.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
-
         structure_position0 = fit_dict['structure_position0']
         beam_positions = -(raw_struct_positions - structure_position0)
         beam_positions_fit = -(xx_fit - structure_position0)
         gap = fit_dict['gap_fit']
         distances = gap/2. - np.abs(beam_positions)
         distances_fit = gap/2. - np.abs(beam_positions_fit)
-
         mask_pos = np.logical_and(beam_positions > 0, raw_struct_positions != 0)
         mask_neg = np.logical_and(beam_positions < 0, raw_struct_positions != 0)
+        mask0 = raw_struct_positions == 0
+
+        sp1.errorbar(raw_struct_positions[mask_pos]*1e3, yy[mask_pos]*1e3, yerr=yy_err[mask_pos]*1e3, label='Data', ls='None', marker='o')
+        sp1.errorbar(raw_struct_positions[mask_neg]*1e3, yy[mask_neg]*1e3, yerr=yy_err[mask_neg]*1e3, ls='None', marker='o')
+        sp1.errorbar(raw_struct_positions[mask0]*1e3, yy[mask0]*1e3, yerr=yy_err[mask0]*1e3, ls='None', marker='o', color='black')
+        sp1.plot(xx_fit*1e3, reconstruction*1e3, label='Fit', color=matplotlib_colors[2])
+        if sim_screens is not None:
+            sp1.plot(raw_struct_positions*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
+        title = sp1.get_title()
+        sp1.set_title('%s; Gap=%.2f mm' % (title, fit_dict['gap_fit']*1e3), fontsize=config.fontsize)
+
         for mask2, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
             sp2.errorbar(distances[mask2]*1e6, np.abs(yy[mask2])*1e3, yerr=yy_err[mask2]*1e3, label=label, marker='o', ls='None')
         lims = sp2.get_xlim()

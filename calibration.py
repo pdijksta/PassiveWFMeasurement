@@ -542,9 +542,9 @@ class StructureCalibrator(LogMsgBase):
 
     def calibrate_gap_and_struct_position(self, use_n_positions=None):
         n_positions = len(use_n_positions) if use_n_positions is not None else len(self.raw_struct_positions)-1
-        delta_gap_scan_range = self.structure_calib_options['delta_gap_scan_range']
         delta_gap_range = self.structure_calib_options['delta_gap_range']
         delta_structure0_range = self.structure_calib_options['delta_structure0_range']
+        delta_gap_scan_range = np.linspace(delta_gap_range.min() - delta_structure0_range.min()*2, delta_gap_range.max() + delta_structure0_range.max()*2, self.structure_calib_options['delta_gap_scan_n'])
         gap0 = self.tracker.structure_gap0
         structure_position0 = self.tracker.structure_position0
 

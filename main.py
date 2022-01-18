@@ -224,12 +224,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.SaveDir.setText(save_dir)
 
         # Gap reconstruction options
-        _lower = gs['delta_gap_scan_range'].min()
-        _upper = gs['delta_gap_scan_range'].max()
-        _step = gs['delta_gap_scan_range'][1] - gs['delta_gap_scan_range'][0]
-        self.DeltaGapRangeLower.setText('%.3f' % (_lower*1e6))
-        self.DeltaGapRangeUpper.setText('%.3f' % (_upper*1e6))
-        self.DeltaGapRangeStep.setText('%.3f' % (_step*1e6))
+        self.DeltaGapScanN.setText('%i' % gs['delta_gap_scan_n'])
         self.DeltaGapSearchLower.setText('%.3f' % (gs['delta_gap_range'].min()*1e6))
         self.DeltaGapSearchUpper.setText('%.3f' % (gs['delta_gap_range'].max()*1e6))
         self.DeltaGapSearchPoints.setText('%.3f' % len(gs['delta_gap_range']))
@@ -490,10 +485,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def get_structure_calib_options(self):
         outp = config.get_default_structure_calibrator_options()
-        _lower = w2f(self.DeltaGapRangeLower)*1e-6
-        _upper = w2f(self.DeltaGapRangeUpper)*1e-6
-        _step = w2f(self.DeltaGapRangeStep)*1e-6
-        outp['delta_gap_scan_range'] = np.arange(_lower, _upper, _step)
+        outp['delta_gap_scan_n'] = w2i(self.DeltaGapScanN)
         _lower = w2f(self.DeltaGapSearchLower)*1e-6
         _upper = w2f(self.DeltaGapSearchUpper)*1e-6
         _points = w2i(self.DeltaGapSearchPoints)

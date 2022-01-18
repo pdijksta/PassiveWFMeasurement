@@ -309,7 +309,7 @@ def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_calib(calib_dict, fig=None, plot_handles=None):
+def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
     delta_gap_range = calib_dict['delta_gap_range']
     delta_structure0_range = calib_dict['delta_structure0_range']
     fit_coefficients2 = calib_dict['fit_coefficients2']
@@ -337,23 +337,27 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
     extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[-1]*y_factor, y_axis[0]*y_factor]
     #extent = None
     plot = sp_heat.imshow(fit_coefficients2, cmap='hot', extent=extent, aspect='auto')
-    fig.colorbar(plot, label='Fit coefficint (arb. units)', ax=sp_heat)
+    if show_colorbars:
+        fig.colorbar(plot, label='Fit coefficint (arb. units)', ax=sp_heat)
 
     plot = sp_heat_rms.imshow(mean_rms_arr*1e15, cmap='hot', extent=extent, aspect='auto')
-    fig.colorbar(plot, label='Profile rms (fs)', ax=sp_heat_rms)
+    if show_colorbars:
+        fig.colorbar(plot, label='Profile rms (fs)', ax=sp_heat_rms)
 
 
     plot = sp_heat_diff.imshow(diff_sides*1e15, cmap='hot', extent=extent, aspect='auto')
-    fig.colorbar(plot, label='Profile rms delta (fs)', ax=sp_heat_diff)
+    if show_colorbars:
+        fig.colorbar(plot, label='Profile rms delta (fs)', ax=sp_heat_diff)
 
     combined_target = calib_dict['combined_target']
     plot = sp_comb.imshow(np.sqrt(combined_target), cmap='hot', extent=extent, aspect='auto')
-    fig.colorbar(plot, label='Optimization function (arb. units)', ax=sp_comb)
+    if show_colorbars:
+        fig.colorbar(plot, label='Optimization function (arb. units)', ax=sp_comb)
 
     n12_pairs = []
-    for n1 in [0, len(delta_structure0_range)-1]:
-        for n2 in [0, len(delta_gap_range)-1]:
-            n12_pairs.append([n1, n2])
+    #for n1 in [0, len(delta_structure0_range)-1]:
+    #    for n2 in [0, len(delta_gap_range)-1]:
+    #        n12_pairs.append([n1, n2])
     n12_pairs.append(argmin)
     mask_pos, mask_neg = beam_positions > 0, beam_positions < 0
 
@@ -364,11 +368,11 @@ def plot_calib(calib_dict, fig=None, plot_handles=None):
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
         label = '%i / %i / %i' % (round(delta_structure0*1e6), round(delta_gap*1e6), round(new_rms.mean()*1e15))
-        color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color()
-        sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=color, ls='None', marker='o')
+        color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color(); color
+        sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=None, ls='None', marker='.')
         xx_fit = np.array(new_distances)
         yy_fit = fit_dict['fit'](xx_fit)
-        sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=color, ls='dotted')
+        sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=None, ls='dotted')
 
     sp_raw.legend(title='Beam position (mm)')
     sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')

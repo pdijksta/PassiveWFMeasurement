@@ -310,6 +310,7 @@ def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
         sp.grid(False)
 
 def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
+    #delta_gap_scan_range = calib_dict['delta_gap_scan_range']
     delta_gap_range = calib_dict['delta_gap_range']
     delta_structure0_range = calib_dict['delta_structure0_range']
     fit_coefficients2 = calib_dict['fit_coefficients2']
@@ -326,7 +327,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
     for n in range(len(distance_rms_arr)):
         distance_arr = distance_rms_arr[n,:,0]
         rms_arr = distance_rms_arr[n,:,1]
-        distance_plot = distance_arr - distance_arr.min()
+        distance_plot = distance_arr - distance_arr.mean()
         sort = np.argsort(distance_plot)
         label = '%.2f' % (beam_positions[n]*1e3)
         sp_raw.plot(distance_plot[sort]*1e6, rms_arr[sort]*1e15, label=label, marker='.')
@@ -669,16 +670,16 @@ def tdc_calib_figure(figsize=None):
     fig.canvas.set_window_title('TDC calibration')
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+2)]
     clear_tdc_calib_figure(*subplots)
     return fig, subplots
 
-def clear_tdc_calib_figure(sp_profile, sp_screen, sp_wake):
+def clear_tdc_calib_figure(sp_profile, sp_screen):
 
     for sp, title, xlabel, ylabel in [
             (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
             (sp_screen, 'Screen distribution', 'x (mm)', config.rho_label),
-            (sp_wake, 'Wake effect', 't (fs)', 'x (mm)'),
+            #(sp_wake, 'Wake effect', 't (fs)', 'x (mm)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -689,18 +690,24 @@ def clear_tdc_calib_figure(sp_profile, sp_screen, sp_wake):
 def plot_tdc_calibration(tdc_dict, plot_handles=None, figsize=None):
     if plot_handles is None:
         _, plot_handles = tdc_calib_figure(figsize)
-    sp_profile, sp_screen, sp_wake = plot_handles
+    sp_profile, sp_screen = plot_handles
 
     blmeas_profile = tdc_dict['blmeas_profile']
-    raw_screen = tdc_dict['meas_screen_raw']
-    blmeas_profile.plot_standard(sp_profile, label='Measured')
-    raw_screen.plot_standard(sp_screen, label='Measured')
-    tdc_dict['forward_screen'].plot_standard(sp_screen, label='Reconstructed')
-    tdc_dict['backward_dict']['profile'].plot_standard(sp_profile, label='Backward propagated')
-    tdc_dict['backward_dict']['screen'].plot_standard(sp_screen, label='Backward propagation')
-    wake_t = tdc_dict['backward_dict']['wake_time']
-    wake_x = tdc_dict['backward_dict']['wake_x']
-    sp_wake.plot(wake_x*1e3, wake_t*1e15)
+    blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')
+    #raw_screen = tdc_dict['meas_screen_raw']
+    #raw_screen.plot_standard(sp_screen, label='Measured')
+    forward_screen = tdc_dict['forward_screen']
+    color = forward_screen.plot_standard(sp_screen, label='Reconstructed')[0].get_color()
+    #sp_screen.axvline(forward_screen.mean()*1e3, color=color, ls='--')
+    back_profile = tdc_dict['backward_dict']['profile']
+    back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean')
+    back_screen = tdc_dict['backward_dict']['screen']
+    color = back_screen.plot_standard(sp_screen, label='Backward propagation')[0].get_color()
+    #sp_screen.axvline(back_screen.mean()*1e3, color=color, ls='--')
+    #wake_t = tdc_dict['backward_dict']['wake_time']
+    #wake_x = tdc_dict['backward_dict']['wake_x']
+    #sp_wake.plot(wake_x*1e3, wake_t*1e15)
+    color
     sp_profile.legend()
     sp_screen.legend()
 

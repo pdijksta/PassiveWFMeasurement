@@ -641,6 +641,7 @@ class StructureCalibrator(LogMsgBase):
                 'beam_positions': beam_positions,
                 'delta_gap_range': delta_gap_range,
                 'delta_structure0_range': delta_structure0_range,
+                'delta_gap_scan_range': delta_gap_scan_range,
                 'mean_rms': mean_rms_arr,
                 'best_index': argmin,
                 'all_fit_dicts': all_fit_dicts,

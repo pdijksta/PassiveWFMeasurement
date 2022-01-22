@@ -3,7 +3,7 @@ import numpy as np
 from . import beam_profile
 from . import h5_storage
 
-def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases, cutoff=10e-2, size=int(1e3)):
+def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases, cutoff=5e-2, size=int(1e3)):
     time_arr = y_axis / calibration
     current0 = images.astype(np.float64).sum(axis=-1)
     current = current0.reshape([current0.size//current0.shape[-1], current0.shape[-1]])
@@ -45,13 +45,13 @@ def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, p
             bp1 = current_profiles0[n_row]
             bp2 = current_profiles0[n_col]
             minus = bp1.charge_dist - bp2.charge_dist
-            squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.mean(minus**2)
+            squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.sum(minus**2)
 
     squares = squares_mat.sum(axis=1)
     n_best = np.argmin(squares)
 
-    #fignum = ms.plt.gcf().number
     #import myplotstyle as ms
+    #fignum = ms.plt.gcf().number
     #ms.figure('Debug')
     #sp = ms.plt.subplot(1,1,1)
     #for curr in current_profiles0:

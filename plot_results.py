@@ -589,6 +589,9 @@ def plot_simple_daq(data_dict, dim):
 def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
 
     elinewidth = 0.8
+    dark_blue  = "#185c8c"
+    dark_red   = "#991c1d"
+    dark_green = "#207320"
     current_cutoff = result_dict['current_cutoff']
     mean_current = result_dict['mean_current']
     lasing_dict = result_dict['lasing_dict']
@@ -614,7 +617,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         outp[key]['gf_dict'] = gf_dict
 
     current_center = []
-    for title, ls, mean_color, fill_color, fill_color2 in [('Lasing Off', None, 'black', 'tab:blue', 'darkblue'), ('Lasing On', '--', 'red', 'tab:red', 'darkred')]:
+    for title, ls, mean_color, fill_color, fill_color2 in [('Lasing Off', None, 'black', 'tab:blue', dark_blue), ('Lasing On', '--', 'red', 'tab:red', dark_red)]:
         all_slice_dict = result_dict['all_slice_dict'][title]
         mean_slice_dict = result_dict['mean_slice_dict'][title]
 
@@ -670,7 +673,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         xx_plot = lasing_dict[key]['time']*1e15
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='darkgreen',zorder=100, lw=elinewidth)
+        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=elinewidth)
 
     for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
         delta_distance = result_dict[key]['delta_distances']

@@ -34,6 +34,7 @@ class dummy_plot:
     set_yticklabels = dummy
     set_yticks = dummy
     imshow = dummy
+    fill_between = dummy
 
 def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
     if plot_handles is None:
@@ -585,7 +586,8 @@ def plot_simple_daq(data_dict, dim):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
+
     current_cutoff = result_dict['current_cutoff']
     mean_current = result_dict['mean_current']
     lasing_dict = result_dict['lasing_dict']
@@ -611,26 +613,39 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None, titl
         outp[key]['gf_dict'] = gf_dict
 
     current_center = []
-    for title, ls, mean_color in [('Lasing Off', None, 'black'), ('Lasing On', '--', 'red')]:
+    for title, ls, mean_color, fill_color, fill_color2 in [('Lasing Off', None, 'black', 'tab:blue', 'mediumblue'), ('Lasing On', '--', 'red', 'tab:red', 'darkred')]:
         all_slice_dict = result_dict['all_slice_dict'][title]
         mean_slice_dict = result_dict['mean_slice_dict'][title]
-        for ctr in range(len(all_slice_dict['t'])):
-            xx_plot = all_slice_dict['t'][ctr,mask]
-            sp_slice_mean.plot(xx_plot*1e15, all_slice_dict['loss'][ctr,mask]/1e6, ls=ls)
-            sp_slice_sigma.plot(xx_plot*1e15, np.sqrt(all_slice_dict['spread'][ctr,mask])/1e6, ls=ls)
+
+        label = title_label_dict[title]
+        xx_plot = all_slice_dict['t'][:,mask]
+
+        for arr, sp in [
+                (all_slice_dict['loss'], sp_slice_mean),
+                (np.sqrt(all_slice_dict['spread']), sp_slice_sigma),
+                ]:
+            all_plot = arr[:,mask]
+            plot_min = np.min(all_plot, axis=0)
+            plot_max = np.max(all_plot, axis=0)
+            sp.fill_between(xx_plot[0]*1e15, plot_min*1e-6, plot_max*1e-6, alpha=0.35, label=label, color=fill_color)
+            for x, y in zip(xx_plot*1e15, all_plot/1e6):
+                sp.plot(x, y, color=fill_color, alpha=0.35)
 
         mean_mean = mean_slice_dict['loss']['mean'][mask]
-        #mean_std = mean_slice_dict['loss']['std'][mask]
-        sigma_mean = mean_slice_dict['spread']['mean'][mask]
-        #sigma_std = mean_slice_dict['spread']['std'][mask]
+        mean_std = mean_slice_dict['loss']['std'][mask]
+        sigma_mean = np.sqrt(mean_slice_dict['spread']['mean'][mask])
+        sigma_std = mean_slice_dict['spread']['std'][mask] / (2*sigma_mean)
+
+        for sp, mean, std in [
+                (sp_slice_mean, mean_mean, mean_std),
+                (sp_slice_sigma, sigma_mean, sigma_std),
+                ]:
+            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=std/1e6, color=fill_color2, ls='None', zorder=100)
+
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
-        label = title_label_dict[title]
-        sp_slice_mean.plot(xx_plot*1e15, mean_mean/1e6, color=mean_color, ls=ls, lw=3, label=label)
-        _yy = np.sqrt(sigma_mean)
-        #_yy_err = sigma_std/(2*_yy)
-        sp_slice_sigma.plot(xx_plot*1e15, _yy/1e6, color=mean_color, ls=ls, lw=3, label=label)
         sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=label, color=mean_color)
+
         current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
     current_profile = result_dict['images_off']['current_profile']
@@ -642,11 +657,11 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None, titl
     sp_slice_sigma.legend(handlelength=1)
 
     for key, sp in [('all_Eloss', sp_lasing_loss), ('all_Espread', sp_lasing_spread)]:
-        if n_shots is None:
-            n_shots = len(lasing_dict[key])
+        plot_min = np.nanmin(lasing_dict[key], axis=0)
+        plot_max = np.nanmax(lasing_dict[key], axis=0)
+        sp.fill_between(lasing_dict['time']*1e15, plot_min/1e9, plot_max/1e9, color='tab:green', alpha=0.35)
         for n_shot, y_arr in enumerate(lasing_dict[key]):
-            if n_shot > len(lasing_dict[key]) - n_shots - 1:
-                sp.plot(lasing_dict['time']*1e15, y_arr/1e9, ls='--')
+            sp.plot(lasing_dict['time']*1e15, y_arr/1e9, color='tab:green', alpha=0.35)
 
     for key, label, sp in [
             ('Eloss', '$\Delta E$', sp_lasing_loss),
@@ -654,7 +669,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, n_shots=None, titl
         xx_plot = lasing_dict[key]['time']*1e15
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='black')
+        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='darkgreen')
 
     for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
         delta_distance = result_dict[key]['delta_distances']

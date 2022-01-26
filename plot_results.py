@@ -588,6 +588,7 @@ def plot_simple_daq(data_dict, dim):
 
 def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
 
+    elinewidth = 0.8
     current_cutoff = result_dict['current_cutoff']
     mean_current = result_dict['mean_current']
     lasing_dict = result_dict['lasing_dict']
@@ -613,7 +614,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         outp[key]['gf_dict'] = gf_dict
 
     current_center = []
-    for title, ls, mean_color, fill_color, fill_color2 in [('Lasing Off', None, 'black', 'tab:blue', 'mediumblue'), ('Lasing On', '--', 'red', 'tab:red', 'darkred')]:
+    for title, ls, mean_color, fill_color, fill_color2 in [('Lasing Off', None, 'black', 'tab:blue', 'darkblue'), ('Lasing On', '--', 'red', 'tab:red', 'darkred')]:
         all_slice_dict = result_dict['all_slice_dict'][title]
         mean_slice_dict = result_dict['mean_slice_dict'][title]
 
@@ -640,7 +641,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 (sp_slice_mean, mean_mean, mean_std),
                 (sp_slice_sigma, sigma_mean, sigma_std),
                 ]:
-            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=std/1e6, color=fill_color2, ls='None', zorder=100)
+            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=std/1e6, color=fill_color2, zorder=100, lw=elinewidth)
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
@@ -669,7 +670,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         xx_plot = lasing_dict[key]['time']*1e15
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='darkgreen')
+        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color='darkgreen',zorder=100, lw=elinewidth)
 
     for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
         delta_distance = result_dict[key]['delta_distances']

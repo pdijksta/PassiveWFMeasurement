@@ -636,15 +636,15 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 sp.plot(x, y, color=fill_color, alpha=0.35)
 
         mean_mean = mean_slice_dict['loss']['mean'][mask]
-        mean_std = mean_slice_dict['loss']['std'][mask]
+        #mean_std = mean_slice_dict['loss']['std'][mask]
         sigma_mean = np.sqrt(mean_slice_dict['spread']['mean'][mask])
-        sigma_std = mean_slice_dict['spread']['std'][mask] / (2*sigma_mean)
+        #sigma_std = mean_slice_dict['spread']['std'][mask] / (2*sigma_mean)
 
-        for sp, mean, std in [
-                (sp_slice_mean, mean_mean, mean_std),
-                (sp_slice_sigma, sigma_mean, sigma_std),
+        for sp, mean in [
+                (sp_slice_mean, mean_mean),
+                (sp_slice_sigma, sigma_mean),
                 ]:
-            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=std/1e6, color=fill_color2, zorder=100, lw=elinewidth)
+            sp.plot(xx_plot[0]*1e15, mean/1e6, color=fill_color2, zorder=100, lw=elinewidth)
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
@@ -672,8 +672,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
         xx_plot = lasing_dict[key]['time']*1e15
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
-        yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=elinewidth)
+        #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
+        sp.plot(xx_plot, yy_plot, color=dark_green, zorder=100, lw=elinewidth)
 
     for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
         delta_distance = result_dict[key]['delta_distances']

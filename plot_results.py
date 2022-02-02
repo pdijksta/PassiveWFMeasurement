@@ -19,6 +19,9 @@ class dummy_plot:
     def dummy(self, *args, **kwargs):
         pass
 
+    def get_xlim(self, *args, **kwargs):
+        return 0, 1
+
     errorbar = plot
     legend = dummy
     axhline = dummy
@@ -35,6 +38,7 @@ class dummy_plot:
     set_yticks = dummy
     imshow = dummy
     fill_between = dummy
+    get_ylim = get_xlim
 
 def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
     if plot_handles is None:
@@ -461,7 +465,7 @@ def plot_slice_dict(slice_dict):
 def lasing_figure(figsize=None):
     fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Lasing reconstruction')
-    fig.subplots_adjust(hspace=0.4)
+    fig.subplots_adjust(hspace=0.5, wspace=0.4)
     subplot = ms.subplot_factory(3,3)
     subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
     clear_lasing_figure(*subplots)

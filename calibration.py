@@ -545,8 +545,9 @@ class StructureCalibrator(LogMsgBase):
         delta_gap_range = self.structure_calib_options['delta_gap_range']
         delta_structure0_range = self.structure_calib_options['delta_structure0_range']
         delta_gap_scan_range = np.linspace(delta_gap_range.min() - delta_structure0_range.min()*2, delta_gap_range.max() + delta_structure0_range.max()*2, self.structure_calib_options['delta_gap_scan_n'])
-        gap0 = self.tracker.structure_gap0
+        gap0 = self.tracker.structure_gap
         structure_position0 = self.tracker.structure_position0
+        old_calibration = self.tracker.calib
 
         distance_rms_arr = np.zeros([n_positions, len(delta_gap_scan_range), 2])
 
@@ -628,7 +629,7 @@ class StructureCalibrator(LogMsgBase):
         new_rms = fit_dict['new_rms']
         new_rms_average = fit_dict['new_rms_average']
 
-        calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap, new_structure_position0)
+        calib = StructureCalibration(self.structure_name, np.mean(self.screen_center_arr), delta_gap+old_calibration.delta_gap, new_structure_position0)
 
         outp = {
                 'diff_sides': diff_sides,
@@ -647,16 +648,17 @@ class StructureCalibrator(LogMsgBase):
                 'all_fit_dicts': all_fit_dicts,
                 'combined_target': combined_target,
                 'calibration': calib,
+                'old_calibration': old_calibration,
                 'new_gap': new_gap,
                 }
         self.logMsg('Streaker position and gap reconstructed as %i um %i um' % (round(calib.structure_position0*1e6), round(new_gap*1e6)))
         return outp
 
 
-    def get_n_positions(self, gap, max_distance):
+    def get_n_positions(self, gap, max_distance, min_distance=0):
         distances = gap/2. - np.abs(self.raw_struct_positions - self.fit_dicts['centroid']['structure_position0'])
         index_arr = np.arange(len(self.raw_struct_positions))
-        return index_arr[distances <= max_distance]
+        return index_arr[(distances <= max_distance) * (distances >=min_distance)]
 
 def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, delta_position):
     position0 = tracker.beam_position

@@ -225,5 +225,7 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         dim_index['delta'] = n_dim
         n_dim += 1
 
-    return Beam(arr, dim_index, beamProfile, total_charge, energy_eV)
+    beam = Beam(arr, dim_index, beamProfile, total_charge, energy_eV)
+    beam.specifications = specifications
+    return beam
 

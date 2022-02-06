@@ -214,8 +214,6 @@ def wf2d_quad(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
             c2 = (wake0 * x_edges).sum()
             wake[n_output,:] += c1 - c2
 
-    wake *= np.sign(charge)
-
     ## A much faster interpolation over the grid than from scipy.interpolate.interp2d
     indices = []
     indices_delta = []

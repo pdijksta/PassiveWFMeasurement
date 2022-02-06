@@ -181,6 +181,7 @@ class Tracker(LogMsgBase):
             outp_split['wake2d_dicts_dipole'].append(dict_dipole_2d)
             outp_split['wake2d_dicts_quad'].append(dict_dipole_2d)
             beam_now = beam_now.linear_propagate(half_length_drift)
+        beam_after_streaker = beam_now.linear_propagate(negative_drift)
 
         beam_at_screen = beam_now.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)
@@ -190,7 +191,7 @@ class Tracker(LogMsgBase):
         if output_details:
             outp.update({
                 'beam': beam,
-                'beam_after_streaker': beam_now,
+                'beam_after_streaker': beam_after_streaker,
                 'beam_at_screen': beam_at_screen,
                 'splits': outp_split,
                 })

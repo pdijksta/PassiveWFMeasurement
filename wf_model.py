@@ -193,7 +193,7 @@ def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)
             }
     return output
 
-def wf2d_quad(self, t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
+def wf2d_quad(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
     """
     Respects sign of the charge
     """

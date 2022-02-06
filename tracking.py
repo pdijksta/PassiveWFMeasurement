@@ -147,6 +147,64 @@ class Tracker(LogMsgBase):
             beam_position = force_beam_position
         return profile.calc_wake(self.structure, gap, beam_position, type_)
 
+    def forward_propagate_2D(self, beam, n_splits, hist_bins_2d, output_details=False):
+        dim = self.structure.dim.lower()
+        quad_wake = self.forward_options['quad_wake']
+        gap = self.structure_gap
+        struct_length = self.structure.Ls
+        half_length_drift = lattice.transferMatrixDrift66(struct_length/(2.*n_splits))
+        negative_drift = lattice.transferMatrixDrift66(-struct_length/2.)
+
+        beam_now = beam.linear_propagate(negative_drift)
+
+        outp_split = {
+                'beams_in_structure': [],
+                'wake2d_dicts_dipole': [],
+                'wake2d_dicts_quad': [],
+                }
+
+        for n_split in range(n_splits):
+            beam_now = beam_now.linear_propagate(half_length_drift)
+            x_coords = beam_now[dim]
+            t_coords = beam_now['t'] - beam_now['t'].min()
+            dict_dipole_2d = wf_model.wf2d(t_coords, x_coords+self.beam_position, gap/2., self.total_charge, self.structure.wxd, hist_bins_2d)
+            delta_xp_dipole = dict_dipole_2d['wake_on_particles']/self.energy_eV
+
+            if quad_wake:
+                dict_quad_2d = wf_model.wf2d_quad(t_coords, x_coords+self.beam_position, gap/2., self.total_charge, self.structure.wxq, hist_bins_2d)
+                delta_xp_quad = dict_quad_2d['wake_on_particles']/self.energy_eV
+            else:
+                dict_quad_2d = None
+                delta_xp_quad = 0
+            beam_now[dim+'p'] += (delta_xp_dipole + delta_xp_quad)/n_splits
+            outp_split['beams_in_structure'].append(beam_now)
+            outp_split['wake2d_dicts_dipole'].append(dict_dipole_2d)
+            outp_split['wake2d_dicts_quad'].append(dict_dipole_2d)
+            beam_now = beam_now.linear_propagate(half_length_drift)
+
+        beam_at_screen = beam_now.linear_propagate(self.matrix)
+        screen = self._beam2screen(beam_at_screen)
+
+        outp = {'screen': screen}
+
+        if output_details:
+            outp.update({
+                'beam': beam,
+                'beam_after_streaker': beam_now,
+                'beam_at_screen': beam_at_screen,
+                'splits': outp_split,
+                })
+
+        return outp
+
+    def _beam2screen(self, beam):
+        screen = beam.to_screen_dist(self.forward_options['screen_bins'], 0, self.structure.dim.lower())
+        screen.smoothen(self.forward_options['screen_smoothen'])
+        screen.aggressive_cutoff(self.forward_options['screen_cutoff'])
+        screen.crop()
+        screen.reshape(self.forward_options['len_screen'])
+        return screen
+
     def forward_propagate(self, beam, plot_details=False, output_details=False):
         """
         beam: must correspond to middle of structure
@@ -172,14 +230,8 @@ class Tracker(LogMsgBase):
         beam_after_streaker[dim+'p'] += delta_xp_coords_quad
 
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
-        screen = beam_at_screen.to_screen_dist(self.forward_options['screen_bins'], 0, dim)
-        screen.smoothen(self.forward_options['screen_smoothen'])
-        screen.aggressive_cutoff(self.forward_options['screen_cutoff'])
-        screen.crop()
-        screen.reshape(self.forward_options['len_screen'])
-        outp_dict = {
-                'screen': screen,
-                }
+        screen = self._beam2screen(beam_at_screen)
+        outp_dict = {'screen': screen}
         if output_details:
             outp_dict.update({
                 'beam': beam,

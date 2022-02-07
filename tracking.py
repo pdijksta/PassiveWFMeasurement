@@ -147,13 +147,16 @@ class Tracker(LogMsgBase):
             beam_position = force_beam_position
         return profile.calc_wake(self.structure, gap, beam_position, type_)
 
-    def forward_propagate_2D(self, beam, n_splits, hist_bins_2d, output_details=False):
+    def forward_propagate_2D(self, beam, n_splits, hist_bins_2d, output_details=False, beam_positions=None):
         dim = self.structure.dim.lower()
         quad_wake = self.forward_options['quad_wake']
         gap = self.structure_gap
         struct_length = self.structure.Ls
         half_length_drift = lattice.transferMatrixDrift66(struct_length/(2.*n_splits))
         negative_drift = lattice.transferMatrixDrift66(-struct_length/2.)
+
+        if beam_positions is None:
+            beam_positions = [self.beam_postion]*n_splits
 
         beam_now = beam.linear_propagate(negative_drift)
 
@@ -163,16 +166,19 @@ class Tracker(LogMsgBase):
                 'wake2d_dicts_quad': [],
                 }
 
-        for n_split in range(n_splits):
+        for n_split, beam_position in enumerate(beam_positions):
             beam_now = beam_now.linear_propagate(half_length_drift)
             x_coords = beam_now[dim]
             t_coords = beam_now['t'] - beam_now['t'].min()
-            dict_dipole_2d = wf_model.wf2d(t_coords, x_coords+self.beam_position, gap/2., self.total_charge, self.structure.wxd, hist_bins_2d)
+            dict_dipole_2d = wf_model.wf2d(t_coords, x_coords+beam_position, gap/2., self.total_charge, self.structure.wxd, hist_bins_2d)
             delta_xp_dipole = dict_dipole_2d['wake_on_particles']/self.energy_eV
 
             if quad_wake:
-                dict_quad_2d = wf_model.wf2d_quad(t_coords, x_coords+self.beam_position, gap/2., self.total_charge, self.structure.wxq, hist_bins_2d)
+                dict_quad_2d = wf_model.wf2d_quad(t_coords, x_coords+beam_position, gap/2., self.total_charge, self.structure.wxq, hist_bins_2d)
                 delta_xp_quad = dict_quad_2d['wake_on_particles']/self.energy_eV
+                #sum_good = np.sum(np.sign(delta_xp_quad) == np.sign(x_coords))
+                #sum_bad = np.sum(np.sign(delta_xp_quad) != np.sign(x_coords))
+                #print(sum_good, sum_bad)
             else:
                 dict_quad_2d = None
                 delta_xp_quad = 0

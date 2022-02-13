@@ -228,6 +228,8 @@ all_structures = []
 for beamline, structure_list in structure_names.items():
     all_structures.extend(structure_list)
 
+default_n_particles = int(1e5)
+
 def get_default_forward_options():
     return {
             'screen_bins': 1000,
@@ -235,6 +237,7 @@ def get_default_forward_options():
             'quad_wake': False,
             'screen_cutoff': 2e-2,
             'len_screen': 5000,
+            'n_particles': default_n_particles,
             }.copy()
 
 def get_default_backward_options():
@@ -298,7 +301,6 @@ def get_default_find_beam_position_options():
             }.copy()
     return outp
 
-default_n_particles = int(1e5)
 default_deltaK = 0.2
 
 # For plots

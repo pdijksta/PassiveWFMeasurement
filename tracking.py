@@ -24,7 +24,7 @@ class Tracker(LogMsgBase):
         n_particles: Number of particles for forward and backward trackiign
         logger: from logMsg.py
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, n_particles=config.default_n_particles, matching_point=None, logger=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None):
 
         self.logger = logger
         self.force_gap = None
@@ -43,7 +43,7 @@ class Tracker(LogMsgBase):
         self.update_calib(calib)
         self.beamline = beamline
         self.screen_name = screen_name
-        self.n_particles = n_particles
+        self.n_particles = forward_options['n_particles']
         if matching_point is None:
             self.matching_point = config.optics_matching_points[self.beamline]
         else:
@@ -156,7 +156,7 @@ class Tracker(LogMsgBase):
         negative_drift = lattice.transferMatrixDrift66(-struct_length/2.)
 
         if beam_positions is None:
-            beam_positions = [self.beam_postion]*n_splits
+            beam_positions = [self.beam_position]*n_splits
 
         beam_now = beam.linear_propagate(negative_drift)
 

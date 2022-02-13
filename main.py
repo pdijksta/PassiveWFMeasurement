@@ -196,7 +196,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         fbs = config.get_default_find_beam_position_options()
         ls = config.get_default_lasing_options()
 
-        self.N_Particles.setText('%i' % config.default_n_particles)
+        self.N_Particles.setText('%i' % fs['n_particles'])
 
         # Forward options
         self.ScreenBins.setText('%i' % fs['screen_bins'])
@@ -387,7 +387,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             force_charge = None
         else:
             force_charge = w2f(self.Charge)*1e-12
-        n_particles = w2i(self.N_Particles)
 
         if structure_name is None:
             structure_name = self.structure_name
@@ -409,7 +408,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 self.get_beam_optics(),
                 self.get_find_beam_position_options(),
                 force_charge,
-                n_particles,
                 self.OpticsReferencePoint.text(),
                 self.logger)
         return tracker
@@ -447,6 +445,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['screen_smoothen'] = w2f(self.ScreenSmoothen)*1e-6
         outp['screen_cutoff'] = w2f(self.ScreenCutoff)
         outp['len_screen'] = w2i(self.ScreenSize)
+        outp['n_particles'] = w2i(self.N_Particles)
         return outp
 
     def get_backward_options(self):

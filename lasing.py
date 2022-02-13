@@ -96,7 +96,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method='cut'):
+    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method='cut', action=True):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
@@ -106,7 +106,8 @@ class LasingReconstruction:
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
-        self.lasing_analysis()
+        if action:
+            self.lasing_analysis()
 
     def generate_all_slice_dict(self):
         self.all_slice_dict = {}

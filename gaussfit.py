@@ -102,16 +102,16 @@ class GaussFit:
         xx2 = np.linspace(self.xx[0], self.xx[-1], 100)
         reconstruction2 = self.fit_func(xx2, *self.popt)
         sp.plot(xx2, reconstruction2, label='Reconstruction', marker='.', ls='--')
-        sp.axhline(self.scale_0+self.const_0, label='scale_0+const_0', color='black')
+        sp.axhline(self.scale_0+self.const_0, label='scale0+const0', color='black')
         sp.axhline(self.scale+self.const, label='scale+const', color='black', ls='--')
 
-        sp.axhline(self.const_0, label='const_0', color='black')
+        sp.axhline(self.const_0, label='const0', color='black')
         sp.axhline(self.const, label='const', color='black', ls='--')
 
-        sp.axvline(self.mean_0, label='mean_0', color='red')
+        sp.axvline(self.mean_0, label='mean0', color='red')
         sp.axvline(self.mean, label='mean', color='red', ls='--')
 
-        sp.axvline(self.mean_0-self.sigma_0, label='sigma_0', color='green')
+        sp.axvline(self.mean_0-self.sigma_0, label='sigma0', color='green')
         sp.axvline(self.mean_0+self.sigma_0, color='green')
         sp.axvline(self.mean-self.sigma, label='sigma', color='green', ls='--')
         sp.axvline(self.mean+self.sigma, color='green', ls='--')

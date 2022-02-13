@@ -478,10 +478,10 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
             (sp_image_on2, 'Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
             (sp_image_off, 'Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
             (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_sigma, 'Energy spread increase', 't (fs)', 'Energy spread (MeV)'),
-            (sp_current, 'Current profile', 't (fs)', 'Current (kA)'),
-            (sp_lasing_loss, 'Energy loss power profile', 't (fs)', 'Power (GW)'),
-            (sp_lasing_spread, 'Energy spread power profile', 't (fs)', 'Power (GW)'),
+            (sp_slice_sigma, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
+            (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
+            (sp_lasing_loss, '$\Delta E$ power', 't (fs)', 'Power (GW)'),
+            (sp_lasing_spread, '$\sigma_E$ power', 't (fs)', 'Power (GW)'),
             (sp_orbit, 'Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
             ]:
         sp.clear()
@@ -633,8 +633,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 (np.sqrt(all_slice_dict['spread']), sp_slice_sigma),
                 ]:
             all_plot = arr[:,mask]
-            plot_min = np.min(all_plot, axis=0)
-            plot_max = np.max(all_plot, axis=0)
+            plot_min = np.nanmin(all_plot, axis=0)
+            plot_max = np.nanmax(all_plot, axis=0)
             sp.fill_between(xx_plot[0]*1e15, plot_min*1e-6, plot_max*1e-6, alpha=0.35, label=label, color=fill_color)
             for x, y in zip(xx_plot*1e15, all_plot/1e6):
                 sp.plot(x, y, color=fill_color, alpha=0.35)

@@ -592,7 +592,7 @@ def plot_simple_daq(data_dict, dim):
 
 def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
 
-    elinewidth = 0.8
+    linewidth = 0.8
     dark_blue  = "#185c8c"
     dark_red   = "#991c1d"
     dark_green = "#207320"
@@ -648,17 +648,17 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 (sp_slice_mean, mean_mean),
                 (sp_slice_sigma, sigma_mean),
                 ]:
-            sp.plot(xx_plot[0]*1e15, mean/1e6, color=fill_color2, zorder=100, lw=elinewidth)
+            sp.plot(xx_plot[0]*1e15, mean/1e6, color=fill_color2, zorder=100, lw=linewidth)
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
-        sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=label, color=mean_color)
+        sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=label, color=fill_color)
 
         current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
     current_profile = result_dict['images_off']['current_profile']
     if current_profile is not None:
-        current_profile.plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed')
+        current_profile.plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed', color='black')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
     sp_current.legend()
     sp_slice_mean.legend()
@@ -677,13 +677,16 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         xx_plot = lasing_dict[key]['time']*1e15
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9
-        sp.plot(xx_plot, yy_plot, color=dark_green, zorder=100, lw=elinewidth)
+        sp.plot(xx_plot, yy_plot, color=dark_green, zorder=100, lw=linewidth)
 
-    for label, key in [('Lasing On', 'images_on'), ('Lasing Off', 'images_off')]:
+    for label, key, color in [
+            ('Lasing Off', 'images_off', 'tab:blue'),
+            ('Lasing On', 'images_on', 'tab:red'),
+            ]:
         delta_distance = result_dict[key]['delta_distances']
         mean_x = result_dict[key]['meas_screen_centroids']
         if delta_distance is not None:
-            sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label)
+            sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label, color=color)
 
     sp_orbit.legend()
     return outp

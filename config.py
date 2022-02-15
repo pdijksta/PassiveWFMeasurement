@@ -289,6 +289,7 @@ def get_default_lasing_options():
             'current_cutoff': 0.5e3,
             'x_conversion': 'wake',
             'x_linear_factor': 1,
+            'rms_sigma': 5,
             }.copy()
     return outp
 

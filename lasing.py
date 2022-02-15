@@ -217,6 +217,7 @@ class LasingReconstructionImages:
         self.slice_factor = lasing_options['slice_factor']
         self.x_conversion = lasing_options['x_conversion']
         self.x_factor = lasing_options['x_linear_factor']
+        self.rms_sigma = lasing_options['rms_sigma']
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -354,7 +355,7 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            slice_dict = image.fit_slice()
+            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

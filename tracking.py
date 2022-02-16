@@ -566,7 +566,6 @@ class Tracker(LogMsgBase):
         mean_list = []
 
         prepare_dict = self.prepare_screen(meas_screen_raw)
-        meas_screen = prepare_dict['screen']
         centroid_meas = prepare_dict['centroid']
         rms_meas = prepare_dict['rms']
 
@@ -617,7 +616,7 @@ class Tracker(LogMsgBase):
 
         output = {
                 'sim_screens': sim_screens,
-                'meas_screen': meas_screen,
+                'meas_screen': meas_screen_raw,
                 'sim_screen': sim_screens[index],
                 'beam_position': beam_position,
                 'beam_positions': np.array(beam_position_list),

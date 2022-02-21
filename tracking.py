@@ -413,6 +413,7 @@ class Tracker(LogMsgBase):
         method = self.reconstruct_gauss_options['method']
         sig_t_range = self.reconstruct_gauss_options['sig_t_range']
         len_profile = self.backward_options['len_profile']
+        init_func = self.reconstruct_gauss_options['init_func']
 
         prepare_dict = self.prepare_screen(meas_screen_raw)
         meas_screen = prepare_dict['screen']
@@ -441,13 +442,20 @@ class Tracker(LogMsgBase):
 
         n_iter = 0
 
+        if init_func == 'gauss':
+            init_f = beam_profile.get_gaussian_profile
+        elif init_func == 'flat':
+            init_f = beam_profile.get_flat_profile
+        else:
+            raise ValueError
+
         def gaussian_baf(sig_t0):
             sig_t = np.round(sig_t0/prec)*prec
             #print('sig_t %.2f, %.2f' % (sig_t*1e15, sig_t0*1e15))
             if sig_t in sig_t_list:
                 return 0
 
-            bp_gauss = beam_profile.get_gaussian_profile(sig_t, float(tt_range), len_profile, float(self.total_charge), float(self.energy_eV))
+            bp_gauss = init_f(sig_t, float(tt_range), len_profile, float(self.total_charge), float(self.energy_eV))
             bp_back0 = self.backward_propagate(meas_screen, bp_gauss)['profile']
             back_dict1 = self.backward_propagate(meas_screen, bp_back0)
             bp_back1 = back_dict1['profile']

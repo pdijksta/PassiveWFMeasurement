@@ -255,6 +255,7 @@ def get_default_reconstruct_gauss_options():
             'method': 'centroid',
             'sig_t_range': np.array([7, 100])*1e-15,
             'max_iterations': 5,
+            'init_func': 'gauss',
             }.copy()
 
 def get_default_beam_spec():

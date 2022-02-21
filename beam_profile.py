@@ -470,6 +470,13 @@ def get_gaussian_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cu
 
     return BeamProfile(time_arr, current_gauss, energy_eV, total_charge)
 
+def get_flat_profile(sig_t, tt_range, tt_points, total_charge, energy_eV, cutoff=None):
+    time_arr = np.linspace(-tt_range/2, tt_range/2, int(tt_points))
+    mask = np.abs(time_arr) <= np.sqrt(3)*abs(sig_t)
+    current_arr = np.zeros_like(time_arr)
+    current_arr[mask] = total_charge / np.sum(mask)
+    return BeamProfile(time_arr, current_arr, energy_eV, total_charge)
+
 def get_average_profile(p_list):
     len_profile = max(len(p) for p in p_list)
 

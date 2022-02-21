@@ -21,11 +21,11 @@ def get_median(projx, method, output, cutoff=default_cutoff):
             gf = gaussfit.GaussFit(x_axis, proj)
             all_mean.append(gf.sigma)
         elif method == 'mean':
-            mean = np.sum(x_axis*proj) / np.sum(proj)
+            mean = np.nansum(x_axis*proj) / np.nansum(proj)
             all_mean.append(mean)
         elif method == 'std':
-            mean = np.sum(x_axis*proj) / np.sum(proj)
-            rms = np.sqrt(np.sum((x_axis-mean)**2 * proj) / np.sum(proj))
+            mean = np.nansum(x_axis*proj) / np.nansum(proj)
+            rms = np.sqrt(np.nansum((x_axis-mean)**2 * proj) / np.nansum(proj))
             all_mean.append(rms)
         else:
             raise ValueError(method)

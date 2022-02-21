@@ -170,22 +170,26 @@ class StructureCalibrator(LogMsgBase):
         for n_o in range(len(raw_struct_positions)):
             for n_i in range(n_images):
                 proj = proj_x[n_o,n_i]
-                proj = proj - np.median(proj)
-                proj[proj<proj.max()*proj_cutoff] = 0
-                centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
-                rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
+                if np.all(proj == 0):
+                    centroids[n_o,n_i] = np.nan
+                    rms[n_o,n_i] = np.nan
+                else:
+                    proj = proj - np.median(proj)
+                    proj[proj<proj.max()*proj_cutoff] = 0
+                    centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
+                    rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))
             median_proj_index = data_loader.get_median(proj_x[n_o,:], 'mean', 'index')
             median_proj = proj_x[n_o, median_proj_index]
             plot_list_image.append(images[n_o, median_proj_index])
             plot_list_y.append(median_proj)
-        centroid_mean = np.mean(centroids, axis=1)
+        centroid_mean = np.nanmean(centroids, axis=1)
         screen_center = centroid_mean[where0]
         centroid_mean -= screen_center
         centroids -= screen_center
         screen_center_arr = np.array([screen_center]*len(raw_struct_positions), float)
-        centroid_std = np.std(centroids, axis=1)
-        rms_mean = np.mean(rms, axis=1)
-        rms_std = np.std(rms, axis=1)
+        centroid_std = np.nanstd(centroids, axis=1)
+        rms_mean = np.nanmean(rms, axis=1)
+        rms_std = np.nanstd(rms, axis=1)
 
         if 0 in self.raw_struct_positions:
             mask = raw_struct_positions != 0

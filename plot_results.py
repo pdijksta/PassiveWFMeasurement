@@ -725,11 +725,11 @@ def plot_tdc_calibration(tdc_dict, plot_handles=None, figsize=None):
     sp_profile, sp_screen = plot_handles
 
     blmeas_profile = tdc_dict['blmeas_profile']
-    blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')
-    #raw_screen = tdc_dict['meas_screen_raw']
-    #raw_screen.plot_standard(sp_screen, label='Measured')
+    color = blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')[0].get_color()
+    raw_screen = tdc_dict['meas_screen_raw']
+    raw_screen.plot_standard(sp_screen, label='Measured', color='black')
     forward_screen = tdc_dict['forward_screen']
-    color = forward_screen.plot_standard(sp_screen, label='Reconstructed')[0].get_color()
+    forward_screen.plot_standard(sp_screen, label='Reconstructed', color=color)
     #sp_screen.axvline(forward_screen.mean()*1e3, color=color, ls='--')
     back_profile = tdc_dict['backward_dict']['profile']
     back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean')

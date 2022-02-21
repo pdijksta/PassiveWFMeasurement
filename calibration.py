@@ -669,7 +669,7 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, delta_position):
     screen_center = tracker.calib.screen_center
     delta_gap = tracker.calib.delta_gap
     structure_position0 = tracker.calib.structure_position0
-    new_structure_center0 = structure_position0 - delta_position
+    new_structure_center0 = structure_position0 + delta_position
     new_calib = StructureCalibration(tracker.structure_name, screen_center, delta_gap, new_structure_center0)
     outp = {
             'calib': new_calib,

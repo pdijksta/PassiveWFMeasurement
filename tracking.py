@@ -127,13 +127,20 @@ class Tracker(LogMsgBase):
             self.force_beam_position = old_bo
         return outp
 
-    def gen_beam(self, beamProfile):
+    def gen_beam(self, beamProfile, other_dim=False):
         dim = self.structure.dim.lower()
+        dims = []
+        if other_dim:
+            if dim == 'x':
+                dims.append('y')
+            elif dim == 'y':
+                dims.append('x')
+        dims.extend([dim, 't'])
         beam_options = self.beam_spec.copy()
         beam_optics0 = self.beam_optics
         beam_optics = self.lat.propagate_optics_dict(beam_optics0, self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
         beam_options.update(beam_optics)
-        beam = gen_beam.beam_from_spec([dim, 't'], beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
+        beam = gen_beam.beam_from_spec(dims, beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam
 
     def calc_wake(self, profile, type_, force_gap=None, force_beam_position=None):
@@ -223,11 +230,15 @@ class Tracker(LogMsgBase):
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
         dim = self.structure.dim.lower()
+        other_dim = 'x' if dim == 'y' else 'y'
 
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
-            delta_xp_coords_quad = np.interp(beam['t'], wake_time, delta_xp_quadrupole)*(beam[dim]-beam[dim].mean())
+            delta_xp_interp = np.interp(beam['t'], wake_time, delta_xp_quadrupole)
+            delta_xp_coords_quad = delta_xp_interp*(beam[dim]-beam[dim].mean())
+            if other_dim in beam.dim_index:
+                delta_yp_coords_quad = -delta_xp_interp*(beam[other_dim]-beam[other_dim].mean())
         else:
             delta_xp_quadrupole = 0.
             delta_xp_coords_quad = 0.
@@ -235,6 +246,8 @@ class Tracker(LogMsgBase):
         beam_after_streaker = beam.child()
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
         beam_after_streaker[dim+'p'] += delta_xp_coords_quad
+        if quad_wake and other_dim in beam.dim_index:
+            beam_after_streaker[other_dim+'p'] += delta_yp_coords_quad
 
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)

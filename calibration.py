@@ -664,9 +664,9 @@ class StructureCalibrator(LogMsgBase):
         index_arr = np.arange(len(self.raw_struct_positions))
         return index_arr[(distances <= max_distance) * (distances >=min_distance)]
 
-def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, delta_position):
+def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, position_explore=None):
     position0 = tracker.beam_position
-    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile, delta_position)
+    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile, position_explore)
     delta_position = result_dict['delta_position']
     meas_screen = tracker.prepare_screen(meas_screen_raw)['screen']
     back_dict = tracker.backward_propagate(meas_screen, blmeas_profile)

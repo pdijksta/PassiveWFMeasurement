@@ -374,8 +374,8 @@ def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
         new_distances = fit_dict['new_distances']
         new_rms = fit_dict['new_rms']
         label = '%i / %i / %i' % (round(delta_structure0*1e6), round(delta_gap*1e6), round(new_rms.mean()*1e15))
-        color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color(); color
         sp_final.plot(new_distances[mask_neg]*1e6, new_rms[mask_neg]*1e15, color=None, ls='None', marker='.')
+        color = sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')[0].get_color(); color
         xx_fit = np.array(new_distances)
         yy_fit = fit_dict['fit'](xx_fit)
         sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=None, ls='dotted')

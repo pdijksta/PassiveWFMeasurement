@@ -124,7 +124,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 rows *= 2
             table.setRowCount(rows)
             table.setColumnCount(7)
-            table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21 / R34', 'R11 / R33', 'Δψ'])
+            table.setHorizontalHeaderLabels(['Identifier', 'Struct β', 'Struct α', 'Screen β', 'R21/R34', 'R11/R33', 'Δψ'])
             self.optics_identifiers[beamline] = []
             n_row = 0
             for ctr, content0 in enumerate(optics_info):
@@ -172,7 +172,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         structure_position0 = 364e-6
         delta_gap = -62e-6
         pulse_energy = 180e-6
-        tdc_calib_delta_position = 150e-6
+        tdc_calib_delta_position = 60e-6
 
         self.ScreenCenterCalib.setText('%i' % round(screen_center*1e6))
         self.StructureCenter.setText('%i' % round(structure_position0*1e6))
@@ -259,23 +259,23 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             return tab_index, canvas
 
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
-        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'I rec.')
-
-        self.structure_fit_fig, self.structure_fit_plot_handles = plot_results.structure_fit_figure()
-        self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'Gap fit')
+        self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'P I(t)')
 
         self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
-        self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'Lasing rec.')
+        self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'P P(t)')
 
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
-        self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'Res.')
+        self.resolution_tab_index, self.resolution_canvas = get_new_tab(self.resolution_fig, 'P r(t)')
 
         self.tdc_calibration_fig, self.tdc_calibration_plot_handles = plot_results.tdc_calib_figure()
-        self.tdc_calibration_tab_index, self.tdc_calibration_canvas = get_new_tab(self.tdc_calibration_fig, 'TDC cal.')
+        self.tdc_calibration_tab_index, self.tdc_calibration_canvas = get_new_tab(self.tdc_calibration_fig, 'P cal. TDC')
+
+        self.structure_fit_fig, self.structure_fit_plot_handles = plot_results.structure_fit_figure()
+        self.structure_fit_plot_tab_index, self.structure_fit_canvas = get_new_tab(self.structure_fit_fig, 'P cal. fit')
 
         def add_calib_tab():
             self.structure_calib_fig, self.structure_calib_plot_handles = plot_results.calib_figure()
-            self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'Gap rec.')
+            self.structure_calib_tab_index, self.structure_calib_canvas = get_new_tab(self.structure_calib_fig, 'P cal. slow')
         self.add_calib_tab = add_calib_tab
         self.add_calib_tab()
 
@@ -646,7 +646,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.structure_calib_canvas.draw()
         self.tabWidget.setCurrentIndex(self.structure_calib_tab_index)
 
-        self.elog_button_title = 'Structure gap and center calibrated'
+        self.elog_button_title = 'Structure gap and center calibrated (slow)'
         self.elog_button_figures = [self.structure_calib_fig]
         self.elog_button_save_dict = calib_dict
         self.elog_button_save_name = '%s_calibration.h5' % self.structure_name
@@ -658,7 +658,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\nscreen center: %.3f um' % (new_calib.screen_center*1e6)
         elog_text += '\nraw data: %s' % filename
         self.setElogAutoText(elog_text)
-
         self.logMsg('End gap calibration')
 
     def tdc_calibration(self):
@@ -667,21 +666,36 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         pyscan_result = data_dict['pyscan_result']
         meta_data = data_dict['meta_data_begin']
         tracker = self.get_tracker(meta_data, calib_delta_gap0=True)
+        tracker.find_beam_position_options['position_explore'] = w2f(self.TdcCalibrationPositionDelta)*1e-6
         tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
-        bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
         dim = config.structure_dimensions[self.structure_name]
         x_axis, proj, charge = data_loader.screen_data_to_median(pyscan_result, dim)
         tracker.force_charge = charge
+        bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
-        delta_position = float(self.TdcCalibrationPositionDelta.text())*1e-6
-        result_dict = calibration.tdc_calibration(tracker, bp, screen_raw, delta_position)
+        result_dict = calibration.tdc_calibration(tracker, bp, screen_raw)
         new_calib = result_dict['calib']
         self.calib_to_gui(new_calib)
         plot_results.clear_tdc_calib_figure(*self.tdc_calibration_plot_handles)
         plot_results.plot_tdc_calibration(result_dict, plot_handles=self.tdc_calibration_plot_handles)
         self.tdc_calibration_canvas.draw()
         self.tabWidget.setCurrentIndex(self.tdc_calibration_tab_index)
+
+        self.elog_button_title = 'Structure gap and center calibrated (TDC)'
+        self.elog_button_figures = [self.tdc_calibration_fig]
+        self.elog_button_save_dict = result_dict
+        self.elog_button_save_name = '%s_tdc_calibration.h5' % self.structure_name
+
+        elog_text = 'Structure gap and center calibrated with TDC'
+        elog_text += '\nBunch length measurement: %s' % blmeasfile
+        elog_text += '\nScreen data: %s' % data_file
+        elog_text += '\nstructure: %s' % tracker.structure_name
+        elog_text += '\ndelta gap: %.3f um' % (new_calib.delta_gap*1e6)
+        elog_text += '\nstructure center: %.3f um' % (new_calib.structure_position0*1e6)
+        elog_text += '\nscreen center: %.3f um' % (new_calib.screen_center*1e6)
+        self.setElogAutoText(elog_text)
+        self.logMsg('End TDC calibration')
 
     def load_structure_fit(self):
         self.clear_structure_fit_plots()

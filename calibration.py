@@ -167,6 +167,7 @@ class StructureCalibrator(LogMsgBase):
 
         plot_list_y = []
         plot_list_image = []
+        self.median_indices = np.zeros(len(raw_struct_positions), int)
         for n_o in range(len(raw_struct_positions)):
             for n_i in range(n_images):
                 proj = proj_x[n_o,n_i]
@@ -182,6 +183,7 @@ class StructureCalibrator(LogMsgBase):
             median_proj = proj_x[n_o, median_proj_index]
             plot_list_image.append(images[n_o, median_proj_index])
             plot_list_y.append(median_proj)
+            self.median_indices[n_o] = median_proj_index
         centroid_mean = np.nanmean(centroids, axis=1)
         screen_center = centroid_mean[where0]
         centroid_mean -= screen_center
@@ -664,12 +666,21 @@ class StructureCalibrator(LogMsgBase):
         index_arr = np.arange(len(self.raw_struct_positions))
         return index_arr[(distances <= max_distance) * (distances >=min_distance)]
 
-def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, position_explore=None):
+def tdc_calibration(tracker, blmeas_profile, meas_screen_raw):
     position0 = tracker.beam_position
-    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile, position_explore)
+    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile)
     delta_position = result_dict['delta_position']
     meas_screen = tracker.prepare_screen(meas_screen_raw)['screen']
-    back_dict = tracker.backward_propagate(meas_screen, blmeas_profile)
+    force_pos_old = tracker.force_beam_position
+
+    try:
+        tracker.force_beam_position = tracker.beam_position + delta_position
+        back_dict = tracker.backward_propagate(meas_screen, blmeas_profile)
+        beam = tracker.gen_beam(back_dict['profile'])
+        forward_dict = tracker.forward_propagate(beam)
+    finally:
+        tracker.force_beam_position = force_pos_old
+
     screen_center = tracker.calib.screen_center
     delta_gap = tracker.calib.delta_gap
     structure_position0 = tracker.calib.structure_position0
@@ -680,9 +691,10 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, position_explore=N
             'old_calib': tracker.calib,
             'blmeas_profile': blmeas_profile,
             'meas_screen_raw': meas_screen_raw,
-            'forward_screen': result_dict['sim_screen'],
+            'tdc_forward_screen': result_dict['sim_screen'],
             'find_beam_position_result': result_dict,
             'backward_dict': back_dict,
+            'forward_dict': forward_dict,
             }
     return outp
 

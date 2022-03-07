@@ -574,9 +574,8 @@ class Tracker(LogMsgBase):
 
         return output
 
-    def find_beam_position(self, position0, meas_screen_raw, profile, position_explore=None):
-        if position_explore is None:
-            position_explore = self.find_beam_position_options['position_explore']
+    def find_beam_position(self, position0, meas_screen_raw, profile):
+        position_explore = self.find_beam_position_options['position_explore']
         prec = self.find_beam_position_options['precision']
         method = self.find_beam_position_options['method']
         max_iterations = self.find_beam_position_options['max_iterations']
@@ -585,10 +584,16 @@ class Tracker(LogMsgBase):
         sim_screens = []
         rms_list = []
         mean_list = []
+        target_list = []
+        n_iter = 0
 
         prepare_dict = self.prepare_screen(meas_screen_raw)
         centroid_meas = prepare_dict['centroid']
         rms_meas = prepare_dict['rms']
+        if method == 'centroid':
+            target_meas = centroid_meas
+        elif method == 'beaamsize' or method == 'rms':
+            target_meas = rms_meas
 
         beam = self.gen_beam(profile)
 
@@ -596,6 +601,8 @@ class Tracker(LogMsgBase):
             beam_position = np.round(beam_position/prec)*prec
             if beam_position in beam_position_list:
                 return
+            nonlocal n_iter
+            n_iter += 1
 
             sim_screen = self.forward_propagate_forced(self.structure_gap, beam_position, beam)['screen']
 
@@ -604,22 +611,17 @@ class Tracker(LogMsgBase):
             sim_screens.insert(index, sim_screen)
             mean_list.insert(index, sim_screen.mean())
             rms_list.insert(index, sim_screen.rms())
+            if method == 'centroid':
+                target_list.insert(index, sim_screen.mean())
+            elif method == 'beaamsize' or method == 'rms':
+                target_list.insert(index, sim_screen.rms())
 
         def get_index_min(output='index'):
             beam_offset_arr = np.array(beam_position_list)
-            if method == 'centroid':
-                centroid_sim = np.array(mean_list)
-                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
-                sort = np.argsort(centroid_sim)
-                beam_position = np.interp(centroid_meas, centroid_sim[sort], beam_offset_arr[sort])
-            elif method == 'rms' or method == 'beamsize':
-                rms_sim = np.array(rms_list)
-                index_min = np.argmin(np.abs(rms_sim - rms_meas))
-                sort = np.argsort(rms_sim)
-                beam_position = np.interp(rms_meas, rms_sim[sort], beam_offset_arr[sort])
-            else:
-                raise ValueError('Method %s unknown' % method)
-
+            target_arr = np.array(target_list)
+            index_min = np.argmin(np.abs(target_arr - target_meas))
+            sort = np.argsort(target_arr)
+            beam_position = np.interp(target_meas, target_arr[sort], beam_offset_arr[sort])
             if output == 'index':
                 return index_min.squeeze()
             elif output == 'offset':
@@ -648,7 +650,7 @@ class Tracker(LogMsgBase):
                 'rms_arr': np.array(rms_list),
                 'mean_arr': np.array(mean_list),
                 }
-        self.logMsg('Beam position found. Delta: %i um' % round(delta_position*1e6))
+        self.logMsg('Beam position found. Delta: %i um. Target: %.2f mm. Result: %.2f mm. %i iterations' % (round(delta_position*1e6), target_meas*1e3, target_list[index]*1e3, n_iter-3))
         return output
 
 

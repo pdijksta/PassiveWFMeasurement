@@ -298,8 +298,8 @@ def get_default_find_beam_position_options():
     outp = {
             'position_explore': 30e-6,
             'method': 'centroid',
-            'precision': 1e-6,
-            'max_iterations': 3,
+            'precision': .5e-6,
+            'max_iterations': 8,
             }.copy()
     return outp
 

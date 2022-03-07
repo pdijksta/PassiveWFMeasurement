@@ -49,8 +49,10 @@ def saveH5Recursive(h5_filename, data_dict):
 
             if type(dict_or_data_name) is int:
                 inner_key = str(dict_or_data_name)
+            else:
+                inner_key = dict_or_data_name
             try:
-                new_group = group.create_group(dict_or_data_name)
+                new_group = group.create_group(inner_key)
             except Exception as e:
                 print(e)
                 print(dict_or_data_name, 'error')
@@ -118,6 +120,12 @@ def saveH5Recursive(h5_filename, data_dict):
                             except:
                                 print('Error for key', inner_key)
                                 print(group, inner_key, i, j)
+            elif type(mydata) is list:
+                try:
+                    add_dataset(group, inner_key, mydata, 'unknown')
+                except Exception:
+                    mydata2 = {'list_entry_%i' % k: mydata[k] for k in range(len(mydata))}
+                    recurse_save(group, mydata2, inner_key)
             else:
                 try:
                     add_dataset(group, inner_key, mydata, 'unknown')

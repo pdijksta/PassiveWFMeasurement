@@ -726,20 +726,17 @@ def plot_tdc_calibration(tdc_dict, plot_handles=None, figsize=None):
 
     blmeas_profile = tdc_dict['blmeas_profile']
     color = blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')[0].get_color()
+
     raw_screen = tdc_dict['meas_screen_raw']
-    raw_screen.plot_standard(sp_screen, label='Measured', color='black')
-    forward_screen = tdc_dict['forward_screen']
-    forward_screen.plot_standard(sp_screen, label='Reconstructed', color=color)
-    #sp_screen.axvline(forward_screen.mean()*1e3, color=color, ls='--')
+    raw_screen.plot_standard(sp_screen, label='Measured', color='black', show_mean=True)
+
+    forward_screen = tdc_dict['tdc_forward_screen']
+    forward_screen.plot_standard(sp_screen, label='Reconstructed', color=color, show_mean=True)
+
     back_profile = tdc_dict['backward_dict']['profile']
-    back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean')
-    back_screen = tdc_dict['backward_dict']['screen']
-    color = back_screen.plot_standard(sp_screen, label='Backward propagation')[0].get_color()
-    #sp_screen.axvline(back_screen.mean()*1e3, color=color, ls='--')
-    #wake_t = tdc_dict['backward_dict']['wake_time']
-    #wake_x = tdc_dict['backward_dict']['wake_x']
-    #sp_wake.plot(wake_x*1e3, wake_t*1e15)
-    color
+    back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean', color='red')
+    recon_forward_screen = tdc_dict['forward_dict']['screen']
+    recon_forward_screen.plot_standard(sp_screen, label='Backward propagation', color='red', show_mean=True)
     sp_profile.legend()
     sp_screen.legend()
 

@@ -27,7 +27,6 @@ structure_names = {
              ],
         'Athos Post-Undulator': [
             'SATMA02-UDCP045',
-            'SATMA02-UDCP015',
             ],
         'Athos Pre-Undulator': [
             'SATDI01-UDCP100',
@@ -71,7 +70,6 @@ structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
         'SATMA02-UDCP045': aramis_structure_parameters,
-        'SATMA02-UDCP015': aramis_structure_parameters,
         'SATDI01-UDCP100': aramis_structure_parameters,
         'SATDI01-UDCP200': aramis_structure_parameters,
         'SATCL02-UDCP100': aramis_structure_parameters,
@@ -84,7 +82,6 @@ structure_dimensions = {
         'SARUN18-UDCP010': 'X',
         'SARUN18-UDCP020': 'X',
         'SATMA02-UDCP045': 'X',
-        'SATMA02-UDCP015': 'Y',
         'SATDI01-UDCP100': 'Y',
         'SATDI01-UDCP200': 'X',
         'SATCL02-UDCP100': 'Y',

@@ -132,9 +132,9 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                     if dimensions == 'X':
                         content = content0
                     elif dimension == 'X':
-                        content = np.take(content0, [0, 1, 2, 5, 8, 7, 11])
+                        content = [content0[i] for i in [0, 1, 2, 5, 8, 7, 11]]
                     elif dimension == 'Y':
-                        content = np.take(content0, [0, 3, 4, 6, 10, 9, 12])
+                        content = [content0[i] for i in [0, 3, 4, 6, 10, 9, 12]]
 
                     identifier = content[0] + ' ' + dimension
                     table.setItem(n_row, 0, PyQt5.QtWidgets.QTableWidgetItem(identifier))

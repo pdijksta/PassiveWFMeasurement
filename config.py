@@ -103,6 +103,9 @@ beamline_quads = {
             ],
         'Athos Post-Undulator': [
             'SATUN22-MQUA080',
+            'SATMA02-MQUA010',
+            'SATMA02-MQUA020',
+            'SATMA02-MQUA040',
             'SATMA02-MQUA050',
             'SATMA02-MQUA070',
             'SATBD01-MQUA010',

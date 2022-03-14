@@ -593,8 +593,12 @@ class StructureCalibrator(LogMsgBase):
                 new_rms_list.append(new_rms)
             new_rms_arr = np.array(new_rms_list)
             fit = np.poly1d(np.polyfit(new_distances, new_rms_arr, 1))
+            fit_pos = np.poly1d(np.polyfit(new_distances[mask_pos], new_rms_arr[mask_pos], 1))
+            fit_neg = np.poly1d(np.polyfit(new_distances[mask_neg], new_rms_arr[mask_neg], 1))
             outp = {
                     'fit': fit,
+                    'fit_pos': fit_pos,
+                    'fit_neg': fit_neg,
                     'new_distances': new_distances,
                     'new_rms': new_rms_arr,
                     'new_rms_average': np.mean(new_rms_arr),
@@ -605,6 +609,8 @@ class StructureCalibrator(LogMsgBase):
         mean_rms_arr = fit_coefficients.copy()
         mean_rms_pos = fit_coefficients.copy()
         mean_rms_neg = fit_coefficients.copy()
+        fc_pos = fit_coefficients.copy()
+        fc_neg = fit_coefficients.copy()
 
         all_fit_dicts = {}
 
@@ -613,17 +619,24 @@ class StructureCalibrator(LogMsgBase):
             for n2, delta_gap in enumerate(delta_gap_range):
                 fit_dict = get_fit_param(delta_structure0, delta_gap)
                 fit_coefficients[n1, n2] = fit_dict['fit'][1] / np.mean(fit_dict['new_rms'])
+                fc_pos[n1, n2] = fit_dict['fit_pos'][1] / np.mean(fit_dict['new_rms'])
+                fc_neg[n1, n2] = fit_dict['fit_neg'][1] / np.mean(fit_dict['new_rms'])
                 mean_rms_arr[n1, n2] = np.mean(fit_dict['new_rms'])
                 mean_rms_pos[n1, n2] = np.mean(fit_dict['new_rms'][mask_pos])
                 mean_rms_neg[n1, n2] = np.mean(fit_dict['new_rms'][mask_neg])
                 all_fit_dicts[n1][n2] = fit_dict
 
-        fit_coefficients2 = np.abs(fit_coefficients)
-        fit_coefficients2 /= fit_coefficients2.max()
+        def normalize(arr):
+            return np.abs(arr)/np.max(np.abs(arr))
+
+        fit_coefficients2 = normalize(fit_coefficients)
+        fc_pos2 = normalize(fc_pos)
+        fc_neg2 = normalize(fc_neg)
+
         diff_sides = np.abs(mean_rms_pos - mean_rms_neg)
         diff_sides /= diff_sides.max()
 
-        combined_target = diff_sides**2 + fit_coefficients2**2
+        combined_target = diff_sides**2 + fit_coefficients2**2 + fc_neg2**2 + fc_pos2**2
         combined_target /= combined_target.max()
 
         argmin = np.argwhere(combined_target == np.nanmin(combined_target))[0]

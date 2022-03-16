@@ -196,7 +196,7 @@ class Tracker(LogMsgBase):
             beam_now = beam_now.linear_propagate(half_length_drift)
         beam_after_streaker = beam_now.linear_propagate(negative_drift)
 
-        beam_at_screen = beam_now.linear_propagate(self.matrix)
+        beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)
 
         outp = {'screen': screen}

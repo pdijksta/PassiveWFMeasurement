@@ -480,8 +480,8 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
             (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
             (sp_slice_sigma, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
             (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
-            (sp_lasing_loss, '$\Delta E$ power', 't (fs)', 'Power (GW)'),
-            (sp_lasing_spread, '$\sigma_E$ power', 't (fs)', 'Power (GW)'),
+            (sp_lasing_loss, '$\Delta E$', 't (fs)', 'Power (GW)'),
+            (sp_lasing_spread, '$\sigma_E$', 't (fs)', 'Power (GW)'),
             (sp_orbit, 'Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
             ]:
         sp.clear()

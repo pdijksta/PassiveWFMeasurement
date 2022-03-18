@@ -63,7 +63,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
             'photon_energy_factors': photon_energy_factors,
             }
 
-def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy):
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None):
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
     else:
@@ -87,7 +87,8 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff)
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False)
+    las_rec.lasing_analysis(norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
             'las_rec': las_rec,
@@ -301,6 +302,7 @@ class LasingReconstructionImages:
             beam_positions.append(position_dict['beam_position'])
         self.beam_positions = np.array(beam_positions)
         self.delta_distances = self.beam_positions - self.tracker.beam_position
+        self.average_distance = self.gap/2. - abs(self.beam_positions.mean())
         return position_dicts
 
     def calc_wake(self, beam_position=None):

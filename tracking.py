@@ -11,6 +11,8 @@ from . import gen_beam
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
+forward_ctr, backward_ctr, rec_ctr = 0, 0, 0
+
 class Tracker(LogMsgBase):
     """
     Parameters:
@@ -223,6 +225,9 @@ class Tracker(LogMsgBase):
         """
         beam: must correspond to middle of structure
         """
+        global forward_ctr
+        forward_ctr += 1
+
         wake_time = beam.beamProfile.time
         energy_eV = beam.energy_eV
         wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
@@ -330,6 +335,8 @@ class Tracker(LogMsgBase):
     def backward_propagate(self, screen, beamProfile, plot_details=False):
         if self.total_charge != beamProfile.total_charge:
             raise ValueError('Charges are unequal (pC), tracker/beam_profile:', self.total_charge*1e12, beamProfile.total_charge*1e12)
+        global backward_ctr
+        backward_ctr += 1
 
         beamProfile = copy.deepcopy(beamProfile)
         beamProfile.expand(0.3)
@@ -420,6 +427,9 @@ class Tracker(LogMsgBase):
         return outp
 
     def reconstruct_profile_Gauss(self, meas_screen_raw, output_details=False, plot_details=False):
+        global rec_ctr
+        rec_ctr += 1
+
         t0 = time.time()
         prec = self.reconstruct_gauss_options['precision']
         tt_range = self.reconstruct_gauss_options['gauss_profile_t_range']

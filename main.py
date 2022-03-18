@@ -7,6 +7,7 @@ import sys
 import os
 import socket
 from datetime import datetime
+#import time
 import numpy as np
 import PyQt5
 import PyQt5.uic
@@ -770,6 +771,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def reconstruct_all_lasing(self):
         self.logMsg('Lasing reconstruction start')
+        #print(time.time())
         self.clear_all_lasing_plots()
 
         pulse_energy = w2f(self.LasingEnergyInput)*1e-6
@@ -797,6 +799,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.setElogAutoText(elog_text)
 
         self.logMsg('Lasing reconstruction end')
+        #print(time.time())
+        #print(tracking.forward_ctr, tracking.backward_ctr, tracking.rec_ctr)
 
     def elog_and_H5_auto(self, text, figs, title, basename, data_dict, dry_run):
         if dry_run:

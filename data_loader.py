@@ -4,7 +4,7 @@ from . import config
 
 default_cutoff = config.get_default_forward_options()['screen_cutoff']
 
-def get_median(projx, method, output, cutoff=default_cutoff):
+def get_median(projx, method, output):
     """
     From list of projections, return the median one
     Methods: gf_mean, gf_sigma, mean, rms

@@ -225,6 +225,7 @@ class Image(LogMsgBase):
         old_proj = np.sum(self.image, axis=0)
         old_proj_cumsum = np.cumsum(old_proj)
 
+        # Make sure the piecewise integrals of the Intensity profiles match when the axis is converted.
         if self.x_axis[1] > self.x_axis[0]:
             wake_x_interp = self.x_axis
             proj_cumsum_interp = old_proj_cumsum
@@ -292,15 +293,6 @@ class Image(LogMsgBase):
             #fig.savefig('/tmp/debug_fig.pdf')
 
         return output
-
-    def force_projection(self, proj_x, proj):
-        real_proj = np.interp(self.x_axis, proj_x, proj)
-        sum_ = self.image.sum(axis=-2)
-        sum_[sum_ == 0] = np.inf
-        image2 = self.image / sum_ / real_proj.sum() * real_proj
-        image2 = image2 / image2.sum() * self.image.sum()
-
-        return self.child(image2, self.x_axis, self.y_axis)
 
     def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None):
 

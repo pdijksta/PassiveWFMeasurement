@@ -5,6 +5,8 @@ from . import beam_profile
 from . import myplotstyle as ms
 from . import image_analysis
 
+espread_current_exponent = 2./3.
+
 def power_Eloss(slice_current, slice_Eloss_eV):
     power = slice_current * slice_Eloss_eV
     #power[power<0] = 0
@@ -27,7 +29,7 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
             }
 
 def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, pulse_energy_factors=1, norm_factor=None):
-    power0 = slice_current**(2/3) * slice_Espread_sqr_increase * pulse_energy_factors
+    power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * pulse_energy_factors
     #power0[power0<0] = 0
     integral = np.trapz(power0, slice_t)
     if norm_factor is None:
@@ -40,15 +42,16 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     """
     Takes squared values of energy spread
     """
+    exp = espread_current_exponent
     slice_Espread_sqr_increase = slice_Espread_on_sq - slice_Espread_off_sq
-    power0 = slice_current**(2/3) * slice_Espread_sqr_increase * photon_energy_factors
+    power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
     #power0[power0 < 0] = 0
     mask_power = power0 > 0
     integral = np.trapz(power0[mask_power], slice_t[mask_power])
     if norm_factor is None:
         norm_factor = E_total/integral
     power = power0*norm_factor
-    power0_err_1 = 2/3 * power0/slice_current * slice_current_err
+    power0_err_1 = exp * slice_current**(exp-1) * slice_Espread_sqr_increase * photon_energy_factors * slice_current_err
     power0_err_2 = slice_current**(2/3) * photon_energy_factors * slice_Espread_off_sq_err
     power0_err_3 = slice_current**(2/3) * photon_energy_factors * slice_Espread_on_sq_err
     power0_err = np.sqrt(power0_err_1**2+power0_err_2**2+power0_err_3**2)

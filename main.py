@@ -629,6 +629,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def calibrate_gap(self):
         self.logMsg('Start gap calibration')
+        #print(time.time())
         self.clear_structure_calib_plots()
 
         filename = self.LoadCalibrationFilename.text().strip()
@@ -660,6 +661,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\nraw data: %s' % filename
         self.setElogAutoText(elog_text)
         self.logMsg('End gap calibration')
+        #print(time.time())
 
     def tdc_calibration(self):
         data_file = self.TdcCalibrationFilename.text()

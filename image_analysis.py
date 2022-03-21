@@ -216,31 +216,52 @@ class Image(LogMsgBase):
             wake_x = wake_x[::-1]
             wake_time = wake_time[::-1]
 
-        new_img0 = np.zeros_like(self.image)
+        assert wake_x[0] == 0
+
+        new_img1 = np.zeros_like(self.image)
         new_t_axis = np.linspace(wake_time.min(), wake_time.max(), self.image.shape[1])
         x_interp = np.interp(new_t_axis, wake_time, wake_x)
 
+        old_proj = np.sum(self.image, axis=0)
+        old_proj_cumsum = np.cumsum(old_proj)
+
+        if self.x_axis[1] > self.x_axis[0]:
+            wake_x_interp = self.x_axis
+            proj_cumsum_interp = old_proj_cumsum
+        else:
+            wake_x_interp = self.x_axis[::-1]
+            proj_cumsum_interp = old_proj_cumsum[::-1]
+
+        cumsum0 = np.interp(0, wake_x_interp, proj_cumsum_interp)
+        max_x = wake_x[np.argmax(np.abs(wake_x)).squeeze()]
+        cumsum1 = np.interp(max_x, wake_x_interp, proj_cumsum_interp)
+        full_intensity = cumsum1 - cumsum0
+
         to_print = []
         x_indices = []
+        prev_cumsum = None
         for t_index, (t, x) in enumerate(zip(new_t_axis, x_interp)):
             x_index = np.argmin((self.x_axis - x)**2)
-            new_img0[:,t_index] = self.image[:,x_index]
             x_indices.append(x_index)
+            cumsum = np.interp(x, wake_x_interp, proj_cumsum_interp)
+            if prev_cumsum is None:
+                delta_cumsum = 0
+            else:
+                delta_cumsum = cumsum - prev_cumsum
+            # Normalize such that I(x) * dx = I(t) * dt
+            new_img1[:,t_index] = self.image[:,x_index] / np.sum(self.image[:,x_index]) * delta_cumsum / full_intensity
+            prev_cumsum = cumsum
 
             if print_:
                 to_print.append('%i %i %.1f %.1f' % (t_index, x_index, t*1e15, x*1e6))
         if print_:
             print('\n'.join(to_print))
-        diff_x = np.concatenate([np.diff(x_interp), [0]])
 
-        new_img = new_img0 * np.abs(diff_x)
-        new_img = new_img / new_img.sum() * self.image.sum()
-
-        output = self.child(new_img, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
+        output = self.child(new_img1, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
         output.x_indices = x_indices
 
         if debug:
-            ms.figure('Debug x_to_t')
+            fig = ms.figure('Debug x to t'); fig
             subplot = ms.subplot_factory(2,3)
             sp_ctr = 1
 
@@ -264,10 +285,11 @@ class Image(LogMsgBase):
             sp_ctr += 1
             output.plot_img_and_proj(sp)
 
-            sp = subplot(sp_ctr, title='Image new 0', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
+            sp = subplot(sp_ctr, title='Image new 1', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
             sp_ctr += 1
-            new_obj0 = self.child(new_img0, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
-            new_obj0.plot_img_and_proj(sp)
+            new_obj1 = self.child(new_img1, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
+            new_obj1.plot_img_and_proj(sp)
+            #fig.savefig('/tmp/debug_fig.pdf')
 
         return output
 

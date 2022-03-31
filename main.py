@@ -432,6 +432,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Resolution calculated'
         self.elog_button_figures = [self.resolution_fig]
         self.elog_button_save_dict = res_dict
+        self.elog_button_save_dict = None
         self.elog_button_save_name = '%s_resolution.h5' % self.structure_name
 
         elog_text = 'Resolution calculated for'
@@ -542,6 +543,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Current profile reconstructed'
         self.elog_button_figures = [self.reconstruction_fig]
         self.elog_button_save_dict = current_rec_dict
+        self.elog_button_save_dict = None
         self.elog_button_save_name = '%s_current_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'Current profile reconstructed'
@@ -651,6 +653,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Structure gap and center calibrated (slow)'
         self.elog_button_figures = [self.structure_calib_fig]
         self.elog_button_save_dict = calib_dict
+        self.elog_button_save_dict = None
         self.elog_button_save_name = '%s_calibration.h5' % self.structure_name
 
         elog_text = 'Structure gap and center calibrated'
@@ -688,6 +691,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'Structure gap and center calibrated (TDC)'
         self.elog_button_figures = [self.tdc_calibration_fig]
         self.elog_button_save_dict = result_dict
+        self.elog_button_save_dict = None
         self.elog_button_save_name = '%s_tdc_calibration.h5' % self.structure_name
 
         elog_text = 'Structure gap and center calibrated with TDC'
@@ -792,6 +796,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_title = 'FEL power profile reconstructed'
         self.elog_button_figures = [self.all_lasing_fig]
         self.elog_button_save_dict = result_dict
+        self.elog_button_save_dict = None
         self.elog_button_save_name = '%s_FEL_power_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'FEL power profile reconstructed'
@@ -848,8 +853,9 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         basename = date.strftime('%Y_%m_%d-%H_%M_%S_PassiveReconstruction_')
         save_name = basename + save_name
         h5_filename = os.path.join(self.SaveDir.text(), save_name)
-        h5_storage.saveH5Recursive(h5_filename, save_dict)
-        auto_text += '\nData saved in %s' % h5_filename
+        if save_dict is not None:
+            h5_storage.saveH5Recursive(h5_filename, save_dict)
+            auto_text += '\nData saved in %s' % h5_filename
         attachments = []
 
         for n_fig, fig in enumerate(figures, 1):

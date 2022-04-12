@@ -12,7 +12,7 @@ class Image(LogMsgBase):
             raise ValueError('Size of x_axis is %i' % x_axis.size)
 
         if image.shape[0] != y_axis.size or image.shape[1] != x_axis.size:
-            raise ValueError('Wrong shapes!', image.shape, x_axis.shape, y_axis.sahpe)
+            raise ValueError('Wrong shapes!', image.shape, x_axis.shape, y_axis.shape)
 
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]

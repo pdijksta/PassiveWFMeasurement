@@ -101,8 +101,6 @@ class Tracker(LogMsgBase):
         energy_pv = self.screen_name+':ENERGY-OP'
         if energy_pv in meta_data:
             self.energy_eV = meta_data[energy_pv]*1e6
-        elif self.beamline in config.fallback_energy_PVs:
-            self.energy_eV = meta_data[config.fallback_energy_PVs[self.beamline]]*1e6
         else:
             raise KeyError(meta_data.keys())
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)

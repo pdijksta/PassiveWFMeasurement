@@ -63,7 +63,7 @@ class Lattice:
         self.quad_names = np.unique([x.replace('.Q1','').replace('.Q2', '') for x in self.raw_quad_names])
         self.names_set = set(self.names)
 
-    def generate(self, quad_k1l_dict):
+    def generate(self, quad_k1l_dict, assert0=True):
         names, types, columns = self.names, self.types, self.columns
         matrix = np.identity(6)
         ele_matrix = np.zeros_like(matrix)
@@ -73,7 +73,8 @@ class Lattice:
         for n_element, (type_, name) in enumerate(zip(types, names)):
             _element_status = 1
             if type_ == 'QUAD':
-                assert columns['R21'][n_element] == 0 # Quadrupole K1 in elegant simulation must be 0
+                if assert0:
+                    assert columns['R21'][n_element] == 0 # Quadrupole K1 in elegant simulation must be 0
                 length = columns['R12'][n_element]
                 if name.endswith('.Q1') or name.endswith('.Q2'):
                     name2 = name[:-3]

@@ -178,6 +178,26 @@ class Beam:
 
         return -np.mean(arr_x*arr_xp)/e
 
+    def slice_beam(self, n_bins, axis='t'):
+        """
+        Method may be const_delta or const_size
+        """
+        xx = self[axis]
+        xx = xx - xx.mean()
+
+        slices = []
+        xx_min, xx_max = np.min(xx), np.max(xx)
+        delta = (xx_max-xx_min)/n_bins
+        for n_bin in range(n_bins):
+            this_mask = np.logical_and(xx_min+n_bin*delta < xx, xx_min+(n_bin+1)*delta > xx)
+            new_charge = self.total_charge / len(self.arr[0]) * this_mask.sum()
+            new_slice = Beam(self.arr[:,this_mask], self.dim_index, None, new_charge, self.energy_eV)
+            slices.append(new_slice)
+            new_slice.delta = delta
+
+        return slices
+
+
 def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_charge, energy_eV):
     """
     Generate a Gaussian beam from specifications.

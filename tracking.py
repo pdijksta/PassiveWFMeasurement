@@ -23,7 +23,6 @@ class Tracker(LogMsgBase):
         calib - StructureCalibration from calibration.py
         Other args: look at get_default_tracker for an example.
         force_charge: Override EPICS charge PV
-        n_particles: Number of particles for forward and backward trackiign
         logger: from logMsg.py
     """
     def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None):

@@ -54,11 +54,6 @@ screen_names = {
             ],
         }
 
-# for legacy data
-fallback_energy_PVs = {
-        'Aramis': 'SARBD01-MBND100:ENERGY-OP',
-        }
-
 aramis_structure_parameters = {
         'Ls': 1,
         'p': 500e-6,

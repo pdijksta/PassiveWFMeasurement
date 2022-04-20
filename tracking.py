@@ -53,9 +53,8 @@ class Tracker(LogMsgBase):
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.update_calib(calib)
-        if self.meta_data is not None:
-            self.meta_data = meta_data
-            self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
+        self.meta_data = meta_data
+        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
 
     def update_calib(self, calib):
         assert self.structure_name == calib.structure_name
@@ -102,8 +101,8 @@ class Tracker(LogMsgBase):
         energy_pv = self.screen_name+':ENERGY-OP'
         if energy_pv in meta_data:
             self.energy_eV = meta_data[energy_pv]*1e6
-        elif self.beamline in config.fallback_energy_PVs:
-            self.energy_eV = meta_data[config.fallback_energy_PVs[self.beamline]]*1e6
+        elif self.beamline in config.beamline_energypv:
+            self.energy_eV = meta_data[config.beamline_energypv[self.beamline]]*1e6
         else:
             raise KeyError(meta_data.keys())
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)

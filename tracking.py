@@ -54,7 +54,8 @@ class Tracker(LogMsgBase):
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.update_calib(calib)
         self.meta_data = meta_data
-        self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
+        if self.meta_data is not None:
+            self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
 
     def update_calib(self, calib):
         assert self.structure_name == calib.structure_name

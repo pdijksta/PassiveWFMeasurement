@@ -36,7 +36,7 @@ def get_median(projx, method, output):
     elif output == 'index':
         return index_median
 
-def screen_data_to_median(pyscan_result, dim):
+def screen_data_to_median(pyscan_result, dim, output='data'):
     """
     dim: 'X' or 'Y'
     Returns: x_axis, proj, charge
@@ -54,9 +54,12 @@ def screen_data_to_median(pyscan_result, dim):
             break
     else:
         charge = None
-    proj = get_median(projx, 'mean', 'proj')
-    if x_axis[1] < x_axis[0]:
-        x_axis = x_axis[::-1]
-        proj = proj[::-1]
-    return x_axis, proj, charge
+    if output == 'data':
+        proj = get_median(projx, 'mean', 'proj')
+        if x_axis[1] < x_axis[0]:
+            x_axis = x_axis[::-1]
+            proj = proj[::-1]
+        return x_axis, proj, charge
+    else:
+        return get_median(projx, 'mean', 'index')
 

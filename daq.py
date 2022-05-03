@@ -5,9 +5,8 @@ import logging
 import datetime
 
 import pyscan
-from cam_server import PipelineClient, CamClient
+from cam_server import PipelineClient
 from cam_server.utils import get_host_port_from_stream_address
-from bsread import source, SUB
 from epics import caget, caput
 
 from . import config
@@ -212,146 +211,6 @@ def move_pv(pv, value, timeout, tolerance):
             caput(pv, value)
     else:
         raise ValueError('Pv %s should be %e, is: %e after %f seconds!' % (pv, value, current_value, timeout))
-
-def bpm_data_streaker_offset(streaker, offset_range, screen, n_images, dry_run, beamline):
-    print('Start bpm_data_streaker_offset for streaker %s, screen %s, beamline %s, dry_run %s' % (streaker, screen, beamline, dry_run))
-    meta_dict_1 = get_meta_data(screen, dry_run, beamline)
-
-    x_axis, y_axis = get_axis(screen)
-
-    result_dict = {'x_axis_m': x_axis, 'y_axis_m': y_axis}
-
-    offset_pv = streaker+':CENTER'
-
-    # Start from closer edge of scan
-    current_val = caget(offset_pv+'.RBV')
-    if abs(current_val - offset_range[0]) > abs(current_val - offset_range[-1]):
-        offset_range = offset_range[::-1]
-
-    offset_range_mm = offset_range * 1e3
-
-    result_dict['image'] = np.zeros([len(offset_range), n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
-
-    bpm_channels = config.beamline_bpm_pvs[beamline]
-    charge_channels = config.beamline_charge_pvs_bsread[beamline]
-
-    for bpm_channel in bpm_channels+charge_channels:
-        result_dict[bpm_channel] = np.zeros([len(offset_range), n_images])
-
-    for n_offset, offset_mm in enumerate(offset_range_mm):
-        if dry_run:
-            print('I would move %s to %f' % (offset_pv, offset_mm))
-            time.sleep(1)
-        else:
-            move_pv(offset_pv, offset_mm, 60, 1e-3)
-        image_dict = get_images_and_bpm(screen, n_images, beamline, False, False, False, x_axis, y_axis, dry_run)['pyscan_result']
-        for key in image_dict.keys():
-            if key in result_dict:
-                result_dict[key][n_offset] = image_dict[key]
-
-    meta_dict_2 = get_meta_data(screen, dry_run, beamline)
-    output = {
-            'pyscan_result': result_dict,
-            'streaker_offsets': offset_range,
-            'screen': screen,
-            'n_images': n_images,
-            'dry_run': dry_run,
-            'streaker': streaker,
-            'meta_data_begin': meta_dict_1,
-            'meta_data_end': meta_dict_2,
-            }
-    print('End bpm_data_streaker_offset')
-    return output
-
-def get_axis(screen):
-    camera_client = CamClient()
-    camera_stream_adress = camera_client.get_instance_stream(screen)
-    host, port = get_host_port_from_stream_address(camera_stream_adress)
-
-    max_tries = 3
-    for _try in range(max_tries):
-        try:
-            with source(host=host, port=port, mode=SUB) as stream:
-                data = stream.receive()
-                print('Received image')
-
-                x_axis = np.array(data.data.data['x_axis'].value)*1e-6
-                y_axis = np.array(data.data.data['y_axis'].value)*1e-6
-        except Exception as e:
-            print('Try %i' % _try, e)
-            pass
-        else:
-            break
-    else:
-        raise
-
-    return x_axis, y_axis
-
-def get_images_and_bpm(screen, n_images, beamline, axis=True, print_=True, include_meta_data=True, x_axis=None, y_axis=None, dry_run=False):
-
-    if print_:
-        print('Start get_images_and_bpm for screen %s, %i images, beamline %s' % (screen, n_images, beamline))
-
-    if include_meta_data:
-        meta_dict_1 = get_meta_data(screen, dry_run, beamline)
-    else:
-        meta_dict_1 = None
-
-    result_dict = {}
-
-    if axis:
-        x_axis, y_axis = get_axis(screen)
-        result_dict['x_axis_m'] = x_axis
-        result_dict['y_axis_m'] = y_axis
-
-    bpm_channels = config.beamline_bpm_pvs[beamline]
-    charge_channels = config.beamline_charge_pvs_bsread[beamline]
-    image_pv = screen+':FPICTURE'
-    channels = bpm_channels + [image_pv] + charge_channels
-
-    images = np.zeros([n_images, len(y_axis), len(x_axis)], dtype=np.uint16)
-    bpm_values = np.zeros([len(bpm_channels+charge_channels), n_images])
-    pulse_ids = np.zeros(n_images)
-
-    max_tries = 3
-    for _try in range(max_tries):
-        try:
-            with source(channels=channels) as stream:
-                for n_image in range(n_images):
-                    msg = stream.receive()
-                    pulse_ids[n_image] = msg.data.pulse_id
-                    for n_bpm, bpm_channel in enumerate(bpm_channels+charge_channels):
-                        bpm_values[n_bpm, n_image] = msg.data.data[bpm_channel].value
-                    if not dry_run:
-                        images[n_image] = msg.data.data[image_pv].value
-
-            result_dict['image'] = images
-            result_dict['pulse_id'] = pulse_ids
-            for n_bpm, bpm_channel in enumerate(bpm_channels+charge_channels):
-                result_dict[bpm_channel] = bpm_values[n_bpm]
-        except Exception as e:
-            print('Try %i' % _try, e)
-            raise
-        else:
-            break
-    else:
-        raise
-
-    if include_meta_data:
-        meta_dict_2 = get_meta_data(screen, dry_run, beamline)
-    else:
-        meta_dict_2 = None
-
-    output_dict = {
-            'pyscan_result': result_dict,
-            'meta_data_begin': meta_dict_1,
-            'meta_data_end': meta_dict_2,
-            }
-
-    if print_:
-        print('End get_images')
-
-    return output_dict
 
 def get_quad_strengths(beamline):
     quads = config.beamline_quads[beamline]

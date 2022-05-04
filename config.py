@@ -238,6 +238,7 @@ def get_default_forward_options():
 def get_default_backward_options():
     return {
             'compensate_negative_screen': True,
+            'compensate_rms_factor': 0.4,
             'len_profile': 5000,
             'profile_cutoff': 0.1e-2,
             'profile_smoothen': 1e-15,
@@ -271,7 +272,6 @@ def get_default_structure_calibrator_options():
             'proj_cutoff': 2e-2,
             'gap_recon_precision': 1e-6,
             'gap_recon_delta': [-100e-6, 100e-6],
-            #'delta_gap_scan_range': np.arange(-100, 100.01, 20)*1e-6,
             'delta_gap_range': np.linspace(-80, 80.01, 51)*1e-6,
             'delta_structure0_range': np.linspace(-10, 10, 21)*1e-6,
             'delta_gap_scan_n': 10,

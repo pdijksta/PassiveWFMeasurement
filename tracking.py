@@ -309,17 +309,29 @@ class Tracker(LogMsgBase):
             mask_negative = screen.x > 0
 
         compensate_negative_screen = self.backward_options['compensate_negative_screen']
+        compensate_rms_factor = self.backward_options['compensate_rms_factor']
 
-        if compensate_negative_screen and np.any(mask_negative):
-            x_positive = -screen.x[mask_negative][::-1]
-            y_positive = screen.intensity[mask_negative][::-1]
-            if np.all(np.diff(x_positive) < 0):
-                x_positive = x_positive[::-1]
-                y_positive = y_positive[::-1]
-            positive_interp = np.interp(screen.x, x_positive, y_positive, left=0, right=0)
-            screen_intensity = screen.intensity + positive_interp
-            screen_intensity[mask_negative] = 0
-            screen._yy = screen_intensity
+        if np.any(mask_negative):
+
+            if compensate_negative_screen:
+                x_positive = -screen.x[mask_negative][::-1]
+                y_positive = screen.intensity[mask_negative][::-1]
+                if np.all(np.diff(x_positive) < 0):
+                    x_positive = x_positive[::-1]
+                    y_positive = y_positive[::-1]
+                positive_interp = np.interp(screen.x, x_positive, y_positive, left=0, right=0)
+                screen_intensity = screen.intensity + positive_interp
+                screen_intensity[mask_negative] = 0
+                screen._yy = screen_intensity
+            else:
+                first_positive = np.logical_and(~mask_negative, np.abs(screen.x) < abs(rms)*compensate_rms_factor)
+                screen_intensity = screen.intensity
+                sum_negative = screen_intensity[mask_negative].sum()
+                screen_intensity[first_positive] += sum_negative / np.sum(first_positive)
+                screen_intensity[mask_negative] = 0
+                screen._yy = screen_intensity
+
+        #import pdb; pdb.set_trace()
 
         screen.crop()
         screen.reshape(self.n_particles)

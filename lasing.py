@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 
 from . import h5_storage
@@ -310,7 +311,9 @@ class LasingReconstructionImages:
 
     def calc_wake(self, beam_position=None):
         r12 = self.tracker.r12
-        wake_dict = self.tracker.calc_wake(self.profile, 'Dipole', force_beam_position=beam_position)
+        profile2 = copy.deepcopy(self.profile)
+        profile2.expand(0.3)
+        wake_dict = self.tracker.calc_wake(profile2, 'Dipole', force_beam_position=beam_position)
         wake_t = wake_dict['wake_time']
         wake_x = wake_dict['wake_potential'] / self.tracker.energy_eV * r12
         return wake_t, wake_x

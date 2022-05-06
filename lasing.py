@@ -67,7 +67,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
             'photon_energy_factors': photon_energy_factors,
             }
 
-def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None):
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None):
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
     else:
@@ -91,7 +91,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False)
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False, slice_method=slice_method)
     las_rec.lasing_analysis(norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
@@ -102,13 +102,16 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method='cut', action=True):
+    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method=None, action=True):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
         self.current_cutoff = current_cutoff
         self.pulse_energy = pulse_energy
-        self.slice_method = slice_method
+        if slice_method is None:
+            self.slice_method = 'cut'
+        else:
+            self.slice_method = slice_method
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
@@ -220,6 +223,7 @@ class LasingReconstructionImages:
         self.profile = profile
 
         self.subtract_quantile = lasing_options['subtract_quantile']
+        self.max_quantile = lasing_options['max_quantile']
         self.slice_factor = lasing_options['slice_factor']
         self.x_conversion = lasing_options['x_conversion']
         self.x_factor = lasing_options['x_linear_factor']
@@ -274,7 +278,10 @@ class LasingReconstructionImages:
             if max_index is not None and n_image >= max_index:
                 break
             img = img - np.quantile(img, self.subtract_quantile)
-            img[img < 0] = 0
+            if self.max_quantile is not None:
+                img = img.clip(0, np.quantile(img, self.max_quantile))
+            else:
+                img = img.clip(0, None)
             image = image_analysis.Image(img, self.x_axis, y_axis, self.charge)
             self.images_xy.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)

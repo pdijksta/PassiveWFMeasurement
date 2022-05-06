@@ -121,6 +121,7 @@ class Image(LogMsgBase):
 
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
+                where_max = y_axis[np.argmax(gf.reconstruction)]
             except RuntimeError:
                 slice_mean.append(np.nan)
                 slice_sigma.append(np.nan)
@@ -129,8 +130,8 @@ class Image(LogMsgBase):
                 slice_rms.append(np.nan)
                 slice_cut_rms.append(np.nan)
                 slice_cut_mean.append(np.nan)
-            else:
                 where_max = y_axis[np.argmax(intensity)]
+            else:
                 mask_rms = np.logical_and(
                         y_axis > where_max - abs(gf.sigma)*rms_sigma,
                         y_axis < where_max + abs(gf.sigma)*rms_sigma)
@@ -294,7 +295,7 @@ class Image(LogMsgBase):
 
         return output
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -327,6 +328,9 @@ class Image(LogMsgBase):
         image = image[index_y_min:index_y_max,index_x_min:index_x_max]
 
         extent = [x_axis[0]*x_factor, x_axis[-1]*x_factor, y_axis[0]*y_factor, y_axis[-1]*y_factor]
+
+        if cut_intensity_quantile:
+            image = np.clip(image, 0, np.quantile(image, cut_intensity_quantile))
 
         if log:
             image_ = np.clip(image, 1, None)

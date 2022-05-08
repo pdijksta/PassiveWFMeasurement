@@ -245,6 +245,7 @@ class Tracker(LogMsgBase):
             if other_dim in beam.dim_index:
                 delta_yp_coords_quad = -delta_xp_interp*(beam[other_dim]-beam[other_dim].mean())
         else:
+            wake_dict_quadrupole = None
             delta_xp_quadrupole = 0.
             delta_xp_coords_quad = 0.
 
@@ -263,6 +264,7 @@ class Tracker(LogMsgBase):
                 'beam_after_streaker': beam_after_streaker,
                 'beam_at_screen': beam_at_screen,
                 'wake_dict_dipole': wake_dict_dipole,
+                'wake_dict_quadrupole': wake_dict_quadrupole,
                 'transport_matrix': self.matrix,
                 })
 

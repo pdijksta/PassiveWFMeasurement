@@ -259,9 +259,9 @@ class LasingReconstructionImages:
     def add_dict(self, data_dict, max_index=None):
         meta_data = data_dict['meta_data_begin']
         self.tracker.meta_data = meta_data
-        images = data_dict['pyscan_result']['image'].astype(float)
-        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(float)
-        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(float)
+        images = data_dict['pyscan_result']['image'].astype(np.float64)
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         self.add_images(meta_data, images, x_axis, y_axis, max_index)
 
     def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):

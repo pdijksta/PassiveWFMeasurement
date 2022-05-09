@@ -5,7 +5,7 @@ from . import h5_storage
 
 def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases, cutoff=5e-2, size=int(1e3)):
     time_arr = y_axis / calibration
-    current0 = images.astype(np.float64).sum(axis=-1)
+    current0 = images.sum(axis=-1, dtype=np.float64)
     current = current0.reshape([current0.size//current0.shape[-1], current0.shape[-1]])
     reverse = time_arr[1] < time_arr[0]
     if reverse:

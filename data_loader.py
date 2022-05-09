@@ -43,10 +43,10 @@ def screen_data_to_median(pyscan_result, dim, output='data'):
     """
     if dim == 'X':
         x_axis = pyscan_result['x_axis_m'].astype(np.float64)
-        projx = pyscan_result['image'].astype(np.float64).sum(axis=-2)
+        projx = pyscan_result['image'].sum(axis=-2, dtype=np.float64)
     elif dim == 'Y':
         x_axis = pyscan_result['y_axis_m'].astype(np.float64)
-        projx = pyscan_result['image'].astype(np.float64).sum(axis=-1)
+        projx = pyscan_result['image'].sum(axis=-1, dtype=np.float64)
 
     for pv in config.beamline_chargepv.values():
         if pv in pyscan_result:

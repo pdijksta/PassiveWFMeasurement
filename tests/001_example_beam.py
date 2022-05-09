@@ -10,7 +10,7 @@ import PassiveWFMeasurement.gen_beam as gen_beam
 import PassiveWFMeasurement.beam_profile as beam_profile
 import WakefieldAnalysis.elegant_matrix as elegant_matrix
 
-import myplotstyle as ms
+import PassiveWFMeasurement.myplotstyle as ms
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--noshow', action='store_true')

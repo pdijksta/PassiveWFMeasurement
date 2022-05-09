@@ -49,7 +49,7 @@ raw_screen = beam_profile.ScreenDistribution(x_axis-calib.screen_center, proj, s
 raw_screen.aggressive_cutoff(0.02)
 raw_screen.crop()
 
-tdc_dict = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen, delta_position=150e-6)
+tdc_dict = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
 
 
 ms.figure('Test TDC calibration')
@@ -67,7 +67,7 @@ sp_ctr += 1
 
 blmeas_profile.plot_standard(sp_profile, label='Measured')
 raw_screen.plot_standard(sp_screen, label='Measured')
-tdc_dict['forward_screen'].plot_standard(sp_screen, label='Reconstructed')
+tdc_dict['tdc_forward_screen'].plot_standard(sp_screen, label='Reconstructed')
 tdc_dict['backward_dict']['profile'].plot_standard(sp_profile, label='Backward propagated')
 tdc_dict['backward_dict']['screen'].plot_standard(sp_screen, label='Backward propagation')
 wake_t = tdc_dict['backward_dict']['wake_time']

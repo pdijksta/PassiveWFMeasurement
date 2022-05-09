@@ -160,7 +160,7 @@ class StructureCalibrator(LogMsgBase):
         n_images = images.shape[1]
         centroids = np.zeros([len(raw_struct_positions), n_images])
         rms = np.zeros_like(centroids)
-        proj_x = images.astype(np.float64).sum(axis=-2)
+        proj_x = images.sum(axis=-2, dtype=np.float64)
 
         where0 = np.argwhere(raw_struct_positions == 0).squeeze()
         assert where0.size == 1
@@ -377,7 +377,7 @@ class StructureCalibrator(LogMsgBase):
 
     def fit(self):
         """
-        Returns: fit_dict for beamsize, fit_dict for centroid
+        Returns: fit_dict for centroid, fit_dict for beamsize
         """
         a = self.fit_type('centroid')
         b = self.fit_type('beamsize')

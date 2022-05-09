@@ -546,7 +546,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     return gauss_dict
 
 def plot_simple_daq(data_dict, dim):
-    images = data_dict['pyscan_result']['image'].astype(np.float64).squeeze()
+    images = data_dict['pyscan_result']['image'].squeeze()
     x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64).squeeze()
     y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64).squeeze()
     xlabel = 'x (mm)'
@@ -565,9 +565,9 @@ def plot_simple_daq(data_dict, dim):
     if reverse_y:
         y_axis = y_axis[::-1]
         images = images[::-1,:]
-    proj = images.sum(axis=-2)
+    proj = images.sum(axis=-2, dtype=np.float64)
     median_index = data_loader.get_median(proj, 'mean', 'index')
-    image = image_analysis.Image(images[median_index], x_axis, y_axis, 1)
+    image = image_analysis.Image(images[median_index].astype(np.float64), x_axis, y_axis, 1)
 
     fig = ms.figure('Data acquisition')
     subplot = ms.subplot_factory(2, 2, False)

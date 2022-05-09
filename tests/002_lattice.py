@@ -59,7 +59,7 @@ for n_d, dimensions in enumerate([dim1, dim2]):
     mat6 = lat_athos.get_matrix('SATMA02.UDCP045', 'SATBD02.DSCR050')
     beam_obj.linear_propagate(mat6)
 
-    ms.figure(dimensions)
+    ms.figure(str(dimensions))
     subplot = ms.subplot_factory(2,5)
     sp_ctr = 1
 

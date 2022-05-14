@@ -295,7 +295,7 @@ class Image(LogMsgBase):
 
         return output
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color='orange', proj_color='green', slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -354,18 +354,18 @@ class Image(LogMsgBase):
         if plot_proj or plot_proj_x:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
-            sp.plot(x_axis*x_factor, proj_plot, color=proj_color)
+            sp.plot(x_axis*x_factor, proj_plot, color=proj_color[0])
             if plot_gauss or plot_gauss_x:
                 gf = gf_x = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color=gauss_color, alpha=gauss_alpha)
+                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color=gauss_color[0], alpha=gauss_alpha)
 
         if plot_proj or plot_proj_y:
             proj = image.sum(axis=-1)
             proj_plot = (x_axis.min() +(x_axis.max()-x_axis.min()) * proj/proj.max()*0.3)*x_factor
-            sp.plot(proj_plot, y_axis*y_factor, color=proj_color)
+            sp.plot(proj_plot, y_axis*y_factor, color=proj_color[1])
             if plot_gauss or plot_gauss_y:
                 gf = gf_y = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color, alpha=gauss_alpha)
+                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color[1], alpha=gauss_alpha)
 
         if revert_x:
             xlim = sp.get_xlim()

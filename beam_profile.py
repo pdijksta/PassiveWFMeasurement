@@ -306,8 +306,7 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_cha
     """
     if smoothen:
         rand = np.random.randn(len(x_points))
-        rand[rand>3] = 3
-        rand[rand<-3] = -3
+        np.clip(rand, -3, 3, out=rand)
         x_points2 = x_points + rand*smoothen
     else:
         x_points2 = x_points

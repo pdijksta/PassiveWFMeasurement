@@ -502,7 +502,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
         outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
         outp['current_cutoff'] = w2f(self.LasingCurrentCutoff)*1e3
-        outp['x_linear_factor'] = w2f(self.LinearCalib)*1e-15/1e-6
+        outp['x_linear_factor'] = 1/w2f(self.LinearCalib) * 1e6/1e15
         if self.LinearCalibCheck.isChecked():
             outp['x_conversion'] = 'linear'
         else:

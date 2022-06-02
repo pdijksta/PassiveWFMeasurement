@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="tab_5">
      <attribute name="title">
@@ -2236,7 +2236,7 @@ Und</string>
      <widget class="QLineEdit" name="LasingEnergyInput">
       <property name="geometry">
        <rect>
-        <x>140</x>
+        <x>230</x>
         <y>480</y>
         <width>121</width>
         <height>26</height>
@@ -2259,7 +2259,7 @@ Und</string>
        </rect>
       </property>
       <property name="text">
-       <string>Pulse energy [uJ]</string>
+       <string>Pulse energy (uJ)</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="LasingReconstructionSliceFactor">
@@ -2638,6 +2638,38 @@ Und</string>
       </property>
       <property name="text">
        <string>ΔK (max)</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="LinearCalib">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>530</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0.23</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="LinearCalibCheck">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>540</y>
+        <width>181</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Linear calibration (fs/um)</string>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
       </property>
      </widget>
     </widget>

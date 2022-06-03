@@ -2265,7 +2265,7 @@ Und</string>
      <widget class="QLineEdit" name="LasingReconstructionSliceFactor">
       <property name="geometry">
        <rect>
-        <x>730</x>
+        <x>770</x>
         <y>380</y>
         <width>121</width>
         <height>26</height>
@@ -2278,10 +2278,10 @@ Und</string>
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <widget class="QLineEdit" name="LasingIntensityCut">
+     <widget class="QLineEdit" name="LasingIntensityCutLow">
       <property name="geometry">
        <rect>
-        <x>730</x>
+        <x>770</x>
         <y>420</y>
         <width>121</width>
         <height>26</height>
@@ -2328,12 +2328,12 @@ Und</string>
        <rect>
         <x>540</x>
         <y>420</y>
-        <width>161</width>
+        <width>191</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>Image intensity cut</string>
+       <string>Image intensity lower quantile</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -2471,7 +2471,7 @@ Und</string>
       <property name="geometry">
        <rect>
         <x>540</x>
-        <y>460</y>
+        <y>500</y>
         <width>161</width>
         <height>20</height>
        </rect>
@@ -2486,8 +2486,8 @@ Und</string>
      <widget class="QLineEdit" name="LasingCurrentCutoff">
       <property name="geometry">
        <rect>
-        <x>730</x>
-        <y>460</y>
+        <x>770</x>
+        <y>500</y>
         <width>121</width>
         <height>26</height>
        </rect>
@@ -2650,7 +2650,7 @@ Und</string>
        </rect>
       </property>
       <property name="text">
-       <string>4.2</string>
+       <string>26.85</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -2670,6 +2670,38 @@ Und</string>
       </property>
       <property name="checked">
        <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="LasingIntensityCutUp">
+      <property name="geometry">
+       <rect>
+        <x>770</x>
+        <y>460</y>
+        <width>121</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_80">
+      <property name="geometry">
+       <rect>
+        <x>540</x>
+        <y>460</y>
+        <width>191</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Image intensity upper quantile</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
       </property>
      </widget>
     </widget>

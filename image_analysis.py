@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .gaussfit import GaussFit
+from . import beam_profile
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
 
@@ -98,7 +99,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, rms_sigma=5, debug=False):
+    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None, center_profile=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -106,57 +107,81 @@ class Image(LogMsgBase):
         slice_gf = []
         slice_rms = []
         slice_mean_rms = []
-        slice_cut_rms = []
         slice_cut_mean = []
+        slice_cut_rms = []
         slice_full_mean = []
         slice_full_rms = []
 
+        proj = np.sum(self.image, axis=-2)
+        proj = proj / np.sum(proj) * abs(self.charge)
+        current = proj / (self.x_axis[1] - self.x_axis[0])
+        current -= current.min()
+        if center_profile:
+            profile = beam_profile.AnyProfile(self.x_axis, current)
+            if current_cutoff is not None:
+                mask = current > current_cutoff
+                min_x = self.x_axis[mask].min()
+                max_x = self.x_axis[mask].max()
+                profile.cut(min_x, max_x)
+            slice_x = self.x_axis - profile.mean()
+        else:
+            slice_x = self.x_axis
+
+        def addzero():
+            slice_mean.append(0)
+            slice_sigma.append(0)
+            slice_gf.append(None)
+            slice_rms.append(0)
+            slice_mean_rms.append(0)
+            slice_cut_rms.append(0)
+            slice_cut_mean.append(0)
+            slice_full_mean.append(0)
+            slice_full_rms.append(0)
+
         for n_slice in range(n_slices):
+
+            if current_cutoff is not None and current[n_slice] < current_cutoff:
+                addzero()
+                continue
             intensity = self.image[:,n_slice]
             intensity = intensity - intensity.min()
+
+            try:
+                gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
+            except RuntimeError:
+                addzero()
+                continue
 
             mean_full, rms_full = calc_rms(y_axis, intensity)
             slice_full_mean.append(mean_full)
             slice_full_rms.append(rms_full**2)
 
-            try:
-                gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
-                where_max = y_axis[np.argmax(gf.reconstruction)]
-            except RuntimeError:
-                slice_mean.append(np.nan)
-                slice_sigma.append(np.nan)
-                slice_gf.append(None)
-                slice_mean_rms.append(np.nan)
-                slice_rms.append(np.nan)
-                slice_cut_rms.append(np.nan)
-                slice_cut_mean.append(np.nan)
-                where_max = y_axis[np.argmax(intensity)]
+            where_max = y_axis[np.argmax(gf.reconstruction)]
+            mask_rms = np.logical_and(
+                    y_axis > where_max - abs(gf.sigma)*rms_sigma,
+                    y_axis < where_max + abs(gf.sigma)*rms_sigma)
+            y_rms = y_axis[mask_rms]
+            data_rms = intensity[mask_rms]
+            if np.sum(data_rms) == 0:
+                mean_rms, rms = 0, 0
             else:
-                mask_rms = np.logical_and(
-                        y_axis > where_max - abs(gf.sigma)*rms_sigma,
-                        y_axis < where_max + abs(gf.sigma)*rms_sigma)
-                y_rms = y_axis[mask_rms]
-                data_rms = intensity[mask_rms]
-                if np.sum(data_rms) == 0:
-                    mean_rms, rms = 0, 0
-                else:
-                    mean_rms, rms = calc_rms(y_rms, data_rms)
+                mean_rms, rms = calc_rms(y_rms, data_rms)
 
-                slice_gf.append(gf)
-                slice_mean.append(gf.mean)
-                slice_sigma.append(gf.sigma**2)
-                slice_rms.append(rms**2)
-                slice_mean_rms.append(mean_rms)
+            slice_gf.append(gf)
+            slice_mean.append(gf.mean)
+            slice_sigma.append(gf.sigma**2)
+            slice_rms.append(rms**2)
+            slice_mean_rms.append(mean_rms)
 
-                prof_y = intensity.copy()
-                prof_y[np.logical_or(y_axis<mean_rms-(rms_sigma/2)*rms, y_axis>mean_rms+(rms_sigma/2)*rms)] = 0
-                if np.all(prof_y == 0):
-                    slice_cut_rms.append(0)
-                    slice_cut_mean.append(0)
-                else:
-                    cut_mean, cut_rms = calc_rms(y_axis, prof_y)
-                    slice_cut_rms.append(cut_rms**2)
-                    slice_cut_mean.append(cut_mean)
+            prof_y = intensity.copy()
+            prof_y[np.logical_or(y_axis<mean_rms-(rms_sigma/2)*rms, y_axis>mean_rms+(rms_sigma/2)*rms)] = 0
+            if np.all(prof_y == 0):
+                slice_cut_rms.append(0)
+                slice_cut_mean.append(0)
+            else:
+                cut_mean, cut_rms = calc_rms(y_axis, prof_y)
+                slice_cut_rms.append(cut_rms**2)
+                slice_cut_mean.append(cut_mean)
 
             # Debug bad gaussfits
             if debug:
@@ -172,11 +197,8 @@ class Image(LogMsgBase):
                     plt.show()
                     import pdb; pdb.set_trace()
 
-        proj = np.sum(self.image, axis=-2)
-        proj = proj / np.sum(proj) * abs(self.charge)
-        current = proj / (self.x_axis[1] - self.x_axis[0])
         slice_dict = {
-                'slice_x': self.x_axis,
+                'slice_x': slice_x,
                 'slice_intensity': proj,
                 'slice_current': current,
                 'slice_gf': slice_gf,
@@ -207,8 +229,14 @@ class Image(LogMsgBase):
         E_axis = (self.y_axis-ref_y) / dispersion * energy_eV
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
-    def x_to_t_linear(self, factor):
-        return self.child(self.image, self.x_axis*factor, self.y_axis, x_unit='s', xlabel='t (fs)')
+    def x_to_t_linear(self, factor, mean_to_zero=True):
+        proj = self.image.sum(axis=0)
+        if mean_to_zero:
+            profile = beam_profile.AnyProfile(self.x_axis, proj)
+            refx = profile.mean()
+        else:
+            refx = 0
+        return self.child(self.image, (self.x_axis-refx)*factor, self.y_axis, x_unit='s', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         diff = np.diff(wake_time)

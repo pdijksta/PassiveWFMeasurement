@@ -228,6 +228,7 @@ class LasingReconstructionImages:
         self.x_conversion = lasing_options['x_conversion']
         self.x_factor = lasing_options['x_linear_factor']
         self.rms_sigma = lasing_options['rms_sigma']
+        self.current_cutoff = lasing_options['current_cutoff']
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -341,9 +342,20 @@ class LasingReconstructionImages:
             self.cut_images.append(img_cut)
 
     def convert_x_linear(self, factor):
-        self.images_tE = self.cut_images = []
+        #self.cut_images = []
+        #for ctr, img in enumerate(self.images_E):
+        #    tt = img.x_axis*factor
+        #    cc = np.sum(img.image, axis=0)
+        #    current = cc*self.charge/np.trapz(cc, tt)
+        #    mask = current > self.current_cutoff
+        #    new_x = img.x_axis[mask]
+        #    new_img = img.image[:,mask]
+        #    cut_image = img.child(new_img, new_x, img.y_axis)
+        #    self.cut_images.append(cut_image)
+
+        self.images_tE = []
         for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_linear(factor)
+            new_img = img.x_to_t_linear(factor, mean_to_zero=True)
             self.images_tE.append(new_img)
 
     def convert_y(self):
@@ -371,7 +383,12 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma)
+            center_profile = (self.x_conversion == 'linear')
+            if self.x_conversion == 'linear':
+                current_cutoff = self.current_cutoff
+            else:
+                current_cutoff = None
+            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff, center_profile=center_profile)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

@@ -239,7 +239,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         # Lasing options
         self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
-        self.LasingIntensityCut.setText('%.4f' % ls['subtract_quantile'])
+        self.LasingIntensityCutLow.setText('%.4f' % ls['subtract_quantile'])
+        self.LasingIntensityCutUp.setText('%.4f' % ls['max_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
 
         self.DeltaUndulatorK.setText('%.4f' % config.default_deltaK)
@@ -500,14 +501,14 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def get_lasing_options(self):
         outp = config.get_default_lasing_options()
         outp['slice_factor'] = w2i(self.LasingReconstructionSliceFactor)
-        outp['subtract_quantile'] = w2f(self.LasingIntensityCut)
+        outp['subtract_quantile'] = w2f(self.LasingIntensityCutLow)
+        outp['max_quantile'] = w2f(self.LasingIntensityCutUp)
         outp['current_cutoff'] = w2f(self.LasingCurrentCutoff)*1e3
         outp['x_linear_factor'] = 1/w2f(self.LinearCalib) * 1e6/1e15
         if self.LinearCalibCheck.isChecked():
             outp['x_conversion'] = 'linear'
         else:
             outp['x_conversion'] = 'wake'
-        print(outp)
         return outp
 
     def reconstruct_current(self):

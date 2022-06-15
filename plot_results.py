@@ -575,7 +575,7 @@ def plot_simple_daq(data_dict, dim):
     sp_img = subplot(sp_ctr, title='Median image', xlabel=xlabel, ylabel=ylabel)
     sp_ctr += 1
 
-    sp_proj = subplot(sp_ctr, title='Projetions', xlabel=xlabel, ylabel='Intensity (arb. units)')
+    sp_proj = subplot(sp_ctr, title='Projections', xlabel=xlabel, ylabel='Intensity (arb. units)')
     sp_ctr += 1
 
 

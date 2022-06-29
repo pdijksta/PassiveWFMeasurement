@@ -54,12 +54,13 @@ class StructureCalibration:
         return StructureCalibration(**dict_)
 
 class MeasScreens:
-    def __init__(self, meas_screens, beam_positions, streaking_factors):
+    def __init__(self, meas_screens, beam_positions, raw_positions, streaking_factors):
         self.meas_screens = meas_screens
         self.beam_positions = beam_positions
+        self.raw_positions = raw_positions
         self.streaking_factors = streaking_factors
 
-    def plot(self, plot_handles=None):
+    def plot(self, plot_handles=None, plot0=True):
         if plot_handles is None:
             ms.figure('Structure calibration measured screens distributions')
             subplot = ms.subplot_factory(2,2)
@@ -69,10 +70,11 @@ class MeasScreens:
             sp_neg = subplot(sp_ctr, title='Raw structure position < 0', xlabel='x (mm)', ylabel=config.rho_label)
         else:
             sp_pos, sp_neg = plot_handles
-        for beam_pos, screen in zip(self.beam_positions, self.meas_screens):
-            if beam_pos == 0:
-                screen.plot_standard(sp_pos, color='black')
-                screen.plot_standard(sp_neg, color='black')
+        for beam_pos, raw_pos, screen in zip(self.beam_positions, self.raw_positions, self.meas_screens):
+            if raw_pos == 0:
+                if plot0:
+                    screen.plot_standard(sp_pos, color='black')
+                    screen.plot_standard(sp_neg, color='black')
             else:
                 # Inverted sign!
                 if beam_pos < 0:
@@ -140,7 +142,7 @@ class StructureCalibrator(LogMsgBase):
 
         beam_positions = -(self.raw_struct_positions - np.mean(self.screen_center_arr))
 
-        self.meas_screens = MeasScreens(meas_screens, beam_positions, streaking_factors)
+        self.meas_screens = MeasScreens(meas_screens, beam_positions, self.raw_struct_positions, streaking_factors)
 
     def get_meas_screens(self):
         if self.meas_screens is None:

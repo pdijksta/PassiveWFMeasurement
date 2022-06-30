@@ -474,15 +474,15 @@ def lasing_figure(figsize=None):
 def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit):
 
     for sp, title, xlabel, ylabel in [
-            (sp_image_on, 'Lasing On', 'x (mm)', 'y (mm)'),
-            (sp_image_on2, 'Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_image_off, 'Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_mean, 'Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_sigma, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
-            (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
-            (sp_lasing_loss, '$\Delta E$', 't (fs)', 'Power (GW)'),
-            (sp_lasing_spread, '$\sigma_E$', 't (fs)', 'Power (GW)'),
-            (sp_orbit, 'Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
+            (sp_image_on, 'a) Lasing On', 'x (mm)', 'y (mm)'),
+            (sp_image_on2, 'b) Lasing On', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_image_off, 'c) Lasing Off', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_slice_mean, 'd) Energy loss', 't (fs)', '$\Delta E$ (MeV)'),
+            (sp_slice_sigma, 'e) Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
+            (sp_current, 'f) Current profile', 't (fs)', 'I (kA)'),
+            (sp_lasing_loss, 'g) Power from $\Delta E$', 't (fs)', '$P_\Delta$ (GW)'),
+            (sp_lasing_spread, 'h) Power from $\sigma_E$', 't (fs)', '$P_\sigma$ (GW)'),
+            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
             ]:
         sp.clear()
         sp.set_title(title)

@@ -77,9 +77,9 @@ class MeasScreens:
                     screen.plot_standard(sp_neg, color='black')
             else:
                 # Inverted sign!
-                if beam_pos < 0:
+                if raw_pos > 0:
                     sp = sp_pos
-                elif beam_pos > 0:
+                elif raw_pos < 0:
                     sp = sp_neg
                 screen.plot_standard(sp, label='%.3f' % (beam_pos*1e3))
         sp_pos.legend(title='Beam position (mm)')

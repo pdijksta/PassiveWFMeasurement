@@ -41,6 +41,9 @@ class dummy_plot:
     get_ylim = get_xlim
 
 def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
+    """
+    OBSOLETE!
+    """
     if plot_handles is None:
         fig, plot_handles = gap_recon_figure(figsize=figsize)
     (sp_rms, sp_overview, sp_std, sp_fit, sp_distances) = plot_handles
@@ -315,6 +318,9 @@ def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
         sp.grid(False)
 
 def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
+    """
+    NEW!
+    """
     #delta_gap_scan_range = calib_dict['delta_gap_scan_range']
     delta_gap_range = calib_dict['delta_gap_range']
     delta_structure0_range = calib_dict['delta_structure0_range']
@@ -378,7 +384,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
         sp_final.plot(new_distances[mask_pos]*1e6, new_rms[mask_pos]*1e15, label=label, ls='None', marker='.')
         xx_fit = np.array(new_distances)
         yy_fit = fit_dict['fit'](xx_fit)
-        sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=None, ls='dotted')
+        sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=None)
 
     sp_raw.legend(title='Beam position (mm)')
     sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')

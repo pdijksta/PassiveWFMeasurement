@@ -25,8 +25,12 @@ class Tracker(LogMsgBase):
         force_charge: Override EPICS charge PV
         logger: from logMsg.py
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None, gen_lat=True, matrix=None):
 
+        self.gen_lat = gen_lat
+        if not self.gen_lat:
+            self.matrix = matrix
+        self.optics_at_streaker = None
         self.logger = logger
         self.force_gap = None
         self.force_beam_position = None
@@ -90,8 +94,11 @@ class Tracker(LogMsgBase):
         if meta_data is None:
             return
         self._meta_data = meta_data
-        self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
-        self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
+        if not self.gen_lat:
+            self.lat = None
+        else:
+            self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
+            self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
         if self.structure.dim == 'X':
             self.r12 = self.matrix[0,1]
             self.disp = self.matrix[2,5]
@@ -140,7 +147,10 @@ class Tracker(LogMsgBase):
         dims.extend([dim, 't'])
         beam_options = self.beam_spec.copy()
         beam_optics0 = self.beam_optics
-        beam_optics = self.lat.propagate_optics_dict(beam_optics0, self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
+        if self.optics_at_streaker is None:
+            beam_optics = self.lat.propagate_optics_dict(beam_optics0, self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
+        else:
+            beam_optics = self.optics_at_streaker
         beam_options.update(beam_optics)
         beam = gen_beam.beam_from_spec(dims, beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam

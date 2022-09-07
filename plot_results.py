@@ -518,10 +518,12 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
             continue
         if opt_ctr == gauss_dict['best_index']:
             lw = 3.
+            zorder=100
         else:
             lw = None
-        screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw)
-        profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw)
+            zorder = None
+        screen.plot_standard(sp_screen, label='%i' % round(sigma*1e15), lw=lw, zorder=zorder)
+        profile.plot_standard(sp_profile, label='%i' % round(profile.rms()*1e15), center='Mean', lw=lw, zorder=zorder)
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 

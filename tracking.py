@@ -343,8 +343,6 @@ class Tracker(LogMsgBase):
                 screen_intensity[mask_negative] = 0
                 screen._yy = screen_intensity
 
-        #import pdb; pdb.set_trace()
-
         screen.crop()
         screen.reshape(self.n_particles)
 

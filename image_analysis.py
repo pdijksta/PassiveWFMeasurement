@@ -281,7 +281,12 @@ class Image(LogMsgBase):
             else:
                 delta_cumsum = cumsum - prev_cumsum
             # Normalize such that I(x) * dx = I(t) * dt
-            new_img1[:,t_index] = self.image[:,x_index] / np.sum(self.image[:,x_index]) * delta_cumsum / full_intensity
+            if delta_cumsum == 0 and full_intensity == 0:
+                new_img1[:,t_index] = 0
+            else:
+                new_img1[:,t_index] = self.image[:,x_index] / np.sum(self.image[:,x_index]) * delta_cumsum / full_intensity
+            if np.any(np.isnan(new_img1[:,t_index])):
+                import pdb; pdb.set_trace()
             prev_cumsum = cumsum
 
             if print_:
@@ -315,12 +320,18 @@ class Image(LogMsgBase):
 
             sp = subplot(sp_ctr, title='Image new', xlabel='t [fs]', ylabel='y [mm]', grid=False)
             sp_ctr += 1
-            output.plot_img_and_proj(sp)
+            try:
+                output.plot_img_and_proj(sp)
+            except:
+                print('Cannot plot output')
 
             sp = subplot(sp_ctr, title='Image new 1', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
             sp_ctr += 1
             new_obj1 = self.child(new_img1, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
-            new_obj1.plot_img_and_proj(sp)
+            try:
+                new_obj1.plot_img_and_proj(sp)
+            except:
+                print('Cannot plot new_obj1')
             #fig.savefig('/tmp/debug_fig.pdf')
 
         return output

@@ -40,56 +40,6 @@ class dummy_plot:
     fill_between = dummy
     get_ylim = get_xlim
 
-def plot_gap_reconstruction(gap_recon_dict, plot_handles=None, figsize=None, exclude_gap_ctrs=()):
-    """
-    OBSOLETE!
-    """
-    if plot_handles is None:
-        fig, plot_handles = gap_recon_figure(figsize=figsize)
-    (sp_rms, sp_overview, sp_std, sp_fit, sp_distances) = plot_handles
-
-    gap_arr = gap_recon_dict['gap_arr']
-    all_rms_arr = gap_recon_dict['all_rms']
-    lin_fit = gap_recon_dict['lin_fit']
-    lin_fit_const = gap_recon_dict['lin_fit_const']
-    gap0 = gap_recon_dict['gap0']
-
-    beam_positions = gap_recon_dict['final_beam_positions']
-
-    for gap_ctr in list(range(len(gap_arr)))[::-1]:
-        if gap_ctr in exclude_gap_ctrs:
-            continue
-        gap = gap_arr[gap_ctr]
-        distance_arr = gap/2. - np.abs(beam_positions)
-        d_arr2 = distance_arr - distance_arr.min()
-        sort = np.argsort(d_arr2)
-        _label = '%i' % round((gap-gap0)*1e6)
-        #sp_centroid.plot(d_arr2, centroid_arr, label=_label)
-        rms_arr = all_rms_arr[gap_ctr]
-        #color = ms.colorprog(gap_ctr, gap_arr)
-        color= sp_rms.plot(d_arr2[sort]*1e6, rms_arr[sort]*1e15, label=_label, marker='.')[0].get_color()
-        fit_yy = lin_fit_const[gap_ctr] + lin_fit[gap_ctr]*d_arr2[sort]
-        sp_rms.plot(d_arr2[sort]*1e6, fit_yy*1e15, color=color, ls='--')
-
-    sp_overview.errorbar(gap_arr*1e3, all_rms_arr.mean(axis=-1)*1e15, yerr=all_rms_arr.std(axis=-1)*1e15)
-    sp_std.plot(gap_arr*1e3, all_rms_arr.std(axis=-1)/all_rms_arr.mean(axis=-1), marker='.')
-    sp_fit.plot(gap_arr*1e3, lin_fit*1e15/1e6, marker='.')
-
-    sp_fit.axhline(0, color='black', ls='--')
-    sp_fit.axvline(gap_recon_dict['gap']*1e3, color='black', ls='--')
-
-    sp_rms.legend(title='$\Delta$g ($\mu$m)')
-
-    mask_pos = beam_positions > 0
-    mask_neg = beam_positions < 0
-
-    distances = gap_recon_dict['gap']/2. - np.abs(beam_positions)
-    best_index = gap_recon_dict['best_index']
-    for mask, label in [(mask_pos, 'Positive'), (mask_neg, 'Negative')]:
-        sp_distances.plot(distances[mask]*1e3, all_rms_arr[best_index][mask]*1e15, label=label)
-
-    sp_distances.legend()
-
 def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
     center = 'Mean'
     if plot_handles is None:
@@ -502,6 +452,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     opt_func_profiles = gauss_dict['opt_func_profiles']
     opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
     meas_screen = gauss_dict['meas_screen']
+    meas_screen_raw = gauss_dict['meas_screen_raw']
     gauss_sigma = gauss_dict['gauss_sigma']
 
     if plot_handles is None:
@@ -527,7 +478,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
-    meas_screen.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
+    meas_screen_raw.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
 
     #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
     #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')

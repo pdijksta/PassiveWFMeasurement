@@ -41,7 +41,7 @@ meta_data = data['meta_data_begin']
 calib = calibration.StructureCalibration(structure_name, screen_center, delta_gap, structure_position0)
 tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib, screen_name)
 
-x_axis, proj, charge = data_loader.screen_data_to_median(data['pyscan_result'], tracker.structure.dim)
+x_axis, proj, charge, _ = data_loader.screen_data_to_median(data['pyscan_result'], tracker.structure.dim)
 tracker.force_charge = charge
 blmeas_profile = beam_profile.profile_from_blmeas(blmeas_file, 400e-15, tracker.total_charge, tracker.energy_eV, 0.02)
 print(blmeas_profile.time.min(), blmeas_profile.time.max())

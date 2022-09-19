@@ -18,7 +18,7 @@ x_axis = pyscan_result['x_axis_m'].astype(np.float64)
 images = pyscan_result['image'].astype(np.float64)
 
 projx = images.sum(axis=-2)
-median_proj = data_loader.get_median(projx, 'mean', 'proj')
+median_proj, _ = data_loader.get_median(projx, 'mean', 'proj')
 
 
 fig = ms.figure('Test data loader')

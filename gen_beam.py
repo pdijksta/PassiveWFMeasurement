@@ -216,6 +216,7 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         - energy_eV: enegy in eV
     """
 
+    n_particles = int(n_particles)
     n_dim = 0
     if 'x' in dimensions:
         n_dim += 2

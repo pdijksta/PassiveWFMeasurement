@@ -3,9 +3,10 @@ from scipy.optimize import curve_fit
 import numpy as np
 
 try:
-    import gaussfit
+    import beam_profile
 except ImportError:
-    from . import gaussfit
+    #from . import gaussfit
+    from . import beam_profile
 
 class DoublehornFit:
     def __init__(self, xx, yy, raise_=True):
@@ -13,27 +14,31 @@ class DoublehornFit:
         self.xx = xx
         self.yy = yy
 
-        gf = gaussfit.GaussFit(xx, yy, fit_const=False)
+        #self.gf = gf = gaussfit.GaussFit(xx, yy, fit_const=False)
+        profile = beam_profile.AnyProfile(xx, yy)
+        mean, rms = profile.mean(), profile.rms()
 
-        mask_left = gf.xx < gf.mean
+        mask_left = xx < mean
         if np.sum(mask_left) == 0:
             arg_left = 0
         else:
-            arg_left = np.argmax(np.abs(gf.yy[mask_left]))
-        pos_left = gf.xx[arg_left]
-        max_left = gf.yy[arg_left]
+            arg_left = np.argmax(np.abs(yy[mask_left]))
+        self.arg_left = arg_left
+        pos_left = xx[arg_left]
+        max_left = yy[arg_left]
 
 
-        mask_right = gf.xx > gf.mean
+        mask_right = xx > mean
         if np.sum(mask_right) == 0:
             arg_right = len(yy)-1
         else:
-            arg_right = np.argmax(np.abs(gf.yy[mask_right])) + np.sum(mask_right == 0)
-        pos_right = gf.xx[arg_right]
-        max_right = gf.yy[arg_right]
-        s1a = s1b = s2a = s2b = gf.sigma / 10
+            arg_right = np.argmax(np.abs(yy[mask_right])) + np.sum(mask_right == 0)
+        self.arg_right = arg_right
+        pos_right = xx[arg_right]
+        max_right = yy[arg_right]
+        s1a = s1b = s2a = s2b = rms / 10
 
-        mask_middle = np.logical_and(gf.xx > pos_left, gf.xx < pos_right)
+        mask_middle = np.logical_and(xx > pos_left, xx < pos_right)
         if np.any(mask_middle):
             const_middle = np.min(yy[mask_middle])
         else:
@@ -51,7 +56,6 @@ class DoublehornFit:
                 plt.figure()
                 plt.plot(xx, yy, label='Input')
                 plt.plot(xx, self.fit_func(xx, *p0), label='Guess')
-                plt.plot(gf.xx, gf.reconstruction, label='gaussfit')
                 plt.legend()
                 plt.show()
                 raise

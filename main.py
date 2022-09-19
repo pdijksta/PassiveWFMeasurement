@@ -27,6 +27,7 @@ from PassiveWFMeasurement import beam_profile
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import resolution
 from PassiveWFMeasurement import data_loader
+from PassiveWFMeasurement import image_analysis
 from PassiveWFMeasurement import logMsg
 from PassiveWFMeasurement import myplotstyle as ms
 
@@ -683,7 +684,11 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
         dim = config.structure_dimensions[self.structure_name]
-        x_axis, proj, charge = data_loader.screen_data_to_median(pyscan_result, dim)
+        x_axis, proj, charge, index = data_loader.screen_data_to_median(pyscan_result, dim)
+        raw_image = pyscan_result['image'][index].astype(float)
+        y_axis = pyscan_result['y_axis_m'].astype(float)
+        image = image_analysis.Image(raw_image, x_axis, y_axis, charge)
+
         tracker.force_charge = charge
         bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
@@ -691,7 +696,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         new_calib = result_dict['calib']
         self.calib_to_gui(new_calib)
         plot_results.clear_tdc_calib_figure(*self.tdc_calibration_plot_handles)
-        plot_results.plot_tdc_calibration(result_dict, plot_handles=self.tdc_calibration_plot_handles)
+        plot_results.plot_tdc_calibration(result_dict, image, plot_handles=self.tdc_calibration_plot_handles)
         self.tdc_calibration_canvas.draw()
         self.tabWidget.setCurrentIndex(self.tdc_calibration_tab_index)
 

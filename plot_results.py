@@ -660,14 +660,15 @@ def tdc_calib_figure(figsize=None):
     fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('TDC calibration')
     fig.subplots_adjust(hspace=0.4)
-    subplot = ms.subplot_factory(2,2)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+2)]
+    subplot = ms.subplot_factory(2,3)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]
     clear_tdc_calib_figure(*subplots)
     return fig, subplots
 
-def clear_tdc_calib_figure(sp_profile, sp_screen):
+def clear_tdc_calib_figure(sp_image, sp_profile, sp_screen):
 
     for sp, title, xlabel, ylabel in [
+            (sp_image, 'Raw image', 'x (mm)', 'y (mm)'),
             (sp_profile, 'Current profile', 't (fs)', 'I (kA)'),
             (sp_screen, 'Screen distribution', 'x (mm)', config.rho_label),
             #(sp_wake, 'Wake effect', 't (fs)', 'x (mm)'),
@@ -678,14 +679,15 @@ def clear_tdc_calib_figure(sp_profile, sp_screen):
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_tdc_calibration(tdc_dict, plot_handles=None, figsize=None):
+def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
     if plot_handles is None:
         _, plot_handles = tdc_calib_figure(figsize)
-    sp_profile, sp_screen = plot_handles
+    sp_image, sp_profile, sp_screen = plot_handles
 
     blmeas_profile = tdc_dict['blmeas_profile']
     color = blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')[0].get_color()
 
+    image.plot_img_and_proj(sp_image, plot_gauss=False)
     raw_screen = tdc_dict['meas_screen_raw']
     raw_screen.plot_standard(sp_screen, label='Measured', color='black', show_mean=True)
 

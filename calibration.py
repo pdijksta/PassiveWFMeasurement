@@ -53,7 +53,10 @@ class StructureCalibration:
         return StructureCalibration(**dict_)
 
 class MeasScreens:
-    def __init__(self, meas_screens, beam_positions, raw_positions, streaking_factors):
+    def __init__(self, raw_images, plot_list_x, y_axis_list, meas_screens, beam_positions, raw_positions, streaking_factors):
+        self.raw_images = raw_images
+        self.plot_list_x = plot_list_x
+        self.y_axis_list = y_axis_list
         self.meas_screens = meas_screens
         self.beam_positions = beam_positions
         self.raw_positions = raw_positions
@@ -141,7 +144,7 @@ class StructureCalibrator(LogMsgBase):
 
         beam_positions = -(self.raw_struct_positions - np.mean(self.screen_center_arr))
 
-        self.meas_screens = MeasScreens(meas_screens, beam_positions, self.raw_struct_positions, streaking_factors)
+        self.meas_screens = MeasScreens(self.plot_list_image, self.plot_list_x, self.y_axis_list, meas_screens, beam_positions, self.raw_struct_positions, streaking_factors)
 
     def get_meas_screens(self):
         if self.meas_screens is None:

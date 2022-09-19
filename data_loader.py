@@ -34,7 +34,7 @@ def get_median(projx, method, output):
     index_median = np.argsort(all_mean)[len(all_mean)//2]
     projx_median = projx[index_median]
     if output == 'proj':
-        return projx_median
+        return projx_median, index_median
     elif output == 'index':
         return index_median
 
@@ -57,11 +57,11 @@ def screen_data_to_median(pyscan_result, dim, output='data'):
     else:
         charge = None
     if output == 'data':
-        proj = get_median(projx, 'mean', 'proj')
+        proj, index = get_median(projx, 'mean', 'proj')
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]
             proj = proj[::-1]
-        return x_axis, proj, charge
+        return x_axis, proj, charge, index
     else:
         return get_median(projx, 'mean', 'index')
 

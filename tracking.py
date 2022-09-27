@@ -99,12 +99,6 @@ class Tracker(LogMsgBase):
         else:
             self.lat = lattice.get_beamline_lattice(self.beamline, meta_data)
             self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
-        if self.structure.dim == 'X':
-            self.r12 = self.matrix[0,1]
-            self.disp = self.matrix[2,5]
-        elif self.structure.dim == 'Y':
-            self.r12 = self.matrix[2,3]
-            self.disp = self.matrix[0,5]
         energy_pv = self.screen_name+':ENERGY-OP'
         if energy_pv in meta_data:
             self.energy_eV = meta_data[energy_pv]*1e6
@@ -116,6 +110,20 @@ class Tracker(LogMsgBase):
         self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
         self.meta_charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
+
+    @property
+    def r12(self):
+        if self.structure.dim == 'X':
+            return self.matrix[0,1]
+        elif self.structure.dim == 'Y':
+            return self.matrix[2,3]
+
+    @property
+    def disp(self):
+        if self.structure.dim == 'X':
+            return self.matrix[2,5]
+        elif self.structure.dim == 'Y':
+            return self.matrix[0,5]
 
     @property
     def total_charge(self):

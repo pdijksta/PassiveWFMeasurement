@@ -109,6 +109,8 @@ class Image(LogMsgBase):
         slice_mean_rms = []
         slice_cut_mean = []
         slice_cut_rms = []
+        slice_cut_lim1 = []
+        slice_cut_lim2 = []
         slice_full_mean = []
         slice_full_rms = []
 
@@ -139,6 +141,8 @@ class Image(LogMsgBase):
             slice_cut_mean.append(0)
             slice_full_mean.append(0)
             slice_full_rms.append(0)
+            slice_cut_lim1.append(0)
+            slice_cut_lim2.append(0)
 
         for n_slice in range(n_slices):
 
@@ -176,7 +180,10 @@ class Image(LogMsgBase):
             slice_mean_rms.append(mean_rms)
 
             prof_y = intensity.copy()
-            prof_y[np.logical_or(y_axis<mean_rms-(rms_sigma/2)*rms, y_axis>mean_rms+(rms_sigma/2)*rms)] = 0
+            lim1, lim2 = mean_rms-(rms_sigma/2)*rms, mean_rms+(rms_sigma/2)*rms
+            slice_cut_lim1.append(lim1)
+            slice_cut_lim2.append(lim2)
+            prof_y[np.logical_or(y_axis<lim1, y_axis>lim2)] = 0
             if np.all(prof_y == 0):
                 slice_cut_rms.append(0)
                 slice_cut_mean.append(0)
@@ -215,6 +222,8 @@ class Image(LogMsgBase):
                 'cut': {
                     'mean': np.array(slice_cut_mean),
                     'sigma_sq': np.array(slice_cut_rms),
+                    'lim1': np.array(slice_cut_lim1),
+                    'lim2': np.array(slice_cut_lim2),
                     },
                 'full': {
                     'mean': np.array(slice_full_mean),

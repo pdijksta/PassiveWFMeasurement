@@ -91,7 +91,8 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False, slice_method=slice_method)
+    linear_conversion = (lasing_options['x_conversion'] == 'linear')
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], linear_conversion, pulse_energy, current_cutoff, action=False, slice_method=slice_method)
     las_rec.lasing_analysis(norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
@@ -102,10 +103,11 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method=None, action=True):
+    def __init__(self, images_off, images_on, linear_conversion, pulse_energy=None, current_cutoff=1e3, slice_method=None, action=True):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
+        self.linear_conversion = linear_conversion
         self.current_cutoff = current_cutoff
         self.pulse_energy = pulse_energy
         if slice_method is None:
@@ -205,6 +207,7 @@ class LasingReconstruction:
                 'mean_slice_dict': self.mean_slice_dict,
                 'current_cutoff': self.current_cutoff,
                 'mean_current': self.mean_current,
+                'linear_conversion': int(self.linear_conversion),
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
             outp[key] = d = {}
@@ -383,12 +386,11 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            center_profile = (self.x_conversion == 'linear')
             if self.x_conversion == 'linear':
                 current_cutoff = self.current_cutoff
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff, center_profile=center_profile)
+            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):

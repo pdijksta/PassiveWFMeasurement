@@ -575,8 +575,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         image_xy = result_dict[key]['raw_images'][index_median]
         image_tE = result_dict[key]['tE_images'][index_median]
         if sp_image_xy is not None:
-            image_xy.plot_img_and_proj(sp_image_xy)
-        gf_dict = image_tE.plot_img_and_proj(sp_image_tE)
+            image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False)
+        gf_dict = image_tE.plot_img_and_proj(sp_image_tE, plot_gauss=False)
         outp[key] = {}
         outp[key]['gf_dict'] = gf_dict
 
@@ -617,8 +617,12 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
     current_profile = result_dict['images_off']['current_profile']
+    if result_dict['linear_conversion']:
+        current_center_plot = 0
+    else:
+        current_center_plot = np.mean(current_center)
     if current_profile is not None:
-        current_profile.plot_standard(sp_current, center_float=np.mean(current_center), label='Reconstructed', color='black')
+        current_profile.plot_standard(sp_current, center_float=current_center_plot, label='Reconstructed', color='black')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
     sp_current.legend()
     sp_slice_mean.legend()
@@ -638,9 +642,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
         sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
-    for sp in sp_lasing_loss, sp_lasing_spread:
-        ylim = sp.get_ylim()
-        sp.set_ylim([max(-10, ylim[0]), ylim[1]])
+    #for sp in sp_lasing_loss, sp_lasing_spread:
+    #    ylim = sp.get_ylim()
+    #    sp.set_ylim([max(-10, ylim[0]), ylim[1]])
 
 
     for label, key, color in [

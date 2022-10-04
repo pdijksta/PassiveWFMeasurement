@@ -99,7 +99,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None, center_profile=False):
+    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -118,17 +118,7 @@ class Image(LogMsgBase):
         proj = proj / np.sum(proj) * abs(self.charge)
         current = proj / (self.x_axis[1] - self.x_axis[0])
         current -= current.min()
-        profile = beam_profile.AnyProfile(self.x_axis, current)
-        if center_profile:
-            if current_cutoff is not None:
-                mask = current > current_cutoff
-                min_x = self.x_axis[mask].min()
-                max_x = self.x_axis[mask].max()
-                profile.cut(min_x, max_x)
-                current[~mask] = 0
-            slice_x = self.x_axis - profile.mean()
-        else:
-            slice_x = self.x_axis
+        slice_x = self.x_axis
         current = current / current.sum() * abs(self.charge) / (self.x_axis[1] - self.x_axis[0])
 
         def addzero():

@@ -29,15 +29,14 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
             'power_err': power_err,
             }
 
-def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, pulse_energy_factors=1, norm_factor=None, t_lims=None):
-    power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * pulse_energy_factors
-    #power0[power0<0] = 0
-    if t_lims:
-        mask = np.logical_and(slice_t > t_lims[0], slice_t < t_lims[1])
-    else:
-        mask = np.ones_like(slice_t, dtype=bool)
-    integral = np.trapz(power0[mask], slice_t[mask])
+def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, photon_energy_factors=1, norm_factor=None, t_lims=None):
+    power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * photon_energy_factors
     if norm_factor is None:
+        if t_lims:
+            mask = np.logical_and(slice_t > t_lims[0], slice_t < t_lims[1])
+        else:
+            mask = np.ones_like(slice_t, dtype=bool)
+        integral = np.trapz(power0[mask], slice_t[mask])
         power = power0/integral*E_total
     else:
         power = power0*norm_factor
@@ -68,6 +67,8 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0_err = np.sqrt(power0_err_1**2+power0_err_2**2+power0_err_3**2)
     power_err = power0_err*norm_factor
     energy = np.trapz(power, slice_t)
+
+
     return {
             'time': slice_t,
             'power': power,
@@ -101,8 +102,15 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False, slice_method=slice_method)
-    las_rec.lasing_analysis(norm_factor=norm_factor, t_lims=t_lims)
+    linear_conversion = (lasing_options['x_conversion'] == 'linear')
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], linear_conversion, pulse_energy, current_cutoff, slice_method=slice_method)
+    if t_lims:
+        tt = las_rec.mean_slice_dict['Lasing Off']['t']['mean']
+        photon_energy_factors = np.logical_and(tt > t_lims[0], tt < t_lims[1]).astype(float)
+        import pdb; pdb.set_trace()
+    else:
+        photon_energy_factors = None
+    las_rec.lasing_analysis(photon_energy_factors=photon_energy_factors, norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
             'las_rec': las_rec,
@@ -112,10 +120,11 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, pulse_energy=None, current_cutoff=1e3, slice_method=None, action=True):
+    def __init__(self, images_off, images_on, linear_conversion, pulse_energy=None, current_cutoff=1e3, slice_method=None):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
+        self.linear_conversion = linear_conversion
         self.current_cutoff = current_cutoff
         self.pulse_energy = pulse_energy
         if slice_method is None:
@@ -125,8 +134,6 @@ class LasingReconstruction:
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
-        if action:
-            self.lasing_analysis()
 
     def generate_all_slice_dict(self):
         self.all_slice_dict = {}
@@ -181,7 +188,10 @@ class LasingReconstruction:
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
-        lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, photon_energy_factors, norm_factor=norm_factor, t_lims=t_lims)
+        try:
+            lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, photon_energy_factors, norm_factor=norm_factor, t_lims=t_lims)
+        except:
+            import pdb; pdb.set_trace()
         lasing_dict['norm_factor'] = norm_factor = lasing_dict['Espread']['norm_factor']
         lasing_dict['photon_energy_factors'] = photon_energy_factors
         print('norm_factor', '%.3e' % norm_factor, 'pulse energy Espread', '%.3e uJ' % (lasing_dict['Espread']['energy']*1e6), 'pulse energy Eloss', '%.3e uJ' % (lasing_dict['Eloss']['energy']*1e6))
@@ -202,7 +212,7 @@ class LasingReconstruction:
             all_loss[ctr] = power_loss
 
             sq_increase = on_spread - off_spread_mean
-            power_spread = power_Espread(slice_time, current, sq_increase, self.pulse_energy, photon_energy_factors, norm_factor=norm_factor, t_lims=t_lims)
+            power_spread = power_Espread(slice_time, current, sq_increase, None, photon_energy_factors, norm_factor=norm_factor)
             power_spread[mask2] = 0
             all_spread[ctr] = power_spread
         lasing_dict['all_Eloss'] = all_loss
@@ -215,6 +225,7 @@ class LasingReconstruction:
                 'mean_slice_dict': self.mean_slice_dict,
                 'current_cutoff': self.current_cutoff,
                 'mean_current': self.mean_current,
+                'linear_conversion': int(self.linear_conversion),
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
             outp[key] = d = {}
@@ -393,12 +404,11 @@ class LasingReconstructionImages:
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            center_profile = (self.x_conversion == 'linear')
             if self.x_conversion == 'linear':
                 current_cutoff = self.current_cutoff
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff, center_profile=center_profile)
+            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):
@@ -472,11 +482,11 @@ def interpolate_slice_dicts(ref, alter):
         if key == 'slice_x':
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:
-            new_dict[key] = np.interp(xx_ref, xx_alter, arr)
+            new_dict[key] = np.interp(xx_ref, xx_alter, arr, left=0, right=0)
         elif type(arr) is dict:
             new_dict[key] = {}
             for key2, arr2 in arr.items():
                 if type(arr2) is np.ndarray:
-                    new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2)
+                    new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2, left=0, right=0)
     return new_dict
 

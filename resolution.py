@@ -8,7 +8,8 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
     forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
     beam = forward_dict['beam_at_screen']
     r12 = tracker.r12
-    wake_dict = beamprofile.calc_wake(tracker.structure, gap, beam_offset, 'Dipole')
+    wake_dict = forward_dict['wake_dict_dipole']
+    wake_dict_quad = forward_dict['wake_dict_quadrupole']
     wf_x = wake_dict['wake_potential'] / tracker.energy_eV * r12
     wf_t = beamprofile.time
     dxdt = np.diff(wf_x)/np.diff(wf_t)
@@ -34,7 +35,9 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
             'beamsize': beamsize,
             'streaking_strength': streaking_strength,
             'beam': beam,
-            'beamprofile': beamprofile
+            'beamprofile': beamprofile,
+            'wake_dict_dipole': wake_dict,
+            'wake_dict_quad': wake_dict_quad,
             }
 
     if use_other_dim:

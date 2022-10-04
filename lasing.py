@@ -29,17 +29,21 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
             'power_err': power_err,
             }
 
-def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, pulse_energy_factors=1, norm_factor=None):
+def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, pulse_energy_factors=1, norm_factor=None, t_lims=None):
     power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * pulse_energy_factors
     #power0[power0<0] = 0
-    integral = np.trapz(power0, slice_t)
+    if t_lims:
+        mask = np.logical_and(slice_t > t_lims[0], slice_t < t_lims[1])
+    else:
+        mask = np.ones_like(slice_t, dtype=bool)
+    integral = np.trapz(power0[mask], slice_t[mask])
     if norm_factor is None:
         power = power0/integral*E_total
     else:
         power = power0*norm_factor
     return power
 
-def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread_off_sq, E_total, slice_current_err, slice_Espread_on_sq_err, slice_Espread_off_sq_err, photon_energy_factors=1, norm_factor=None):
+def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread_off_sq, E_total, slice_current_err, slice_Espread_on_sq_err, slice_Espread_off_sq_err, photon_energy_factors=1, norm_factor=None, t_lims=None):
     """
     Takes squared values of energy spread
     """
@@ -47,8 +51,14 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     slice_Espread_sqr_increase = slice_Espread_on_sq - slice_Espread_off_sq
     power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
     #power0[power0 < 0] = 0
+    if t_lims:
+        mask = np.logical_and(slice_t > t_lims[0], slice_t < t_lims[1])
+    else:
+        mask = np.ones_like(slice_t, dtype=bool)
     mask_power = power0 > 0
-    integral = np.trapz(power0[mask_power], slice_t[mask_power])
+    mask = np.logical_and(mask_power, mask)
+    integral = np.trapz(power0[mask], slice_t[mask])
+
     if norm_factor is None:
         norm_factor = E_total/integral
     power = power0*norm_factor
@@ -67,7 +77,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
             'photon_energy_factors': photon_energy_factors,
             }
 
-def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None):
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None, t_lims=None):
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
     else:
@@ -92,7 +102,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         las_rec_images[title] = rec_obj
 
     las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], pulse_energy, current_cutoff, action=False, slice_method=slice_method)
-    las_rec.lasing_analysis(norm_factor=norm_factor)
+    las_rec.lasing_analysis(norm_factor=norm_factor, t_lims=t_lims)
     result_dict = las_rec.get_result_dict()
     outp = {
             'las_rec': las_rec,
@@ -149,7 +159,7 @@ class LasingReconstruction:
                         'std': np.nanstd(arr, axis=0),
                         }
 
-    def lasing_analysis(self, photon_energy_factors=1, norm_factor=None):
+    def lasing_analysis(self, photon_energy_factors=1, norm_factor=None, t_lims=None):
         all_slice_dict = self.all_slice_dict
         mean_slice_dict = self.mean_slice_dict
         self.lasing_dict = lasing_dict = {}
@@ -171,7 +181,7 @@ class LasingReconstruction:
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
-        lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, photon_energy_factors, norm_factor=norm_factor)
+        lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, photon_energy_factors, norm_factor=norm_factor, t_lims=t_lims)
         lasing_dict['norm_factor'] = norm_factor = lasing_dict['Espread']['norm_factor']
         lasing_dict['photon_energy_factors'] = photon_energy_factors
         print('norm_factor', '%.3e' % norm_factor, 'pulse energy Espread', '%.3e uJ' % (lasing_dict['Espread']['energy']*1e6), 'pulse energy Eloss', '%.3e uJ' % (lasing_dict['Eloss']['energy']*1e6))
@@ -192,7 +202,7 @@ class LasingReconstruction:
             all_loss[ctr] = power_loss
 
             sq_increase = on_spread - off_spread_mean
-            power_spread = power_Espread(slice_time, current, sq_increase, self.pulse_energy, photon_energy_factors, norm_factor=norm_factor)
+            power_spread = power_Espread(slice_time, current, sq_increase, self.pulse_energy, photon_energy_factors, norm_factor=norm_factor, t_lims=t_lims)
             power_spread[mask2] = 0
             all_spread[ctr] = power_spread
         lasing_dict['all_Eloss'] = all_loss

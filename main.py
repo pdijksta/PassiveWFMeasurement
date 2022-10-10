@@ -161,6 +161,9 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elif hostname == 'pubuntu':
             default_dir = '/home/work/data_2021-05-18/'
             save_dir = '/home/work/tmp_reconstruction/'
+        elif hostname == 'mpyubl38552':
+            default_dir = '/mnt/data/data_2021-05-18/'
+            save_dir = '/mnt/data/tmp_reconstruction/'
         elif 'psi' in hostname or 'lc6a' in hostname or 'lc7a' in hostname or True:
             default_dir = '/sf/data/measurements/2021/05/18/'
             date = datetime.now()

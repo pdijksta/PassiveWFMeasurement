@@ -383,6 +383,9 @@ class BeamProfile(Profile):
 
         self._xx = self._xx - self._xx[center_index]
 
+    def get_current(self):
+        return self._yy*self.total_charge/self.integral
+
     def plot_standard(self, sp, norm=True, center=None, center_max=False, center_float=None, **kwargs):
         """
         center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'

@@ -230,14 +230,16 @@ class Image(LogMsgBase):
         E_axis = (self.y_axis-ref_y) / dispersion * energy_eV
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
-    def x_to_t_linear(self, factor, mean_to_zero=True):
+    def x_to_t_linear(self, factor, mean_to_zero=True, current_cutoff=None):
         proj = self.image.sum(axis=0)
         if mean_to_zero:
-            profile = beam_profile.AnyProfile(self.x_axis, proj)
+            profile = beam_profile.BeamProfile(self.x_axis*factor, proj, 1, self.charge)
+            if current_cutoff:
+                profile._yy[np.abs(profile.get_current()) < current_cutoff] = 0
             refx = profile.mean()
         else:
             refx = 0
-        return self.child(self.image, (self.x_axis-refx)*factor, self.y_axis, x_unit='s', xlabel='t (fs)')
+        return self.child(self.image, self.x_axis*factor-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         diff = np.diff(wake_time)

@@ -60,6 +60,13 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power_err = power0_err*norm_factor
     energy = np.trapz(power, slice_t)
 
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #plt.plot(slice_t*1e15, slice_Espread_on_sq)
+    #plt.plot(slice_t*1e15, slice_Espread_off_sq)
+    #plt.show()
+    #import pdb; pdb.set_trace()
+
 
     return {
             'time': slice_t,
@@ -100,7 +107,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         tt = las_rec.mean_slice_dict['Lasing Off']['t']['mean']
         photon_energy_factors = np.logical_and(tt > t_lims[0], tt < t_lims[1]).astype(float)
     else:
-        photon_energy_factors = None
+        photon_energy_factors = 1
     las_rec.lasing_analysis(photon_energy_factors=photon_energy_factors, norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
@@ -126,7 +133,7 @@ class LasingReconstruction:
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
 
-    def generate_all_slice_dict(self):
+    def generate_all_slice_dict(self, use_old=False):
         self.all_slice_dict = {}
         for images, title, ls in [(self.images_off, 'Lasing Off', None), (self.images_on, 'Lasing On', '--')]:
             all_mean = np.zeros([len(images.images_tE), images.n_slices], dtype=float)
@@ -134,7 +141,12 @@ class LasingReconstruction:
             all_x = all_mean.copy()
             all_current = all_mean.copy()
 
-            for ctr, slice_dict in enumerate(images.slice_dicts):
+            if use_old:
+                slice_dicts = images.slice_dicts_old
+            else:
+                slice_dicts = images.slice_dicts
+
+            for ctr, slice_dict in enumerate(slice_dicts):
                 all_mean[ctr] = slice_dict[self.slice_method]['mean']
                 all_sigma[ctr] = slice_dict[self.slice_method]['sigma_sq']
                 all_x[ctr] = slice_dict['slice_x']
@@ -176,6 +188,9 @@ class LasingReconstruction:
         on_spread_mean = mean_slice_dict['Lasing On']['spread']['mean'][mask]
         on_spread_err = mean_slice_dict['Lasing On']['spread']['std'][mask]
         slice_time = mean_slice_dict['Lasing Off']['t']['mean'][mask]
+
+        if photon_energy_factors != 1:
+            photon_energy_factors = photon_energy_factors[mask]
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
@@ -351,20 +366,9 @@ class LasingReconstructionImages:
             self.cut_images.append(img_cut)
 
     def convert_x_linear(self, factor):
-        #self.cut_images = []
-        #for ctr, img in enumerate(self.images_E):
-        #    tt = img.x_axis*factor
-        #    cc = np.sum(img.image, axis=0)
-        #    current = cc*self.charge/np.trapz(cc, tt)
-        #    mask = current > self.current_cutoff
-        #    new_x = img.x_axis[mask]
-        #    new_img = img.image[:,mask]
-        #    cut_image = img.child(new_img, new_x, img.y_axis)
-        #    self.cut_images.append(cut_image)
-
         self.images_tE = []
         for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_linear(factor, mean_to_zero=True)
+            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.current_cutoff)
             self.images_tE.append(new_img)
 
     def convert_y(self):
@@ -427,7 +431,8 @@ class LasingReconstructionImages:
             if self.ref_slice_dict is not None:
                 self.interpolate_slice(self.ref_slice_dict)
         elif self.x_conversion == 'linear':
-            self.ref_slice_dict = self.slice_dicts[self.median_meas_screen_index]
+            if self.ref_slice_dict is None:
+                self.ref_slice_dict = self.slice_dicts[self.median_meas_screen_index]
             self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title='', **kwargs):
@@ -466,6 +471,7 @@ def interpolate_slice_dicts(ref, alter):
     new_dict = {}
     xx_ref = ref['slice_x']
     xx_alter = alter['slice_x']
+    print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
     for key, arr in alter.items():
         if key == 'slice_x':
             new_dict[key] = xx_ref

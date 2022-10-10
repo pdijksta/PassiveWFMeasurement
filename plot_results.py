@@ -418,12 +418,18 @@ def plot_slice_dict(slice_dict):
         slice_gf.plot_data_and_fit(sp)
         sp.legend()
 
-def lasing_figure(figsize=None):
+def lasing_figure(figsize=None, sharex=True):
     fig = plt.figure(figsize=figsize)
     fig.canvas.set_window_title('Lasing reconstruction')
     fig.subplots_adjust(hspace=0.5, wspace=0.4)
     subplot = ms.subplot_factory(3,3)
-    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
+    subplots = []
+    for sp_ctr in range(1, 1+9):
+        if sharex and sp_ctr in [5, 6, 7, 8]:
+            sp_share = subplots[3]
+        else:
+            sp_share = None
+        subplots.append(subplot(sp_ctr, sharex=sp_share))
     clear_lasing_figure(*subplots)
     return fig, subplots
 
@@ -548,7 +554,7 @@ def plot_simple_daq(data_dict, dim):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True):
 
     linewidth = 0.8
     dark_blue  = "#185c8c"
@@ -564,7 +570,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     mask = abs(mean_current) > current_cutoff
 
     if plot_handles is None:
-        _, plot_handles = lasing_figure(figsize=figsize)
+        _, plot_handles = lasing_figure(figsize=figsize, sharex=sharex)
     sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit = plot_handles
 
     for sp_image_tE, sp_image_xy, key in [
@@ -656,7 +662,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         if delta_distance is not None:
             sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label, color=color)
 
-    sp_orbit.legend()
+    if delta_distance is not None:
+        sp_orbit.legend()
     return outp
 
 def tdc_calib_figure(figsize=None):

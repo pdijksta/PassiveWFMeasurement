@@ -471,7 +471,7 @@ def interpolate_slice_dicts(ref, alter):
     new_dict = {}
     xx_ref = ref['slice_x']
     xx_alter = alter['slice_x']
-    print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
+    #print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
     for key, arr in alter.items():
         if key == 'slice_x':
             new_dict[key] = xx_ref

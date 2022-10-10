@@ -77,7 +77,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
             'photon_energy_factors': photon_energy_factors,
             }
 
-def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None, t_lims=None):
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None):
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
     else:
@@ -86,7 +86,6 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         lasing_on_dict = file_or_dict_on
     else:
         lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
-    current_cutoff = lasing_options['current_cutoff']
     las_rec_images = {}
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
         if main_ctr == 0:
@@ -101,14 +100,8 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         rec_obj.process_data()
         las_rec_images[title] = rec_obj
 
-    linear_conversion = (lasing_options['x_conversion'] == 'linear')
-    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], linear_conversion, pulse_energy, current_cutoff, slice_method=slice_method)
-    if t_lims:
-        tt = las_rec.mean_slice_dict['Lasing Off']['t']['mean']
-        photon_energy_factors = np.logical_and(tt > t_lims[0], tt < t_lims[1]).astype(float)
-    else:
-        photon_energy_factors = 1
-    las_rec.lasing_analysis(photon_energy_factors=photon_energy_factors, norm_factor=norm_factor)
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
+    las_rec.lasing_analysis(norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
     outp = {
             'las_rec': las_rec,
@@ -118,17 +111,19 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     return outp
 
 class LasingReconstruction:
-    def __init__(self, images_off, images_on, linear_conversion, pulse_energy=None, current_cutoff=1e3, slice_method=None):
+    def __init__(self, images_off, images_on, lasing_options, pulse_energy=None):
         assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
-        self.linear_conversion = linear_conversion
-        self.current_cutoff = current_cutoff
+        self.lasing_options = lasing_options
+        self.linear_conversion = (lasing_options['x_conversion'] == 'linear')
+        self.current_cutoff = lasing_options['current_cutoff']
         self.pulse_energy = pulse_energy
-        if slice_method is None:
+        self.t_lims = lasing_options['t_lims']
+        if lasing_options['slice_method'] is None:
             self.slice_method = 'cut'
         else:
-            self.slice_method = slice_method
+            self.slice_method = lasing_options['slice_method']
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
@@ -169,10 +164,11 @@ class LasingReconstruction:
                         'std': np.nanstd(arr, axis=0),
                         }
 
-    def lasing_analysis(self, photon_energy_factors=1, norm_factor=None):
+    def lasing_analysis(self, photon_energy_factors=None, norm_factor=None):
         all_slice_dict = self.all_slice_dict
         mean_slice_dict = self.mean_slice_dict
         self.lasing_dict = lasing_dict = {}
+
 
         self.mean_current = mean_current = (mean_slice_dict['Lasing On']['current']['mean']+mean_slice_dict['Lasing Off']['current']['mean'])/2.
         self.current_mask = mask = np.abs(mean_current) > self.current_cutoff
@@ -189,8 +185,15 @@ class LasingReconstruction:
         on_spread_err = mean_slice_dict['Lasing On']['spread']['std'][mask]
         slice_time = mean_slice_dict['Lasing Off']['t']['mean'][mask]
 
-        if photon_energy_factors != 1:
+        if photon_energy_factors is None:
+            photon_energy_factors = np.ones_like(off_loss_mean)
+        else:
             photon_energy_factors = photon_energy_factors[mask]
+
+        if self.t_lims:
+            photon_energy_factors[slice_time < self.t_lims[0]] = 0.
+            photon_energy_factors[slice_time > self.t_lims[1]] = 0.
+
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
@@ -229,6 +232,7 @@ class LasingReconstruction:
                 'current_cutoff': self.current_cutoff,
                 'mean_current': self.mean_current,
                 'linear_conversion': int(self.linear_conversion),
+                'lasing_options': self.lasing_options,
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
             outp[key] = d = {}

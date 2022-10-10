@@ -510,6 +510,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             outp['x_conversion'] = 'linear'
         else:
             outp['x_conversion'] = 'wake'
+        if self.TimeLimitCheck.isChecked():
+            outp['t_lims'] = np.array([w2f(self.TimeLimit1)*1e-15, w2f(self.TimeLimit2)*1e-15])
         return outp
 
     def reconstruct_current(self):

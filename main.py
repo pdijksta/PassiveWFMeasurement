@@ -515,6 +515,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             outp['x_conversion'] = 'wake'
         if self.TimeLimitCheck.isChecked():
             outp['t_lims'] = np.array([w2f(self.TimeLimit1)*1e-15, w2f(self.TimeLimit2)*1e-15])
+        if self.EnergyLimitCheck.isChecked():
+            outp['E_lims'] = np.array([w2f(self.EnergyLimit1)*1e6, w2f(self.EnergyLimit2)*1e6])
         return outp
 
     def reconstruct_current(self):

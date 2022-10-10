@@ -99,7 +99,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None):
+    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None, E_lims=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -121,6 +121,14 @@ class Image(LogMsgBase):
         slice_x = self.x_axis
         current = current / current.sum() * abs(self.charge) / (self.x_axis[1] - self.x_axis[0])
 
+        if E_lims is not None:
+            projY = np.sum(self.image, axis=-1)
+            meanY = np.sum(y_axis*projY)/np.sum(projY)
+            mask_Elim = np.logical_and(y_axis >= meanY+E_lims[0], y_axis <= meanY+E_lims[1])
+        else:
+            mask_Elim = np.ones_like(y_axis, dtype=bool)
+        y_axis = y_axis[mask_Elim]
+
         def addzero():
             slice_mean.append(0)
             slice_sigma.append(0)
@@ -139,7 +147,7 @@ class Image(LogMsgBase):
             if current_cutoff is not None and current[n_slice] < current_cutoff:
                 addzero()
                 continue
-            intensity = self.image[:,n_slice]
+            intensity = self.image[mask_Elim,n_slice]
             intensity = intensity - intensity.min()
 
             try:
@@ -201,6 +209,8 @@ class Image(LogMsgBase):
                 'slice_intensity': proj,
                 'slice_current': current,
                 'slice_gf': slice_gf,
+                'y_axis_Elim': y_axis,
+                'E_lims': E_lims,
                 'gauss': {
                     'mean': np.array(slice_mean),
                     'sigma_sq': np.array(slice_sigma),
@@ -337,7 +347,7 @@ class Image(LogMsgBase):
 
         return output
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue'):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -408,6 +418,10 @@ class Image(LogMsgBase):
             if plot_gauss or plot_gauss_y:
                 gf = gf_y = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
                 sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color[1], alpha=gauss_alpha)
+
+        if hlines is not None:
+            for hline in hlines:
+                sp.axhline(hline, color=hline_color)
 
         if revert_x:
             xlim = sp.get_xlim()

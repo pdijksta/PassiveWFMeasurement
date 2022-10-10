@@ -582,7 +582,13 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         image_tE = result_dict[key]['tE_images'][index_median]
         if sp_image_xy is not None:
             image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False)
-        gf_dict = image_tE.plot_img_and_proj(sp_image_tE, plot_gauss=False)
+
+        E_lims = result_dict['lasing_options']['E_lims']
+        if E_lims is not None:
+            hlines = [e/1e6 for e in E_lims]
+        else:
+            hlines = None
+        gf_dict = image_tE.plot_img_and_proj(sp_image_tE, plot_gauss=False, hlines=hlines)
         outp[key] = {}
         outp[key]['gf_dict'] = gf_dict
 

@@ -316,6 +316,7 @@ def get_default_lasing_options():
             'x_linear_factor': 1,
             'rms_sigma': 5,
             't_lims': None,
+            'E_lims': None,
             'slice_method': 'cut'
             }.copy()
     return outp

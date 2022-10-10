@@ -261,6 +261,7 @@ class LasingReconstructionImages:
         self.x_factor = lasing_options['x_linear_factor']
         self.rms_sigma = lasing_options['rms_sigma']
         self.current_cutoff = lasing_options['current_cutoff']
+        self.E_lims = lasing_options['E_lims']
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -411,7 +412,7 @@ class LasingReconstructionImages:
                 current_cutoff = self.current_cutoff
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff)
+            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff, E_lims=self.E_lims)
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):
@@ -487,6 +488,8 @@ def interpolate_slice_dicts(ref, alter):
     xx_alter = alter['slice_x']
     #print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
     for key, arr in alter.items():
+        if key in ('E_lims', 'y_axis_Elim'):
+            continue
         if key == 'slice_x':
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:

@@ -77,7 +77,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
             'photon_energy_factors': photon_energy_factors,
             }
 
-def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, slice_method=None):
+def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None):
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
     else:
@@ -92,12 +92,16 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             ref_y = None
         else:
             ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
-        rec_obj = LasingReconstructionImages(tracker, lasing_options, ref_y=ref_y)
-        rec_obj.add_dict(data_dict)
         if main_ctr == 1:
-            rec_obj.profile = las_rec_images['Lasing Off'].profile
-            rec_obj.ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
-        rec_obj.process_data()
+            profile = las_rec_images['Lasing Off'].profile
+            ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+        else:
+            profile = None
+            ref_slice_dict = None
+
+        rec_obj = LasingReconstructionImages(tracker, lasing_options, profile=profile, ref_y=ref_y)
+        rec_obj.add_dict(data_dict)
+        rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         las_rec_images[title] = rec_obj
 
     las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
@@ -190,7 +194,7 @@ class LasingReconstruction:
         else:
             photon_energy_factors = photon_energy_factors[mask]
 
-        if self.t_lims:
+        if self.t_lims is not None:
             photon_energy_factors[slice_time < self.t_lims[0]] = 0.
             photon_energy_factors[slice_time > self.t_lims[1]] = 0.
 
@@ -371,9 +375,12 @@ class LasingReconstructionImages:
 
     def convert_x_linear(self, factor):
         self.images_tE = []
+        self.profiles = []
         for ctr, img in enumerate(self.images_E):
             new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.current_cutoff)
             self.images_tE.append(new_img)
+            new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.tracker.energy_eV, self.tracker.total_charge)
+            self.profiles.append(new_profile)
 
     def convert_y(self):
         self.ref_y_list = []
@@ -414,7 +421,7 @@ class LasingReconstructionImages:
         self.slice_dicts_old = self.slice_dicts
         self.slice_dicts = new_slice_dicts
 
-    def process_data(self):
+    def process_data(self, ref_slice_dict=None):
         self.convert_y()
         if self.x_conversion == 'wake':
             if self.profile is None:
@@ -425,19 +432,22 @@ class LasingReconstructionImages:
             self.convert_x_wake()
         elif self.x_conversion == 'linear':
             self.convert_x_linear(self.x_factor)
+            if self.profile is None:
+                self.set_profile()
         else:
             raise ValueError(self.x_conversion)
+
         self.slice_x()
         self.fit_slice()
-        if self.x_conversion == 'wake':
-            if self.index_median is not None:
-                self.ref_slice_dict = self.slice_dicts[self.index_median]
-            if self.ref_slice_dict is not None:
-                self.interpolate_slice(self.ref_slice_dict)
-        elif self.x_conversion == 'linear':
-            if self.ref_slice_dict is None:
-                self.ref_slice_dict = self.slice_dicts[self.median_meas_screen_index]
-            self.interpolate_slice(self.ref_slice_dict)
+
+        if ref_slice_dict is not None:
+            self.ref_slice_dict = ref_slice_dict
+        elif self.index_median is not None:
+            self.ref_slice_dict = self.slice_dicts[self.index_median]
+
+        if self.ref_slice_dict is None:
+            raise ValueError('No ref_slice_dict defined!')
+        self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title='', **kwargs):
         if type_ == 'raw':

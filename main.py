@@ -816,6 +816,10 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_figures = [self.all_lasing_fig]
         self.elog_button_save_dict = {
                 'main_result': result_dict['lasing_dict'],
+                'phase_spaces': {
+                    'lasing_on': result_dict['images_on']['tE_images'],
+                    'lasing_off': result_dict['images_off']['tE_images'],
+                    },
                 'other_results': {'all_slice_dict': result_dict['all_slice_dict'], 'mean_slice_dict': result_dict['mean_slice_dict']},
                 'Input': {'pulse_energy': pulse_energy, 'file_on': file_on, 'file_off': file_off},
                 'Calibration': self.gui_to_calib().to_dict_custom(),

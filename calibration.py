@@ -139,8 +139,11 @@ class StructureCalibrator(LogMsgBase):
             meas_screens.append(meas_screen)
             streaking_factors.append(meas_screen.rms())
 
-        bs0 = streaking_factors[index0]
-        streaking_factors = streaking_factors/bs0
+        if index0:
+            bs0 = streaking_factors[index0]
+        else:
+            bs0 = 1
+        streaking_factors = np.array(streaking_factors)/bs0
 
         beam_positions = -(self.raw_struct_positions - np.mean(self.screen_center_arr))
 
@@ -167,7 +170,7 @@ class StructureCalibrator(LogMsgBase):
         proj_x = images.sum(axis=-2, dtype=np.float64)
 
         where0 = np.argwhere(raw_struct_positions == 0).squeeze()
-        assert where0.size == 1
+        #assert where0.size == 1
 
         plot_list_y = []
         plot_list_image = []
@@ -189,7 +192,10 @@ class StructureCalibrator(LogMsgBase):
             plot_list_y.append(median_proj)
             self.median_indices[n_o] = median_proj_index
         centroid_mean = np.nanmean(centroids, axis=1)
-        screen_center = centroid_mean[where0]
+        if where0.size == 1:
+            screen_center = centroid_mean[where0]
+        else:
+            screen_center = 0
         centroid_mean -= screen_center
         centroids -= screen_center
         screen_center_arr = np.array([screen_center]*len(raw_struct_positions), float)

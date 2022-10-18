@@ -632,7 +632,7 @@ class Tracker(LogMsgBase):
         rms_meas = prepare_dict['rms']
         if method == 'centroid':
             target_meas = centroid_meas
-        elif method == 'beaamsize' or method == 'rms':
+        elif method == 'beamsize' or method == 'rms':
             target_meas = rms_meas
 
         beam = self.gen_beam(profile)
@@ -653,7 +653,7 @@ class Tracker(LogMsgBase):
             rms_list.insert(index, sim_screen.rms())
             if method == 'centroid':
                 target_list.insert(index, sim_screen.mean())
-            elif method == 'beaamsize' or method == 'rms':
+            elif method == 'beamsize' or method == 'rms':
                 target_list.insert(index, sim_screen.rms())
 
         def get_index_min(output='index'):

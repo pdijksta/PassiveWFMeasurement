@@ -120,20 +120,14 @@ class LasingReconstruction:
         self.images_off = images_off
         self.images_on = images_on
         self.lasing_options = lasing_options
-        self.linear_conversion = (lasing_options['x_conversion'] == 'linear')
-        self.current_cutoff = lasing_options['current_cutoff']
         self.pulse_energy = pulse_energy
-        self.t_lims = lasing_options['t_lims']
-        if lasing_options['slice_method'] is None:
-            self.slice_method = 'cut'
-        else:
-            self.slice_method = lasing_options['slice_method']
 
         self.generate_all_slice_dict()
         self.calc_mean_slice_dict()
 
     def generate_all_slice_dict(self, use_old=False):
         self.all_slice_dict = {}
+        slice_method = self.lasing_options['slice_method']
         for images, title, ls in [(self.images_off, 'Lasing Off', None), (self.images_on, 'Lasing On', '--')]:
             all_mean = np.zeros([len(images.images_tE), images.n_slices], dtype=float)
             all_sigma = all_mean.copy()
@@ -146,8 +140,8 @@ class LasingReconstruction:
                 slice_dicts = images.slice_dicts
 
             for ctr, slice_dict in enumerate(slice_dicts):
-                all_mean[ctr] = slice_dict[self.slice_method]['mean']
-                all_sigma[ctr] = slice_dict[self.slice_method]['sigma_sq']
+                all_mean[ctr] = slice_dict[slice_method]['mean']
+                all_sigma[ctr] = slice_dict[slice_method]['sigma_sq']
                 all_x[ctr] = slice_dict['slice_x']
                 all_current[ctr] = slice_dict['slice_current']
 
@@ -172,10 +166,10 @@ class LasingReconstruction:
         all_slice_dict = self.all_slice_dict
         mean_slice_dict = self.mean_slice_dict
         self.lasing_dict = lasing_dict = {}
-
+        current_cutoff = self.lasing_options['current_cutoff']
 
         self.mean_current = mean_current = (mean_slice_dict['Lasing On']['current']['mean']+mean_slice_dict['Lasing Off']['current']['mean'])/2.
-        self.current_mask = mask = np.abs(mean_current) > self.current_cutoff
+        self.current_mask = mask = np.abs(mean_current) > current_cutoff
         mean_current = mean_current[mask]
         err_current = (np.sqrt(mean_slice_dict['Lasing On']['current']['std']**2+mean_slice_dict['Lasing Off']['current']['std']**2)/2.)[mask]
 
@@ -194,9 +188,10 @@ class LasingReconstruction:
         else:
             photon_energy_factors = photon_energy_factors[mask]
 
-        if self.t_lims is not None:
-            photon_energy_factors[slice_time < self.t_lims[0]] = 0.
-            photon_energy_factors[slice_time > self.t_lims[1]] = 0.
+        t_lims = self.lasing_options['t_lims']
+        if t_lims is not None:
+            photon_energy_factors[slice_time < t_lims[0]] = 0.
+            photon_energy_factors[slice_time > t_lims[1]] = 0.
 
 
         lasing_dict['time'] = slice_time
@@ -212,7 +207,7 @@ class LasingReconstruction:
 
         for ctr in range(n_images):
             current = all_slice_dict['Lasing On']['current'][ctr, mask]
-            mask2 = current < self.current_cutoff
+            mask2 = current < current_cutoff
             on_loss = all_slice_dict['Lasing On']['loss'][ctr,mask]
             on_spread = all_slice_dict['Lasing On']['spread'][ctr,mask]
 
@@ -233,9 +228,8 @@ class LasingReconstruction:
                 'lasing_dict': self.lasing_dict,
                 'all_slice_dict': self.all_slice_dict,
                 'mean_slice_dict': self.mean_slice_dict,
-                'current_cutoff': self.current_cutoff,
                 'mean_current': self.mean_current,
-                'linear_conversion': int(self.linear_conversion),
+                'linear_conversion': int(self.lasing_options['x_conversion'] == 'linear'),
                 'lasing_options': self.lasing_options,
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
@@ -253,15 +247,7 @@ class LasingReconstructionImages:
         self.tracker = tracker
         self.charge = tracker.total_charge
         self.profile = profile
-
-        self.subtract_quantile = lasing_options['subtract_quantile']
-        self.max_quantile = lasing_options['max_quantile']
-        self.slice_factor = lasing_options['slice_factor']
-        self.x_conversion = lasing_options['x_conversion']
-        self.x_factor = lasing_options['x_linear_factor']
-        self.rms_sigma = lasing_options['rms_sigma']
-        self.current_cutoff = lasing_options['current_cutoff']
-        self.E_lims = lasing_options['E_lims']
+        self.lasing_options = lasing_options
 
         self.ref_slice_dict = None
         self.ref_y = ref_y
@@ -300,6 +286,8 @@ class LasingReconstructionImages:
 
     def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
         self.meta_data = meta_data
+        subtract_quantile = self.lasing_options['subtract_quantile']
+        max_quantile = self.lasing_options['max_quantile']
         self.gap = self.tracker.structure_gap
         self.x_axis0 = x_axis
         self.x_axis = x_axis - self.tracker.calib.screen_center
@@ -311,9 +299,9 @@ class LasingReconstructionImages:
         for n_image, img in enumerate(images):
             if max_index is not None and n_image >= max_index:
                 break
-            img = img - np.quantile(img, self.subtract_quantile)
-            if self.max_quantile is not None:
-                img = img.clip(0, np.quantile(img, self.max_quantile))
+            img = img - np.quantile(img, subtract_quantile)
+            if max_quantile is not None:
+                img = img.clip(0, np.quantile(img, max_quantile))
             else:
                 img = img.clip(0, None)
             image = image_analysis.Image(img, self.x_axis, y_axis, self.charge)
@@ -378,7 +366,7 @@ class LasingReconstructionImages:
         self.images_tE = []
         self.profiles = []
         for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.current_cutoff)
+            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
             self.images_tE.append(new_img)
             new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.tracker.energy_eV, self.tracker.total_charge)
             self.profiles.append(new_profile)
@@ -396,23 +384,24 @@ class LasingReconstructionImages:
             self.ref_y_list.append(ref_y)
 
     def slice_x(self):
-        if self.slice_factor == 1:
+        slice_factor = self.lasing_options['slice_factor']
+        if slice_factor == 1:
             self.images_sliced = self.images_tE
         else:
             self.images_sliced = []
             for n_image, image in enumerate(self.images_tE):
-                n_slices = len(image.x_axis)//self.slice_factor
+                n_slices = len(image.x_axis)//slice_factor
                 image_sliced = image.slice_x(n_slices)
                 self.images_sliced.append(image_sliced)
 
     def fit_slice(self):
         self.slice_dicts = []
         for image in self.images_sliced:
-            if self.x_conversion == 'linear':
-                current_cutoff = self.current_cutoff
+            if self.lasing_options['x_conversion'] == 'linear':
+                current_cutoff = self.lasing_options['current_cutoff']
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.rms_sigma, current_cutoff=current_cutoff, E_lims=self.E_lims)
+            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'])
             self.slice_dicts.append(slice_dict)
 
     def interpolate_slice(self, ref):
@@ -424,19 +413,20 @@ class LasingReconstructionImages:
 
     def process_data(self, ref_slice_dict=None):
         self.convert_y()
-        if self.x_conversion == 'wake':
+        x_conversion = self.lasing_options['x_conversion']
+        if x_conversion == 'wake':
             if self.profile is None:
                 self.get_current_profiles()
                 self.set_profile()
             self.wake_t, self.wake_x = self.calc_wake()
             self.get_streaker_offsets()
             self.convert_x_wake()
-        elif self.x_conversion == 'linear':
-            self.convert_x_linear(self.x_factor)
+        elif x_conversion  == 'linear':
+            self.convert_x_linear(self.lasing_options['x_factor'])
             if self.profile is None:
                 self.set_profile()
         else:
-            raise ValueError(self.x_conversion)
+            raise ValueError(x_conversion)
 
         self.slice_x()
         self.fit_slice()

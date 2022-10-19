@@ -561,7 +561,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     dark_red   = "#991c1d"
     dark_green = "#207320"
 
-    current_cutoff = result_dict['current_cutoff']
+    current_cutoff = result_dict['lasing_options']['current_cutoff']
     mean_current = result_dict['mean_current']
     lasing_dict = result_dict['lasing_dict']
     n_shots = len(lasing_dict['all_Espread'])

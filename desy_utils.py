@@ -2,6 +2,7 @@ import numpy as np
 from scipy.signal import find_peaks
 
 from . import beam_profile
+from . import lasing
 from . import tracking
 from . import calibration
 from . import data_loader
@@ -26,7 +27,7 @@ default_optics = {
         }
 
 class Xfel_data:
-    def __init__(self, filename_or_data, charge, energy_eV, pixelsize, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, distance=500e-6, profile=None, logger=None):
+    def __init__(self, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
         else:
@@ -67,7 +68,7 @@ class Xfel_data:
                 'meta_data_begin': {
                     '%s:ENERGY' % beamline: energy_eV/1e6,
                     '%s:GAP' % beamline: gap*1e3,
-                    '%s:CENTER' % beamline: (gap/2-distance)*1e3,
+                    '%s:CENTER' % beamline: (gap/2-init_distance)*1e3,
                     '%s:CHARGE' % beamline: charge*1e12,
                     },
                 }
@@ -88,7 +89,7 @@ class Xfel_data:
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
 
-    def calibrate_axis(self, sp=None, profile=None, backup_profile=None):
+    def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
         if profile is None:
             profile = self.profile
         if profile is None:
@@ -130,5 +131,14 @@ class Xfel_data:
             sp.plot(forward_screen.x*1e3, forward_screen.intensity)
             sp.plot(trans_dist.x*1e3, trans_dist.intensity)
             sp.plot((trans_dist.x+delta_x)*1e3, trans_dist.intensity)
+
+    def calibrate_distance(self, ref_profile):
+        pass
+
+    def get_LPS(self, lasing_options=None):
+        if lasing_options is None:
+            lasing_options = config.get_default_lasing_options()
+        rec_obj = lasing.LasingReconstructionImages(self.tracker, lasing_options)
+        rec_obj.add_dict(self.data)
 
 

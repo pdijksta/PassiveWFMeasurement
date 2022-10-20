@@ -159,6 +159,7 @@ class Image(LogMsgBase):
             if current_cutoff is not None and current[n_slice] < current_cutoff:
                 addzero()
                 continue
+
             intensity = self.image[mask_Elim,n_slice]
             intensity = intensity - intensity.min()
 

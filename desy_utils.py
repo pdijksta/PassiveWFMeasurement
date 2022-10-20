@@ -26,20 +26,30 @@ default_optics = {
         'alphay': -1.864,
         }
 
-class Xfel_data:
-    def __init__(self, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
-        if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
-            data = filename_or_data
-        else:
-            data = np.load(filename_or_data)
+def prepare_image_data(self, image_data):
+    new_images = np.zeros_like(image_data)
+    for n_image, image in enumerate(image_data):
+        new_image = image - np.quantile(image, 0.5)
+        new_image = np.clip(new_image, 0, None)
+        new_images[n_image] = new_image
+    return new_images
 
+
+class Xfel_data(logMsg.LogMsgBase):
+    def __init__(self, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+
+        self.logger = logger
         self.beamline = beamline = 'SASE2'
         self.structure_name = 'SASE2'
         self.screen_name = 'SASE2'
         self.matrix = matrix
         self.optics_at_streaker = optics_at_streaker
-        self.logger = logger
         self.charge = charge
+
+        if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
+            data = filename_or_data
+        else:
+            data = np.load(filename_or_data)
 
         if profile is None:
             crisp_intensity = data['crisp'][1]
@@ -50,20 +60,14 @@ class Xfel_data:
             crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, energy_eV, charge)
         self.profile = crisp_profile
 
-
-        new_images = np.zeros_like(data['images'])
-        for n_image, image in enumerate(data['images']):
-            new_image = image - np.quantile(image, 0.5)
-            new_image = np.clip(new_image, 0, None)
-            new_images[n_image] = new_image
-
         x_axis_m = np.arange(0, data['images'][0].shape[1], dtype=float)*pixelsize
         y_axis_m = np.arange(0, data['images'][0].shape[0], dtype=float)*pixelsize
+        new_images = prepare_image_data(data['images'])
         self.data = data = {
                 'pyscan_result': {
                     'x_axis_m': x_axis_m,
                     'y_axis_m': y_axis_m,
-                    'image': data['images'],
+                    'image': new_images,
                     },
                 'meta_data_begin': {
                     '%s:ENERGY' % beamline: energy_eV/1e6,
@@ -97,10 +101,7 @@ class Xfel_data:
         # This function will not work if the streaking is on the other side, for example if the R34 changes sign
         tracker = self.tracker
         axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
-        trans_dist = beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge)
-        trans_dist.aggressive_cutoff(0.02)
-        trans_dist.crop()
-        trans_dist.normalize()
+        trans_dist = self.get_median_sd()
 
         method0 = tracker.find_beam_position_options['method']
         position_explore0 = tracker.find_beam_position_options['position_explore']
@@ -124,7 +125,7 @@ class Xfel_data:
 
         delta_x = -(half_peak_x - half_peak_x_sim)
         self.data['pyscan_result']['%s_axis_m' % tracker.structure.dim.lower()] += delta_x
-        logMsg.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3), logger=self.logger)
+        self.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3))
 
         # For debug only
         if sp is not None:
@@ -132,13 +133,33 @@ class Xfel_data:
             sp.plot(trans_dist.x*1e3, trans_dist.intensity)
             sp.plot((trans_dist.x+delta_x)*1e3, trans_dist.intensity)
 
-    def calibrate_distance(self, ref_profile):
-        pass
+    def get_median_sd(self):
+        axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
+        trans_dist = beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge)
+        trans_dist.aggressive_cutoff(self.tracker.forward_options['screen_cutoff'])
+        trans_dist.crop()
+        trans_dist.normalize()
+        return trans_dist
 
-    def get_LPS(self, lasing_options=None):
+    def calibrate_distance(self, ref_profile=None):
+        tracker = self.tracker
+        if ref_profile is None:
+            ref_profile = self.profile
+
+        trans_dist = self.get_median_sd()
+        tracker.find_beam_position_options['position_explore'] = 100e-6
+        find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, ref_profile)
+        new_beam_position = find_beam_position_dict['beam_position']
+        distance = tracker.structure_gap/2. - abs(new_beam_position)
+        self.meta_data_begin[self.beamline+':CENTER'] = (tracker.structure_gap/2 - distance)*1e3
+        self.logMsg('Distance calibrated to %.0f um' % (distance*1e6))
+
+    def get_images(self, lasing_options=None):
         if lasing_options is None:
             lasing_options = config.get_default_lasing_options()
+        lasing_options['subtract_quantile'] = 0
         rec_obj = lasing.LasingReconstructionImages(self.tracker, lasing_options)
         rec_obj.add_dict(self.data)
-
+        rec_obj.process_data()
+        return rec_obj
 

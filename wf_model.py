@@ -21,14 +21,12 @@ class CorrugatedStructure:
     DOI: 10.1103/PhysRevAccelBeams.19.084401
     p         period
     g         longitudinal gap
-    w         plate width
     Ls        Length of structure
     """
-    def __init__(self, p, g, w, Ls, dim, logger=None):
+    def __init__(self, p, g, Ls, dim, logger=None):
         self.logger = logger
         self.p = p
         self.g = g
-        self.w = w
         self.Ls = Ls
         self.alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
         self.dim = dim
@@ -42,14 +40,13 @@ class CorrugatedStructure:
         conditions = (
                 self.p == other.p,
                 self.g == other.g,
-                self.w == other.w,
                 self.Ls == other.Ls,
                 self.dim == other.dim,
                 )
         return all(conditions)
 
     def __hash__(self):
-        return hash((self.p, self.g, self.w, self.Ls, self.dim))
+        return hash((self.p, self.g, self.Ls, self.dim))
 
     def logMsg(self, msg, style='I'):
         return logMsg(msg, self.logger, style)

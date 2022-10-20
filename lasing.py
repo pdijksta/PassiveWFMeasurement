@@ -47,9 +47,9 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     exp = espread_current_exponent
     slice_Espread_sqr_increase = slice_Espread_on_sq - slice_Espread_off_sq
     power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
-    #power0[power0 < 0] = 0
-    mask = power0 > 0
-    integral = np.trapz(power0[mask], slice_t[mask])
+    power0[power0 < 0] = 0
+    #mask = power0 > 0
+    integral = np.trapz(power0, slice_t)
 
     if norm_factor is None:
         norm_factor = E_total/integral
@@ -60,14 +60,6 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0_err = np.sqrt(power0_err_1**2+power0_err_2**2+power0_err_3**2)
     power_err = power0_err*norm_factor
     energy = np.trapz(power, slice_t)
-
-    #import matplotlib.pyplot as plt
-    #plt.figure()
-    #plt.plot(slice_t*1e15, slice_Espread_on_sq)
-    #plt.plot(slice_t*1e15, slice_Espread_off_sq)
-    #plt.show()
-    #import pdb; pdb.set_trace()
-
 
     return {
             'time': slice_t,
@@ -259,9 +251,6 @@ class LasingReconstructionImages:
         self.index_median = None
         self.delta_distances = None
 
-        if tracker.structure.dim == 'Y':
-            raise ValueError('Structure streaking dimension Y not supported for lasing reconstruction!')
-
     @property
     def ref_slice_dict(self):
         return self._ref_slice_dict
@@ -287,6 +276,12 @@ class LasingReconstructionImages:
         self.add_images(meta_data, images, x_axis, y_axis, max_index)
 
     def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
+
+        if self.tracker.structure.dim == 'Y':
+            print('Rotating images because streaking direction is vertical.')
+            x_axis, y_axis = y_axis, x_axis
+            images = np.transpose(images, (0, 2, 1))
+
         self.meta_data = meta_data
         subtract_quantile = self.lasing_options['subtract_quantile']
         max_quantile = self.lasing_options['max_quantile']

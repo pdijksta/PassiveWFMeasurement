@@ -62,17 +62,15 @@ screen_names = {
         }
 
 aramis_structure_parameters = {
-        'Ls': 1,
+        'Ls': 1.,
         'p': 500e-6,
         'g': 250e-6,
-        'w': 10e-3,
         }
 
 xfel_structure_parameters = {
-        'Ls': 5,
+        'Ls': 5.,
         'p': 500e-6,
         'g': 250e-6,
-        'w': 10e-3,
         }
 
 structure_parameters = {

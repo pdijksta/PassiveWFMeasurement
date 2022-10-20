@@ -99,7 +99,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, rms_sigma=5, debug=False, current_cutoff=None, E_lims=None):
+    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -111,6 +111,8 @@ class Image(LogMsgBase):
         slice_cut_rms = []
         slice_cut_lim1 = []
         slice_cut_lim2 = []
+        slice_lima1 = []
+        slice_lima2 = []
         slice_full_mean = []
         slice_full_rms = []
 
@@ -141,6 +143,13 @@ class Image(LogMsgBase):
             slice_full_rms.append(0)
             slice_cut_lim1.append(0)
             slice_cut_lim2.append(0)
+            slice_lima1.append(0)
+            slice_lima2.append(0)
+
+        sp_ctr = np.inf
+        nx, ny = 4, 4
+        subplot = ms.subplot_factory(ny, nx, False)
+        fignum0 = ms.plt.gcf().number
 
         for n_slice in range(n_slices):
 
@@ -153,56 +162,62 @@ class Image(LogMsgBase):
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
             except RuntimeError:
+                gf = None
                 addzero()
-                continue
-
-            mean_full, rms_full = calc_rms(y_axis, intensity)
-            slice_full_mean.append(mean_full)
-            slice_full_rms.append(rms_full**2)
-
-            where_max = y_axis[np.argmax(gf.reconstruction)]
-            mask_rms = np.logical_and(
-                    y_axis > where_max - abs(gf.sigma)*rms_sigma,
-                    y_axis < where_max + abs(gf.sigma)*rms_sigma)
-            y_rms = y_axis[mask_rms]
-            data_rms = intensity[mask_rms]
-            if np.sum(data_rms) == 0:
-                mean_rms, rms = 0, 0
             else:
-                mean_rms, rms = calc_rms(y_rms, data_rms)
+                mean_full, rms_full = calc_rms(y_axis, intensity)
+                slice_full_mean.append(mean_full)
+                slice_full_rms.append(rms_full**2)
 
-            slice_gf.append(gf)
-            slice_mean.append(gf.mean)
-            slice_sigma.append(gf.sigma**2)
-            slice_rms.append(rms**2)
-            slice_mean_rms.append(mean_rms)
+                where_max = y_axis[np.argmax(gf.reconstruction)]
+                lima1 = where_max - abs(gf.sigma)*rms_sigma
+                lima2 = where_max + abs(gf.sigma)*rms_sigma
+                slice_lima1.append(lima1)
+                slice_lima2.append(lima2)
+                mask_rms = np.logical_and(y_axis >= lima1, y_axis <= lima2)
+                y_rms = y_axis[mask_rms]
+                data_rms = intensity[mask_rms]
+                if np.sum(data_rms) == 0:
+                    mean_rms, rms = 0, 0
+                else:
+                    mean_rms, rms = calc_rms(y_rms, data_rms)
 
-            prof_y = intensity.copy()
-            lim1, lim2 = mean_rms-(rms_sigma/2)*rms, mean_rms+(rms_sigma/2)*rms
-            slice_cut_lim1.append(lim1)
-            slice_cut_lim2.append(lim2)
-            prof_y[np.logical_or(y_axis<lim1, y_axis>lim2)] = 0
-            if np.all(prof_y == 0):
-                slice_cut_rms.append(0)
-                slice_cut_mean.append(0)
-            else:
-                cut_mean, cut_rms = calc_rms(y_axis, prof_y)
-                slice_cut_rms.append(cut_rms**2)
-                slice_cut_mean.append(cut_mean)
+                slice_gf.append(gf)
+                slice_mean.append(gf.mean)
+                slice_sigma.append(gf.sigma**2)
+                slice_rms.append(rms**2)
+                slice_mean_rms.append(mean_rms)
 
-            # Debug bad gaussfits
-            if debug:
-                if rms == 0 or slice_cut_rms[-1] == 0:
-                    import matplotlib.pyplot as plt
-                    num = plt.gcf().number
-                    plt.figure()
-                    plt.suptitle('Debug')
-                    sp = plt.subplot(1,1,1)
-                    gf.plot_data_and_fit(sp)
-                    sp.legend()
-                    plt.figure(num)
-                    plt.show()
-                    import pdb; pdb.set_trace()
+                prof_y = intensity.copy()
+                lim1, lim2 = mean_rms-(rms_sigma/2)*rms, mean_rms+(rms_sigma/2)*rms
+                slice_cut_lim1.append(lim1)
+                slice_cut_lim2.append(lim2)
+                prof_y[np.logical_or(y_axis <= lim1, y_axis >= lim2)] = 0
+                if np.all(prof_y == 0):
+                    slice_cut_rms.append(0)
+                    slice_cut_mean.append(0)
+                else:
+                    cut_mean, cut_rms = calc_rms(y_axis, prof_y)
+                    slice_cut_rms.append(cut_rms**2)
+                    slice_cut_mean.append(cut_mean)
+
+            if do_plot:
+                if sp_ctr >= nx*ny:
+                    ms.figure('Plot slice analysis')
+                    sp_ctr = 1
+                sp = subplot(sp_ctr, title='Slice %i' % n_slice, xlabel='y', ylabel='intensity')
+                sp_ctr += 1
+
+                sp.plot(y_axis, intensity)
+                if gf is not None:
+                    sp.plot(gf.xx, gf.reconstruction, label='%.1e' % gf.sigma)
+                    sp.axvline(lima1, color='black', ls='--', label='%.1e' % slice_rms[-1])
+                    sp.axvline(lima2, color='black', ls='--')
+                    sp.axvline(lim1, color='gray', ls='--', label='%.1e' % slice_cut_rms[-1])
+                    sp.axvline(lim2, color='gray', ls='--')
+
+        if do_plot:
+            ms.plt.figure(fignum0)
 
         slice_dict = {
                 'slice_x': slice_x,
@@ -218,6 +233,8 @@ class Image(LogMsgBase):
                 'rms': {
                     'mean': np.array(slice_mean_rms),
                     'sigma_sq': np.array(slice_rms),
+                    'lim1': np.array(slice_lima1),
+                    'lim2': np.array(slice_lima2),
                     },
                 'cut': {
                     'mean': np.array(slice_cut_mean),

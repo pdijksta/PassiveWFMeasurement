@@ -246,6 +246,14 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingIntensityCutLow.setText('%.4f' % ls['subtract_quantile'])
         self.LasingIntensityCutUp.setText('%.4f' % ls['max_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
+        if ls['t_lims'] is None:
+            ls['t_lims'] = [0, 0]
+        self.TimeLimit1.setText('%.4f' % (ls['t_lims'][0]*1e15))
+        self.TimeLimit2.setText('%.4f' % (ls['t_lims'][1]*1e15))
+        if ls['E_lims'] is None:
+            ls['E_lims'] = [0, 0]
+        self.EnergyLimit1.setText('%.4f' % (ls['E_lims'][0]*1e-6))
+        self.EnergyLimit2.setText('%.4f' % (ls['E_lims'][1]*1e-6))
 
         self.DeltaUndulatorK.setText('%.4f' % config.default_deltaK)
 
@@ -515,8 +523,14 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             outp['x_conversion'] = 'wake'
         if self.TimeLimitCheck.isChecked():
             outp['t_lims'] = np.array([w2f(self.TimeLimit1)*1e-15, w2f(self.TimeLimit2)*1e-15])
+        else:
+            outp['t_lims'] = None
         if self.EnergyLimitCheck.isChecked():
             outp['E_lims'] = np.array([w2f(self.EnergyLimit1)*1e6, w2f(self.EnergyLimit2)*1e6])
+        else:
+            outp['E_lims'] = None
+        outp['plot_slice_analysis'] = self.PlotSliceAnalysisCheck.isChecked()
+        outp['plot_slice_analysis_save_path'] = self.save_dir+'/slice_analysis'
         return outp
 
     def reconstruct_current(self):

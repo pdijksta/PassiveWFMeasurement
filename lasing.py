@@ -1,3 +1,4 @@
+import os
 import copy
 import numpy as np
 
@@ -99,7 +100,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             profile = None
             ref_slice_dict = None
 
-        rec_obj = LasingReconstructionImages(tracker, lasing_options, profile=profile, ref_y=ref_y)
+        rec_obj = LasingReconstructionImages(title, tracker, lasing_options, profile=profile, ref_y=ref_y)
         rec_obj.add_dict(data_dict)
         rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         las_rec_images[title] = rec_obj
@@ -243,7 +244,8 @@ class LasingReconstruction:
         return outp
 
 class LasingReconstructionImages:
-    def __init__(self, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
+    def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
+        self.identifier = identifier
         self.tracker = tracker
         self.charge = tracker.total_charge
         self.profile = profile
@@ -395,14 +397,32 @@ class LasingReconstructionImages:
                 self.images_sliced.append(image_sliced)
 
     def fit_slice(self):
+        do_plot = self.lasing_options['plot_slice_analysis']
+        save_path = self.lasing_options['plot_slice_analysis_save_path']
+        print(do_plot, save_path)
         self.slice_dicts = []
-        for image in self.images_sliced:
+        old_fignums = ms.plt.get_fignums()
+        if old_fignums:
+            old_fignum = ms.plt.gcf().number
+        else:
+            old_fignum = None
+        for n_image, image in enumerate(self.images_sliced):
             if self.lasing_options['x_conversion'] == 'linear':
                 current_cutoff = self.lasing_options['current_cutoff']
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'])
+            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot)
             self.slice_dicts.append(slice_dict)
+
+            if do_plot:
+                new_fignums = sorted(set(ms.plt.get_fignums()) - set(old_fignums))
+                for fignum in new_fignums:
+                    save_path2 = os.path.expanduser(save_path)+'_%s_image_%i_%i.png' % (self.identifier.replace(' ','_'), n_image, fignum)
+                    ms.plt.figure(fignum).savefig(save_path2)
+                    ms.plt.close(fignum)
+                    print('Saved %s' % save_path2)
+                if old_fignum is not None:
+                    ms.plt.figure(old_fignum)
 
     def interpolate_slice(self, ref):
         new_slice_dicts = []

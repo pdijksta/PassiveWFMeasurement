@@ -1,10 +1,12 @@
 import numpy as np
+from scipy.optimize._optimize import OptimizeWarning
 import matplotlib.pyplot as plt
 
 from .gaussfit import GaussFit
 from . import beam_profile
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
+
 
 class Image(LogMsgBase):
     def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)', logger=None):
@@ -151,6 +153,7 @@ class Image(LogMsgBase):
         subplot = ms.subplot_factory(ny, nx, False)
         fignum0 = ms.plt.gcf().number
 
+
         for n_slice in range(n_slices):
 
             if current_cutoff is not None and current[n_slice] < current_cutoff:
@@ -159,9 +162,13 @@ class Image(LogMsgBase):
             intensity = self.image[mask_Elim,n_slice]
             intensity = intensity - intensity.min()
 
+            if np.sum(intensity) == 0:
+                addzero()
+                continue
+
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
-            except RuntimeError:
+            except (RuntimeError, OptimizeWarning):
                 gf = None
                 addzero()
             else:
@@ -177,7 +184,7 @@ class Image(LogMsgBase):
                 mask_rms = np.logical_and(y_axis >= lima1, y_axis <= lima2)
                 y_rms = y_axis[mask_rms]
                 data_rms = intensity[mask_rms]
-                if np.sum(data_rms) == 0:
+                if np.sum(mask_rms) <= 1 or np.sum(data_rms) == 0:
                     mean_rms, rms = 0, 0
                 else:
                     mean_rms, rms = calc_rms(y_rms, data_rms)
@@ -192,12 +199,12 @@ class Image(LogMsgBase):
                 lim1, lim2 = mean_rms-(rms_sigma/2)*rms, mean_rms+(rms_sigma/2)*rms
                 slice_cut_lim1.append(lim1)
                 slice_cut_lim2.append(lim2)
-                prof_y[np.logical_or(y_axis <= lim1, y_axis >= lim2)] = 0
-                if np.all(prof_y == 0):
+                mask_cut = np.logical_and(y_axis >= lim1, y_axis <= lim2)
+                if np.sum(mask_cut) <= 1 or np.sum(prof_y[mask_cut]) == 0:
                     slice_cut_rms.append(0)
                     slice_cut_mean.append(0)
                 else:
-                    cut_mean, cut_rms = calc_rms(y_axis, prof_y)
+                    cut_mean, cut_rms = calc_rms(y_axis[mask_cut], prof_y[mask_cut])
                     slice_cut_rms.append(cut_rms**2)
                     slice_cut_mean.append(cut_mean)
 
@@ -211,10 +218,11 @@ class Image(LogMsgBase):
                 sp.plot(y_axis, intensity)
                 if gf is not None:
                     sp.plot(gf.xx, gf.reconstruction, label='%.1e' % gf.sigma)
-                    sp.axvline(lima1, color='black', ls='--', label='%.1e' % slice_rms[-1])
+                    sp.axvline(lima1, color='black', ls='--', label='%.1e' % np.sqrt(slice_rms[-1]))
                     sp.axvline(lima2, color='black', ls='--')
-                    sp.axvline(lim1, color='gray', ls='--', label='%.1e' % slice_cut_rms[-1])
+                    sp.axvline(lim1, color='gray', ls='--', label='%.1e' % np.sqrt(slice_cut_rms[-1]))
                     sp.axvline(lim2, color='gray', ls='--')
+                    sp.legend()
 
         if do_plot:
             ms.plt.figure(fignum0)

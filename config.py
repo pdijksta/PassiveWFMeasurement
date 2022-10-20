@@ -317,7 +317,9 @@ def get_default_lasing_options():
             'rms_sigma': 5,
             't_lims': None,
             'E_lims': None,
-            'slice_method': 'cut'
+            'slice_method': 'cut',
+            'plot_slice_analysis': False,
+            'plot_slice_analysis_save_path': None,
             }.copy()
     return outp
 

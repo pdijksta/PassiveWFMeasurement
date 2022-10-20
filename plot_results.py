@@ -76,7 +76,7 @@ def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max
             blmeas_profile.plot_standard(_sp, color='black', center=center, ls='--', label='%i' % round(blmeas_profile.rms()*1e15))
 
     for _sp in sp_screen_pos, sp_screen_neg:
-        _sp.legend(title='d ($\mu$m)')
+        _sp.legend(title=r'd ($\mu$m)')
 
     for _sp in sp_profile_pos, sp_profile_neg:
         _sp.legend(title='rms (fs)')
@@ -85,7 +85,7 @@ def gauss_recon_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Current reconstruction')
+    fig.canvas.manager.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 2, grid=False)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+4)))
@@ -109,7 +109,7 @@ def structure_fit_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Streaker center calibration')
+    fig.canvas.manager.set_window_title('Streaker center calibration')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+6)))
@@ -135,7 +135,7 @@ def gap_recon_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 4.8]
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Streaker gap reconstruction')
+    fig.canvas.manager.set_window_title('Streaker gap reconstruction')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     subplot = ms.subplot_factory(2, 3, grid=False)
     plot_handles = tuple((subplot(sp_ctr, title_fs=config.fontsize) for sp_ctr in range(1, 1+5)))
@@ -243,7 +243,7 @@ def calib_figure(figsize=None):
     if figsize is None:
         figsize = [6.4, 6.4]
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Gap and structure position calibration')
+    fig.canvas.manager.set_window_title('Gap and structure position calibration')
     fig.subplots_adjust(hspace=0.4, wspace=0.4)
     ny, nx = 2, 3
     subplot = ms.subplot_factory(ny, nx, grid=False)
@@ -341,7 +341,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
 
 def resolution_figure():
     fig = plt.figure()
-    fig.canvas.set_window_title('Screen center calibration')
+    fig.canvas.manager.set_window_title('Screen center calibration')
     fig.subplots_adjust(hspace=0.35)
     subplot = ms.subplot_factory(1, 1)
     sp_res = subplot(1)
@@ -362,7 +362,7 @@ def clear_resolution_figure(sp_curr, sp_res):
 
 def screen_calibration_figure():
     fig = plt.figure()
-    fig.canvas.set_window_title('Screen center calibration')
+    fig.canvas.manager.set_window_title('Screen center calibration')
     fig.subplots_adjust(hspace=0.35)
     sp_ctr = 1
     subplot = ms.subplot_factory(1, 1)
@@ -384,7 +384,7 @@ def clear_screen_calibration(sp_proj):
 
 def reconstruction_figure(figsize=None):
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Current reconstruction')
+    fig.canvas.manager.set_window_title('Current reconstruction')
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,2)
     subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]
@@ -420,7 +420,7 @@ def plot_slice_dict(slice_dict):
 
 def lasing_figure(figsize=None, sharex=True):
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('Lasing reconstruction')
+    fig.canvas.manager.set_window_title('Lasing reconstruction')
     fig.subplots_adjust(hspace=0.5, wspace=0.4)
     subplot = ms.subplot_factory(3,3)
     subplots = []
@@ -674,7 +674,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
 
 def tdc_calib_figure(figsize=None):
     fig = plt.figure(figsize=figsize)
-    fig.canvas.set_window_title('TDC calibration')
+    fig.canvas.manager.set_window_title('TDC calibration')
     fig.subplots_adjust(hspace=0.4)
     subplot = ms.subplot_factory(2,3)
     subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+3)]

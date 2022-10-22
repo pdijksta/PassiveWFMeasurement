@@ -717,3 +717,51 @@ def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
     sp_profile.legend()
     sp_screen.legend()
 
+def all_slice_dict_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.manager.set_window_title('Slice analysis overview')
+    fig.subplots_adjust(hspace=0.4)
+    subplot = ms.subplot_factory(2,2)
+    subplots = []
+    sp = None
+    for sp_ctr in range(1, 1+4):
+        sp = subplot(sp_ctr, sharex=sp)
+        subplots.append(sp)
+    clear_slice_dict_figure(*subplots)
+    return fig, subplots
+
+def clear_slice_dict_figure(sp_current, sp_loss, sp_chirp, sp_spread):
+
+    for sp, title, xlabel, ylabel in [
+            (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
+            (sp_loss, 'Energy loss', 't (fs)', '$\Delta$E (MeV)'),
+            (sp_chirp, 'Energy chirp', 't (fs)', 'C (MeV/fs)'),
+            (sp_spread, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
+def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=None):
+    if plot_handles is None:
+        fig, subplots = all_slice_dict_figure(figsize=figsize)
+    else:
+        fig, subplots = plot_handles
+
+    slice_time = all_slice_dict['t'][0]
+    for ctr, (key, factor, sqrt) in enumerate([
+            ('current', 1e-3, False),
+            ('loss', 1e-6, False),
+            ('chirp', 1e-21, False),
+            ('spread', 1e-6, True),
+            ]):
+        arr = np.array(all_slice_dict[key])
+
+        if sqrt:
+            arr = np.sqrt(arr)
+        mean = np.mean(arr, axis=0)
+        err = np.std(arr, axis=0)
+        subplots[ctr].errorbar(slice_time*1e15, mean*factor, yerr=err*factor, label=label)
+

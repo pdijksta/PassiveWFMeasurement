@@ -115,37 +115,11 @@ class LasingReconstruction:
         self.lasing_options = lasing_options
         self.pulse_energy = pulse_energy
 
-        self.generate_all_slice_dict()
-        self.calc_mean_slice_dict()
-
-    def generate_all_slice_dict(self, use_old=False):
         self.all_slice_dict = {}
         slice_method = self.lasing_options['slice_method']
-        for images, title, ls in [(self.images_off, 'Lasing Off', None), (self.images_on, 'Lasing On', '--')]:
-            all_mean = np.zeros([len(images.images_tE), images.n_slices], dtype=float)
-            all_sigma = all_mean.copy()
-            all_x = all_mean.copy()
-            all_current = all_mean.copy()
+        for images, title in [(self.images_off, 'Lasing Off'), (self.images_on, 'Lasing On')]:
+            self.all_slice_dict[title] = images.generate_all_slice_dict(slice_method)
 
-            if use_old:
-                slice_dicts = images.slice_dicts_old
-            else:
-                slice_dicts = images.slice_dicts
-
-            for ctr, slice_dict in enumerate(slice_dicts):
-                all_mean[ctr] = slice_dict[slice_method]['mean']
-                all_sigma[ctr] = slice_dict[slice_method]['sigma_sq']
-                all_x[ctr] = slice_dict['slice_x']
-                all_current[ctr] = slice_dict['slice_current']
-
-            self.all_slice_dict[title] = {
-                    'loss': all_mean,
-                    'spread': all_sigma,
-                    't': all_x,
-                    'current': all_current,
-                    }
-
-    def calc_mean_slice_dict(self):
         mean_slice_dict = self.mean_slice_dict = {}
         for title in 'Lasing Off', 'Lasing On':
             mean_slice_dict[title] = {}
@@ -185,7 +159,6 @@ class LasingReconstruction:
         if t_lims is not None:
             photon_energy_factors[slice_time < t_lims[0]] = 0.
             photon_energy_factors[slice_time > t_lims[1]] = 0.
-
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
@@ -394,7 +367,6 @@ class LasingReconstructionImages:
     def fit_slice(self):
         do_plot = self.lasing_options['plot_slice_analysis']
         save_path = self.lasing_options['plot_slice_analysis_save_path']
-        print(do_plot, save_path)
         self.slice_dicts = []
         old_fignums = ms.plt.get_fignums()
         if old_fignums:
@@ -418,6 +390,30 @@ class LasingReconstructionImages:
                     print('Saved %s' % save_path2)
                 if old_fignum is not None:
                     ms.plt.figure(old_fignum)
+
+    def generate_all_slice_dict(self, slice_method):
+        all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)
+        all_sigma = all_mean.copy()
+        all_x = all_mean.copy()
+        all_current = all_mean.copy()
+        all_chirp = all_mean.copy()
+
+        for ctr, slice_dict in enumerate(self.slice_dicts):
+            all_mean[ctr] = slice_dict[slice_method]['mean']
+            all_sigma[ctr] = slice_dict[slice_method]['sigma_sq']
+            all_chirp[ctr] = slice_dict[slice_method]['chirp']
+            all_x[ctr] = slice_dict['slice_x']
+            all_current[ctr] = slice_dict['slice_current']
+
+        outp = {
+                'loss': all_mean,
+                'spread': all_sigma,
+                't': all_x,
+                'current': all_current,
+                'chirp': all_chirp,
+                }
+        return outp
+
 
     def interpolate_slice(self, ref):
         new_slice_dicts = []
@@ -455,7 +451,7 @@ class LasingReconstructionImages:
             raise ValueError('No ref_slice_dict defined!')
         self.interpolate_slice(self.ref_slice_dict)
 
-    def plot_images(self, type_, title='', **kwargs):
+    def plot_images(self, type_, title='', plot_slice=True, figsize=(12,10), **kwargs):
         if type_ == 'raw':
             images = self.images_xy
         elif type_ == 'cut':
@@ -473,7 +469,7 @@ class LasingReconstructionImages:
         subplots = []
         for n_image, image in enumerate(images):
             if sp_ctr > ny*nx:
-                fig = ms.figure('%s Images %s' % (title, type_))
+                fig = ms.figure('%s Images %s' % (title, type_), figsize=figsize)
                 figs.append(fig)
                 this_subplots = []
                 subplots.append(this_subplots)
@@ -482,7 +478,7 @@ class LasingReconstructionImages:
             sp_ctr += 1
             this_subplots.append(sp)
             slice_dict = None
-            if type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
+            if plot_slice and type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
                 slice_dict = self.slice_dicts[n_image]
             image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
         return figs, subplots
@@ -495,7 +491,7 @@ def interpolate_slice_dicts(ref, alter):
     for key, arr in alter.items():
         if key in ('E_lims', 'y_axis_Elim'):
             continue
-        if key == 'slice_x':
+        elif key == 'slice_x':
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:
             new_dict[key] = np.interp(xx_ref, xx_alter, arr, left=0, right=0)

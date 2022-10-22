@@ -26,8 +26,8 @@ default_optics = {
         'alphay': -1.864,
         }
 
-def prepare_image_data(self, image_data):
-    new_images = np.zeros_like(image_data)
+def prepare_image_data(image_data):
+    new_images = np.zeros_like(image_data, dtype=float)
     for n_image, image in enumerate(image_data):
         new_image = image - np.quantile(image, 0.5)
         new_image = np.clip(new_image, 0, None)
@@ -36,8 +36,9 @@ def prepare_image_data(self, image_data):
 
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
+        self.identifier = identifier
         self.logger = logger
         self.beamline = beamline = 'SASE2'
         self.structure_name = 'SASE2'
@@ -139,6 +140,7 @@ class Xfel_data(logMsg.LogMsgBase):
         trans_dist.aggressive_cutoff(self.tracker.forward_options['screen_cutoff'])
         trans_dist.crop()
         trans_dist.normalize()
+        self.median_index = index
         return trans_dist
 
     def calibrate_distance(self, ref_profile=None):
@@ -151,15 +153,32 @@ class Xfel_data(logMsg.LogMsgBase):
         find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, ref_profile)
         new_beam_position = find_beam_position_dict['beam_position']
         distance = tracker.structure_gap/2. - abs(new_beam_position)
-        self.meta_data_begin[self.beamline+':CENTER'] = (tracker.structure_gap/2 - distance)*1e3
+        self.meta_data[self.beamline+':CENTER'] = (tracker.structure_gap/2 - distance)*1e3
+        self.tracker.meta_data = self.meta_data
         self.logMsg('Distance calibrated to %.0f um' % (distance*1e6))
 
     def get_images(self, lasing_options=None):
         if lasing_options is None:
             lasing_options = config.get_default_lasing_options()
         lasing_options['subtract_quantile'] = 0
-        rec_obj = lasing.LasingReconstructionImages(self.tracker, lasing_options)
+        rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
         rec_obj.add_dict(self.data)
         rec_obj.process_data()
         return rec_obj
+
+    def cut_axes(self, cutX=None, cutY=None):
+        x_axis_m = self.data['pyscan_result']['x_axis_m']
+        y_axis_m = self.data['pyscan_result']['y_axis_m']
+        new_images = self.data['pyscan_result']['image']
+        if cutX:
+            mask_x = np.logical_and(x_axis_m >= cutX[0], x_axis_m <= cutX[1])
+            x_axis_m = x_axis_m[mask_x]
+            new_images = new_images[:,:,mask_x]
+        if cutY:
+            mask_y = np.logical_and(y_axis_m >= cutY[0], y_axis_m <= cutY[1])
+            y_axis_m = y_axis_m[mask_y]
+            new_images = new_images[:,mask_y,:]
+        self.data['pyscan_result']['x_axis_m'] = x_axis_m
+        self.data['pyscan_result']['y_axis_m'] = y_axis_m
+        self.data['pyscan_result']['image'] = new_images
 

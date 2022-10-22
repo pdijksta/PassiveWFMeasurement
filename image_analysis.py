@@ -151,7 +151,10 @@ class Image(LogMsgBase):
         sp_ctr = np.inf
         nx, ny = 4, 4
         subplot = ms.subplot_factory(ny, nx, False)
-        fignum0 = ms.plt.gcf().number
+        if plt.get_fignums():
+            fignum0 = ms.plt.gcf().number
+        else:
+            fignum0 = None
 
 
         for n_slice in range(n_slices):
@@ -225,7 +228,7 @@ class Image(LogMsgBase):
                     sp.axvline(lim2, color='gray', ls='--')
                     sp.legend()
 
-        if do_plot:
+        if do_plot and fignum0 is not None:
             ms.plt.figure(fignum0)
 
         slice_dict = {
@@ -256,6 +259,10 @@ class Image(LogMsgBase):
                     'sigma_sq': np.array(slice_full_rms),
                     },
                 }
+        diff_time = np.diff(slice_x)
+        for key in ['gauss', 'rms', 'cut', 'full']:
+            slice_dict[key]['chirp'] = np.concatenate([np.diff(slice_dict[key]['mean'])/diff_time, [0.]])
+
         return slice_dict
 
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):

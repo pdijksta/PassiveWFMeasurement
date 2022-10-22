@@ -451,7 +451,9 @@ class LasingReconstructionImages:
             raise ValueError('No ref_slice_dict defined!')
         self.interpolate_slice(self.ref_slice_dict)
 
-    def plot_images(self, type_, title='', plot_slice=True, figsize=(12,10), **kwargs):
+    def plot_images(self, type_, title=None, plot_slice=True, figsize=(12,10), **kwargs):
+        if title is None:
+            title = self.identifier
         if type_ == 'raw':
             images = self.images_xy
         elif type_ == 'cut':

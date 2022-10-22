@@ -156,7 +156,6 @@ class Image(LogMsgBase):
         else:
             fignum0 = None
 
-
         for n_slice in range(n_slices):
 
             if current_cutoff is not None and current[n_slice] < current_cutoff:

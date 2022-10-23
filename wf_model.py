@@ -33,6 +33,7 @@ class CorrugatedStructure:
         self.spw_dict = {
                 'Dipole': {},
                 'Quadrupole': {},
+                'Longitudinal': {},
                 }
 
     # __hash__ and __eq__ are implemented so that this class can be used as keys in dictionaries
@@ -63,6 +64,8 @@ class CorrugatedStructure:
             func = self.wxq
         elif spw_type == 'Dipole':
             func = self.wxd
+        elif spw_type == 'Longitudinal':
+            func = self.wld
         self.spw_dict[spw_type][dict_key] = func(time_grid0, semigap, beam_position)
         #self.logMsg('spw calculated for semigap %.2f mm and beam position %.2f mm' % (semigap*1e3, beam_position*1e3))
 
@@ -77,7 +80,7 @@ class CorrugatedStructure:
         charge_profile = beamProfile.charge_dist
         if np.any(np.isnan(charge_profile)):
             raise ValueError
-        wake_potential = np.convolve(charge_profile, spw)[:len(beam_time)]
+        wake_potential = np.convolve(charge_profile, spw)[:len(beam_time)]*np.sign(charge_profile.mean())
         return {
                 'wake_time': beam_time,
                 'spw_time': spw_time,
@@ -92,16 +95,16 @@ class CorrugatedStructure:
     def s0r(self, a):
         return (a**2 * self.g) / (2*pi * self.alpha**2 * self.p**2)
 
-    def wxd_lin_dipole(self, t, a, x):
-        """
-        Single particle wake, linear dipole approximation.
-        Unit: V/m /m (offset)
-        """
-        t2 = pi**4 / (16*a**4)
-        t3 = self.s0d(a)
-        sqr = sqrt(c*t/t3)
-        t4 = 1 - (1 + sqr)*exp(-sqr)
-        return t1*t2*t3*t4*x*self.Ls
+    #def wxd_lin_dipole(self, t, a, x):
+    #    """
+    #    Single particle wake, linear dipole approximation.
+    #    Unit: V/m /m (offset)
+    #    """
+    #    t2 = pi**4 / (16*a**4)
+    #    t3 = self.s0d(a)
+    #    sqr = sqrt(c*t/t3)
+    #    t4 = 1 - (1 + sqr)*exp(-sqr)
+    #    return t1*t2*t3*t4*x*self.Ls
 
     def s0yd(self, a, x):
         arg = pi*x/a
@@ -145,7 +148,7 @@ class CorrugatedStructure:
         t3 = cos((pi*x)/(2*a))**(-2)
         s0l_ = self.s0l(a, x)
         t4 = exp(-sqrt(c*t/s0l_))
-        return t1 * t2 * t3 * t4 * self.Ls
+        return - t1 * t2 * t3 * t4 * self.Ls
 
     def generate_elegant_wf(self, filename, xx, semigap, beam_offset):
         xx -= xx.min()

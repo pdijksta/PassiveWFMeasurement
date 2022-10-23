@@ -35,7 +35,6 @@ def find_rising_flank(arr, method='Size'):
     return end_longest_streak
 
 class Profile:
-
     def __init__(self):
         self._gf = None
         self._gf_xx = None
@@ -146,7 +145,6 @@ class Profile:
             self._yy = np.zeros_like(yy)
         else:
             self._yy = yy / np.sum(yy) * old_sum
-
 
     def crop(self):
         old_sum = np.sum(self._yy)
@@ -323,7 +321,6 @@ class BeamProfile(Profile):
         if np.any(np.isnan(charge_dist)):
             raise ValueError('nans in charge_dist')
 
-        self.ignore_range = None
         self._xx = time
         assert np.all(np.diff(self._xx)>=0)
         self._yy = charge_dist / charge_dist.sum() * total_charge
@@ -333,9 +330,8 @@ class BeamProfile(Profile):
 
     def calc_wake(self, structure, gap, beam_position, wake_type):
         """
-        wake_type: can be 'Dipole' or 'Quadrupole'
+        wake_type: can be 'Dipole', 'Quadrupole', or 'Longitudinal'
         """
-        #print('calc_wake gap beam_offset %.2e %.2e' % (gap, beam_offset))
         if abs(beam_position) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_position))
         dict_key = gap, beam_position, structure, wake_type, len(self._xx)

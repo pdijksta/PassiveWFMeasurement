@@ -156,6 +156,7 @@ class Xfel_data(logMsg.LogMsgBase):
         self.meta_data[self.beamline+':CENTER'] = (tracker.structure_gap/2 - distance)*1e3
         self.tracker.meta_data = self.meta_data
         self.logMsg('Distance calibrated to %.0f um' % (distance*1e6))
+        return distance
 
     def get_images(self, lasing_options=None):
         if lasing_options is None:

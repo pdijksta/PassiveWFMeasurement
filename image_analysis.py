@@ -9,7 +9,7 @@ from .logMsg import LogMsgBase
 
 
 class Image(LogMsgBase):
-    def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, x_offset=0, xlabel='x (mm)', ylabel='y (mm)', logger=None):
+    def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None):
         self.logger = logger
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
@@ -31,7 +31,7 @@ class Image(LogMsgBase):
             image = image - np.median(image)
             np.clip(image, 0, None, out=image)
         self.image = image
-        self.x_axis = x_axis - x_offset
+        self.x_axis = x_axis
         self.y_axis = y_axis
         self.x_unit = x_unit
         self.y_unit = y_unit

@@ -414,7 +414,6 @@ class LasingReconstructionImages:
                 }
         return outp
 
-
     def interpolate_slice(self, ref):
         new_slice_dicts = []
         for slice_dict in self.slice_dicts:
@@ -503,4 +502,17 @@ def interpolate_slice_dicts(ref, alter):
                 if type(arr2) is np.ndarray:
                     new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2, left=0, right=0)
     return new_dict
+
+def subtract_long_wake(all_slice_dict, tracker, profile):
+    long_wake = profile.calc_wake(tracker.structure, tracker.structure_gap, tracker.beam_position, 'Longitudinal')
+    long_wake_interp = np.interp(all_slice_dict['t'][0], long_wake['wake_time'], long_wake['wake_potential'])
+    loss2 = all_slice_dict['loss'] - long_wake_interp
+    chirp2 = np.zeros_like(loss2)
+    chirp2[:,:-1] = np.diff(loss2)/np.diff(all_slice_dict['t'])
+
+    outp = copy.deepcopy(all_slice_dict)
+    outp['loss'] = loss2
+    outp['chirp'] = chirp2
+
+    return outp
 

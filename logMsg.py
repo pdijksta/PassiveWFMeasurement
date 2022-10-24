@@ -5,6 +5,8 @@ from logging.handlers import RotatingFileHandler
 
 # Copied from Eugenio Ferrari's wsServer
 
+mute = False
+
 def get_logger(logfilename, title):
     try:
         handler = RotatingFileHandler(filename=logfilename,
@@ -27,7 +29,7 @@ def get_logger(logfilename, title):
     return logger
 
 def logMsg(msg='', logger=None, style='I'):
-    if logger:
+    if logger is not None:
         if style == 'I':
             logger.info(msg)
         elif style == 'W':
@@ -38,7 +40,7 @@ def logMsg(msg='', logger=None, style='I'):
             logger.critical(msg)
         else:
             logger.info(msg)
-    else:
+    elif not mute:
         time_str = dt.now().strftime('%Y-%m-%d %H:%M:%S')
         if style == 'I':
             print('%s INFO: %s' % (time_str, msg))

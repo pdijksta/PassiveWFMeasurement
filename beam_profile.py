@@ -323,7 +323,11 @@ class BeamProfile(Profile):
 
         self._xx = time
         assert np.all(np.diff(self._xx)>=0)
-        self._yy = charge_dist / charge_dist.sum() * total_charge
+        _sum = charge_dist.sum()
+        if _sum != 0:
+            self._yy = charge_dist / _sum * total_charge
+        else:
+            self._yy = charge_dist
         self.energy_eV = energy_eV
         self.total_charge = total_charge
         self.wake_dict = {}

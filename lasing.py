@@ -443,8 +443,11 @@ class LasingReconstructionImages:
 
         if ref_slice_dict is not None:
             self.ref_slice_dict = ref_slice_dict
-        elif self.index_median is not None:
-            self.ref_slice_dict = self.slice_dicts[self.index_median]
+        elif self.ref_slice_dict is not None:
+            pass
+        else:
+            print("Fix this!")
+            self.ref_slice_dict = self.slice_dicts[0]
 
         if self.ref_slice_dict is None:
             raise ValueError('No ref_slice_dict defined!')

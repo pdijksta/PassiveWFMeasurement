@@ -46,6 +46,7 @@ class Xfel_data(logMsg.LogMsgBase):
         self.matrix = matrix
         self.optics_at_streaker = optics_at_streaker
         self.charge = charge
+        self.rec_obj = None
 
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
@@ -110,13 +111,13 @@ class Xfel_data(logMsg.LogMsgBase):
         trans_dist.smoothen(20e-6)
 
         method0 = tracker.find_beam_position_options['method']
-        position_explore0 = tracker.find_beam_position_options['position_explore']
+        #position_explore0 = tracker.find_beam_position_options['position_explore']
         try:
             tracker.find_beam_position_options['method'] = 'beamsize'
-            tracker.find_beam_position_options['position_explore'] = 100e-6
+            #tracker.find_beam_position_options['position_explore'] = 100e-6
             find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, profile)
         finally:
-            tracker.find_beam_position_options['position_explore'] = position_explore0
+            #tracker.find_beam_position_options['position_explore'] = position_explore0
             tracker.find_beam_position_options['method'] = method0
 
         def do_interp(trans_dist, half_int=None):
@@ -175,11 +176,11 @@ class Xfel_data(logMsg.LogMsgBase):
 
         trans_dist = self.get_median_sd()
         exp0 = tracker.find_beam_position_options['position_explore']
-        tracker.find_beam_position_options['position_explore'] = 100e-6
+        #tracker.find_beam_position_options['position_explore'] = 100e-6
         find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, ref_profile)
         delta_position = find_beam_position_dict['delta_position']
         if round(abs(delta_position*1e6)) == round(abs(tracker.find_beam_position_options['position_explore']*1e6)):
-            raise ValueError('Beam position could not be found')
+            raise ValueError('Beam position could not be found. Delta position: %0.f um' % (delta_position*1e6))
         new_beam_position = find_beam_position_dict['beam_position']
         distance = tracker.structure_gap/2. - abs(new_beam_position)
         self.meta_data[self.beamline+':CENTER'] = -(tracker.structure_gap/2 - distance)*1e3
@@ -188,14 +189,18 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker.find_beam_position_options['position_explore'] = exp0
         return distance
 
-    def get_images(self, lasing_options=None):
+    def init_images(self, lasing_options=None):
         if lasing_options is None:
             lasing_options = config.get_default_lasing_options()
         lasing_options['subtract_quantile'] = 0
-        rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
-        rec_obj.add_dict(self.data)
-        rec_obj.process_data()
-        return rec_obj
+        self.rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
+        self.rec_obj.add_dict(self.data)
+
+    def get_images(self, lasing_options=None):
+        if self.rec_obj is None:
+            self.init_images(lasing_options=lasing_options)
+        self.rec_obj.process_data()
+        return self.rec_obj
 
     def cut_axes(self, cutX=None, cutY=None):
         x_axis_m = self.data['pyscan_result']['x_axis_m']

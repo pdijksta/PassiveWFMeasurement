@@ -324,10 +324,11 @@ class Image(LogMsgBase):
             else:
                 delta_cumsum = cumsum - prev_cumsum
             # Normalize such that I(x) * dx = I(t) * dt
-            if delta_cumsum == 0 and full_intensity == 0:
+            sum_slice = np.sum(self.image[:,x_index])
+            if (delta_cumsum == 0 and full_intensity == 0) or sum_slice == 0:
                 new_img1[:,t_index] = 0
             else:
-                new_img1[:,t_index] = self.image[:,x_index] / np.sum(self.image[:,x_index]) * delta_cumsum / full_intensity
+                new_img1[:,t_index] = self.image[:,x_index] / sum_slice * delta_cumsum / full_intensity
             if np.any(np.isnan(new_img1[:,t_index])):
                 import pdb; pdb.set_trace()
             prev_cumsum = cumsum

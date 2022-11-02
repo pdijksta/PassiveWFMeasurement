@@ -46,6 +46,7 @@ class Xfel_data(logMsg.LogMsgBase):
         self.matrix = matrix
         self.optics_at_streaker = optics_at_streaker
         self.charge = charge
+        self.rec_obj = None
 
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
@@ -53,14 +54,14 @@ class Xfel_data(logMsg.LogMsgBase):
             data = np.load(filename_or_data)
         self.raw_data = data
 
+        self.profile = profile
         if profile is None:
-            crisp_intensity = data['crisp'][1]
-            if np.any(np.isnan(crisp_intensity)):
-                raise ValueError('NaNs in crisp intensity')
-            if not np.any(crisp_intensity):
-                raise ValueError('All zeros in crisp intensity')
-            crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, energy_eV, charge)
-        self.profile = crisp_profile
+            crisp_intensity = np.nan_to_num(data['crisp'][1])
+            if np.any(crisp_intensity):
+                crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, energy_eV, charge)
+                self.profile = crisp_profile
+            else:
+                self.logMsg('All zeros in crisp intensity')
 
         x_axis_m = np.arange(0, data['images'][0].shape[1], dtype=float)*pixelsize
         y_axis_m = np.arange(0, data['images'][0].shape[0], dtype=float)*pixelsize
@@ -91,9 +92,12 @@ class Xfel_data(logMsg.LogMsgBase):
         beam_optics = self.optics_at_streaker
 
         calib0 = calibration.StructureCalibration(self.structure_name, 0, 0, 0)
-        tracker = tracking.Tracker(self.beamline, self.screen_name, self.structure_name, self.meta_data, calib0, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, gen_lat=False, matrix=self.matrix)
+        tracker = tracking.Tracker(self.beamline, self.screen_name, self.structure_name, self.meta_data, calib0, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, gen_lat=False, matrix=self.matrix, logger=self.logger)
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
+
+    def limit_images(self, limit):
+        self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]
 
     def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
         if profile is None:
@@ -107,13 +111,13 @@ class Xfel_data(logMsg.LogMsgBase):
         trans_dist.smoothen(20e-6)
 
         method0 = tracker.find_beam_position_options['method']
-        position_explore0 = tracker.find_beam_position_options['position_explore']
+        #position_explore0 = tracker.find_beam_position_options['position_explore']
         try:
             tracker.find_beam_position_options['method'] = 'beamsize'
-            tracker.find_beam_position_options['position_explore'] = 100e-6
+            #tracker.find_beam_position_options['position_explore'] = 100e-6
             find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, profile)
         finally:
-            tracker.find_beam_position_options['position_explore'] = position_explore0
+            #tracker.find_beam_position_options['position_explore'] = position_explore0
             tracker.find_beam_position_options['method'] = method0
 
         def do_interp(trans_dist, half_int=None):
@@ -171,23 +175,32 @@ class Xfel_data(logMsg.LogMsgBase):
             ref_profile = self.profile
 
         trans_dist = self.get_median_sd()
-        tracker.find_beam_position_options['position_explore'] = 100e-6
+        exp0 = tracker.find_beam_position_options['position_explore']
+        #tracker.find_beam_position_options['position_explore'] = 100e-6
         find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, ref_profile)
+        delta_position = find_beam_position_dict['delta_position']
+        if round(abs(delta_position*1e6)) == round(abs(tracker.find_beam_position_options['position_explore']*1e6)):
+            raise ValueError('Beam position could not be found. Delta position: %0.f um' % (delta_position*1e6))
         new_beam_position = find_beam_position_dict['beam_position']
         distance = tracker.structure_gap/2. - abs(new_beam_position)
         self.meta_data[self.beamline+':CENTER'] = -(tracker.structure_gap/2 - distance)*1e3
         self.tracker.meta_data = self.meta_data
-        self.logMsg('Distance calibrated to %.0f um' % (distance*1e6))
+        self.logMsg('Distance calibrated to %.0f um. Change by %.0f um' % (distance*1e6, delta_position*1e6))
+        tracker.find_beam_position_options['position_explore'] = exp0
         return distance
 
-    def get_images(self, lasing_options=None):
+    def init_images(self, lasing_options=None):
         if lasing_options is None:
             lasing_options = config.get_default_lasing_options()
         lasing_options['subtract_quantile'] = 0
-        rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
-        rec_obj.add_dict(self.data)
-        rec_obj.process_data()
-        return rec_obj
+        self.rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
+        self.rec_obj.add_dict(self.data)
+
+    def get_images(self, lasing_options=None):
+        if self.rec_obj is None:
+            self.init_images(lasing_options=lasing_options)
+        self.rec_obj.process_data()
+        return self.rec_obj
 
     def cut_axes(self, cutX=None, cutY=None):
         x_axis_m = self.data['pyscan_result']['x_axis_m']

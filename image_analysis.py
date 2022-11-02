@@ -58,6 +58,24 @@ class Image(LogMsgBase):
         ylabel = self.ylabel if ylabel is None else ylabel
         return Image(new_i, new_x, new_y, self.charge, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
+    def mean(self, dimension):
+        axis, proj = self._get_axis_and_proj(dimension)
+        return np.sum(axis*proj)/np.sum(proj)
+
+    def get_screen_dist(self, dimension, **kwargs):
+        if dimension == 'X':
+            axis = self.x_axis
+            proj = self.image.sum(axis=0)
+        elif dimension == 'Y':
+            axis = self.y_axis
+            proj = self.image.sum(axis=1)
+        return beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge, **kwargs)
+
+    def rms(self, dimension):
+        axis, proj = self._get_axis_and_proj(dimension)
+        mean = self.mean(dimension)
+        return np.sqrt(np.sum((axis-mean)**2*proj)/np.sum(proj))
+
     def transpose(self):
         return self.child(self.image.T.copy(), self.y_axis.copy(), self.x_axis.copy(), self.y_unit, self.x_unit, self.ylabel, self.xlabel)
 

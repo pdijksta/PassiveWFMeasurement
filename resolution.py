@@ -38,6 +38,7 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
             'beamprofile': beamprofile,
             'wake_dict_dipole': wake_dict,
             'wake_dict_quad': wake_dict_quad,
+            'forward_dict': forward_dict,
             }
 
     if use_other_dim:

@@ -65,7 +65,11 @@ ms.set_fontsizes(config.fontsize)
 PyQt5.QtCore.pyqtRemoveInputHook() # for pdb to work
 
 def w2f(w):
-    return float(w.text())
+    text = w.text()
+    if w.text == 'None':
+        return None
+    else:
+        return float(text)
 
 def w2i(w):
     return int(round(w2f(w)))
@@ -244,6 +248,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         # Lasing options
         self.LasingReconstructionSliceFactor.setText('%i' % ls['slice_factor'])
         self.LasingIntensityCutLow.setText('%.4f' % ls['subtract_quantile'])
+        if ls['max_quantile'] is None:
+            self.LasingIntensityCutUp.setText('None')
         self.LasingIntensityCutUp.setText('%.4f' % ls['max_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
         if ls['t_lims'] is None:

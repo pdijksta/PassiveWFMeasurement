@@ -765,3 +765,5 @@ def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=N
         err = np.std(arr, axis=0)
         subplots[ctr].errorbar(slice_time*1e15, mean*factor, yerr=err*factor, label=label)
 
+    return (fig, subplots)
+

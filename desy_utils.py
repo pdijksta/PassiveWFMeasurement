@@ -57,8 +57,12 @@ class Xfel_data(logMsg.LogMsgBase):
         self.profile = profile
         if profile is None:
             crisp_intensity = np.nan_to_num(data['crisp'][1])
+            crisp_intensity2 = np.nan_to_num(data['crisp_all'][0][1])
             if np.any(crisp_intensity):
                 crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, energy_eV, charge)
+                self.profile = crisp_profile
+            elif np.any(crisp_intensity2):
+                crisp_profile = beam_profile.BeamProfile(data['crisp_all'][0][0]*1e-15, crisp_intensity2, energy_eV, charge)
                 self.profile = crisp_profile
             else:
                 self.logMsg('All zeros in crisp intensity')
@@ -217,4 +221,63 @@ class Xfel_data(logMsg.LogMsgBase):
         self.data['pyscan_result']['x_axis_m'] = x_axis_m
         self.data['pyscan_result']['y_axis_m'] = y_axis_m
         self.data['pyscan_result']['image'] = new_images
+
+
+class BumpCalibration:
+    def __init__(self, ref_type, ref, ref_distance):
+        self.ref_type = ref_type
+        self.ref = ref
+        self.ref_distance = ref_distance
+
+    def get_distance(self, val):
+        return self.ref_distance + (self.ref-val)
+
+class XfelDistanceScan:
+
+    bpm_name = 'BPMA.2467.T3'
+
+    def __init__(self, filenames, charge, energy_eV, pixelsize):
+        self.filenames = filenames
+        self.charge = charge
+        self.energy_eV = energy_eV
+        self.pixelsize = pixelsize
+
+        self.first_images = None
+
+        self.all_orbits0 = all_orbits = []
+        self.bumps = bumps = np.zeros(len(filenames))
+        self.orbits_mean = bumps.copy()
+        self.orbits_rms = bumps.copy()
+
+        for ctr, filename in enumerate(self.filenames):
+            data = np.load(filename)
+            bump = data['bump']*1e-3
+            index = np.argwhere(data['orbit_list'][0,:,0] == self.bpm_name).squeeze()
+            orbits = np.array(data['orbit_list'][:,index,2], float)
+            all_orbits.append(orbits)
+
+            bumps[ctr] = bump
+            self.orbits_mean[ctr] = np.mean(orbits)
+            self.orbits_rms[ctr] = np.std(orbits)
+
+    def sort(self, key='bump'):
+        if key == 'bump':
+            sort = np.argsort(self.bumps)
+        else:
+            raise NotImplementedError(key)
+
+        self.filenames = self.filenames[sort]
+        self.bumps = self.bumps[sort]
+        self.orbits_mean = self.orbits_mean[sort]
+        self.orbits_rms = self.orbits_rms[sort]
+        if self.first_images is not None:
+            self.first_images = self.first_images[sort]
+
+    def get_first_images(self):
+        self.first_images = []
+        for filename in self.filenames:
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, None)
+            analyzer.limit_images(1)
+            analyzer.init_images()
+            self.first_images.append(analyzer.rec_obj.images_xy[0])
 

@@ -307,7 +307,7 @@ def get_default_structure_calibrator_options():
 def get_default_lasing_options():
     outp = {
             'subtract_quantile': 0.1,
-            'max_quantile': 0.998,
+            'max_quantile': None,
             'slice_factor': 3,
             'current_cutoff': 0.5e3,
             'x_conversion': 'wake',

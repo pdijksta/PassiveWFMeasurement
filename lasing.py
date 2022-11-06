@@ -432,7 +432,7 @@ class LasingReconstructionImages:
             self.get_streaker_offsets()
             self.convert_x_wake()
         elif x_conversion  == 'linear':
-            self.convert_x_linear(self.lasing_options['x_factor'])
+            self.convert_x_linear(self.lasing_options['x_linear_factor'])
             if self.profile is None:
                 self.set_profile()
         else:

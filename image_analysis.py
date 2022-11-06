@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize._optimize import OptimizeWarning
+#from scipy.optimize._optimize import OptimizeWarning
 import matplotlib.pyplot as plt
 
 from .gaussfit import GaussFit
@@ -189,7 +189,7 @@ class Image(LogMsgBase):
 
             try:
                 gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
-            except (RuntimeError, OptimizeWarning):
+            except (RuntimeError):
                 gf = None
                 addzero()
             else:

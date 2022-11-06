@@ -66,7 +66,7 @@ PyQt5.QtCore.pyqtRemoveInputHook() # for pdb to work
 
 def w2f(w):
     text = w.text()
-    if w.text == 'None':
+    if text == 'None':
         return None
     else:
         return float(text)
@@ -250,7 +250,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.LasingIntensityCutLow.setText('%.4f' % ls['subtract_quantile'])
         if ls['max_quantile'] is None:
             self.LasingIntensityCutUp.setText('None')
-        self.LasingIntensityCutUp.setText('%.4f' % ls['max_quantile'])
+        else:
+            self.LasingIntensityCutUp.setText('%.4f' % ls['max_quantile'])
         self.LasingCurrentCutoff.setText('%.4f' % (ls['current_cutoff']*1e-3))
         if ls['t_lims'] is None:
             ls['t_lims'] = [0, 0]

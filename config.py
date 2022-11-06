@@ -248,6 +248,7 @@ beamline_charge_pvs_bsread = {
 all_structures = []
 for beamline, structure_list in structure_names.items():
     all_structures.extend(structure_list)
+del beamline, structure_list
 
 default_n_particles = int(1e5)
 
@@ -329,6 +330,16 @@ def get_default_find_beam_position_options():
             'max_iterations': 8,
             }.copy()
     return outp
+
+sase2_zpos_dict = {
+        'CMY.2443.T3': 2443.4426,
+        'BPMA.2455.T3': 2455.3481,
+        'CMY.2456.T3': 2456.812,
+        'BPMA.2467.T3': 2467.948,
+        'CEY.2468.T3': 2468.5825,
+        'BPMA.2487.T3': 2487.627,
+        'CMY.2488.T3': 2488.7915,
+        }
 
 default_deltaK = 0.2
 

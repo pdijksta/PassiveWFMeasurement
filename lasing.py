@@ -385,6 +385,7 @@ class LasingReconstructionImages:
                 new_fignums = sorted(set(ms.plt.get_fignums()) - set(old_fignums))
                 for fignum in new_fignums:
                     save_path2 = os.path.expanduser(save_path)+'_%s_image_%i_%i.png' % (self.identifier.replace(' ','_'), n_image, fignum)
+                    ms.plt.figure(fignum).subplots_adjust(hspace=0.5, wspace=0.3)
                     ms.plt.figure(fignum).savefig(save_path2)
                     ms.plt.close(fignum)
                     print('Saved %s' % save_path2)
@@ -517,5 +518,8 @@ def subtract_long_wake(all_slice_dict, tracker, profile):
     outp['loss'] = loss2
     outp['chirp'] = chirp2
 
-    return outp
+    return {
+            'all_slice_dict': outp,
+            'long_wake_dict': long_wake,
+            }
 

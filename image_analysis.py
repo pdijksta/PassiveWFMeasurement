@@ -174,6 +174,8 @@ class Image(LogMsgBase):
         else:
             fignum0 = None
 
+        image_sum = self.image.sum()
+
         for n_slice in range(n_slices):
 
             if current_cutoff is not None and current[n_slice] < current_cutoff:
@@ -182,6 +184,7 @@ class Image(LogMsgBase):
 
             intensity = self.image[mask_Elim,n_slice]
             intensity = intensity - intensity.min()
+            intensity_ratio = np.sum(self.image[:,n_slice])/image_sum * n_slices
 
             if np.sum(intensity) == 0:
                 addzero()
@@ -233,7 +236,7 @@ class Image(LogMsgBase):
                 if sp_ctr >= nx*ny:
                     ms.figure('Plot slice analysis')
                     sp_ctr = 1
-                sp = subplot(sp_ctr, title='Slice %i' % n_slice, xlabel='y', ylabel='intensity')
+                sp = subplot(sp_ctr, title='Slice %i int. %.1f' % (n_slice, intensity_ratio), xlabel='y', ylabel='intensity', scix=True, sciy=True)
                 sp_ctr += 1
 
                 sp.plot(y_axis, intensity)

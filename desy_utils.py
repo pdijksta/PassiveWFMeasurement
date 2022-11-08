@@ -232,33 +232,41 @@ class BumpCalibration:
     def get_distance(self, val):
         return self.ref_distance + (self.ref-val)
 
+_z_corr1 = config.sase2_zpos_dict['CMY.2456.T3']
+_z_corr0 = config.sase2_zpos_dict['CMY.2443.T3']
+_z_bpm0 = config.sase2_zpos_dict['BPMA.2455.T3']
+
 class XfelDistanceScan:
 
-    bpm_name = 'BPMA.2467.T3'
+    bpm_names_factors = [
+            ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
+            ('BPMA.2467.T3', 1),
+            ]
 
     def __init__(self, filenames, charge, energy_eV, pixelsize):
-        self.filenames = filenames
+        self.filenames = self.filenames0 = filenames
         self.charge = charge
         self.energy_eV = energy_eV
         self.pixelsize = pixelsize
 
         self.first_images = None
 
-        self.all_orbits0 = all_orbits = []
         self.bumps = bumps = np.zeros(len(filenames))
         self.orbits_mean = bumps.copy()
         self.orbits_rms = bumps.copy()
+        all_orbits = {bpm_name: [] for bpm_name, _ in self.bpm_names_factors}
 
         for ctr, filename in enumerate(self.filenames):
             data = np.load(filename)
             bump = data['bump']*1e-3
-            index = np.argwhere(data['orbit_list'][0,:,0] == self.bpm_name).squeeze()
-            orbits = np.array(data['orbit_list'][:,index,2], float)
-            all_orbits.append(orbits)
-
-            bumps[ctr] = bump
-            self.orbits_mean[ctr] = np.mean(orbits)
-            self.orbits_rms[ctr] = np.std(orbits)
+            for bpm_name, factor in self.bpm_names_factors:
+                index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
+                orbits = np.array(data['orbit_list'][:,index,2], float)*factor
+                all_orbits[bpm_name].append(orbits)
+                if bpm_name == 'BPMA.2455.T3':
+                    bumps[ctr] = bump
+                    self.orbits_mean[ctr] = np.mean(orbits)
+                    self.orbits_rms[ctr] = np.std(orbits)
 
     def sort(self, key='bump'):
         if key == 'bump':
@@ -266,7 +274,7 @@ class XfelDistanceScan:
         else:
             raise NotImplementedError(key)
 
-        self.filenames = self.filenames[sort]
+        self.filenames = np.array(self.filenames)[sort]
         self.bumps = self.bumps[sort]
         self.orbits_mean = self.orbits_mean[sort]
         self.orbits_rms = self.orbits_rms[sort]

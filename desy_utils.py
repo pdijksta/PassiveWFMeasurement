@@ -283,9 +283,23 @@ class XfelDistanceScan:
 
     def get_first_images(self):
         self.first_images = []
-        for filename in self.filenames:
-            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, None)
+        for ctr, filename in enumerate(self.filenames):
+            init_distance = 3.5e-3 - self.orbits_mean[ctr]
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance)
             analyzer.limit_images(1)
             analyzer.init_images()
             self.first_images.append(analyzer.rec_obj.images_xy[0])
+        return self.first_images
+
+    def get_crisp_distances(self):
+        distances = []
+        for ctr, filename in enumerate(self.filenames):
+            init_distance = 3.5e-3 - self.orbits_mean[ctr]
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance)
+            analyzer.limit_images(1)
+            analyzer.calibrate_screen0()
+            analyzer.tracker.find_beam_position_options['position_explore'] = 200e-6
+            distances.append(analyzer.calibrate_distance())
+        return np.array(distances)
+
 

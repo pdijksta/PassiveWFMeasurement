@@ -1,7 +1,7 @@
-#import warnings
+import warnings
 import numpy as np
 from scipy.optimize import curve_fit
-#from scipy.optimize._optimize import OptimizeWarning
+from scipy.optimize import OptimizeWarning
 
 factor_fwhm = 2*np.sqrt(2*np.log(2))
 
@@ -51,21 +51,21 @@ class GaussFit:
                 self.scale_0, self.mean_0, self.sigma_0 = p0
                 self.const_0 = 0
 
-        #with warnings.catch_warnings():
-            #warnings.simplefilter('error', category=OptimizeWarning)
-        try:
-            self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
-        except (RuntimeError):
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', category=OptimizeWarning)
             try:
-                p0[2] *= 5
                 self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
-            except (RuntimeError) as e:
-                if raise_:
-                    raise
-                self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
-                if print_:
-                    print(e)
-                    print('Fit did not converge. Using p0 instead!')
+            except (RuntimeError, OptimizeWarning):
+                try:
+                    p0[2] *= 5
+                    self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
+                except (RuntimeError, OptimizeWarning) as e:
+                    if raise_:
+                        raise
+                    self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
+                    if print_:
+                        print(e)
+                        print('Fit did not converge. Using p0 instead!')
 
         if fit_const:
             self.scale, self.mean, self.sigma, self.const = self.popt

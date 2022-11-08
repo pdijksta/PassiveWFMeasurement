@@ -130,6 +130,8 @@ def load_avg_blmeas(file_or_dict):
 
     if 'Raw_data' in blmeas_dict:
         return load_avg_blmeas_old(blmeas_dict)
+    elif 'data' in blmeas_dict:
+        return load_avg_blmeas_new(blmeas_dict['data'])
     else:
         return load_avg_blmeas_new(blmeas_dict)
 

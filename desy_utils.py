@@ -103,6 +103,7 @@ class Xfel_data(logMsg.LogMsgBase):
         self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]
 
     def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
+        half_factor = 4
         if profile is None:
             profile = self.profile
         if profile is None:
@@ -134,7 +135,7 @@ class Xfel_data(logMsg.LogMsgBase):
                 interp_intensity = trans_dist.intensity[index:][::-1].copy()
                 interp_x = trans_dist.x[index:][::-1]
             if half_int is None:
-                half_int = trans_dist.intensity[index]/2
+                half_int = trans_dist.intensity[index]/half_factor
             interp_intensity[interp_intensity < interp_intensity.max()*0.2] = 0
             half_peak_x = np.interp(half_int, interp_intensity, interp_x)
             return half_peak_x, half_int, index

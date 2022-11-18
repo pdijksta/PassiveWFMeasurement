@@ -147,7 +147,7 @@ class Xfel_data(logMsg.LogMsgBase):
         half_peak_x, _, index_meas = do_interp(trans_dist, half_int)
 
         delta_x = -(half_peak_x - half_peak_x_sim)
-        self.data['pyscan_result']['%s_axis_m' % tracker.structure.dim.lower()] += delta_x
+        self.change_screen0(delta_x)
         self.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3))
 
         # For debug only
@@ -162,6 +162,10 @@ class Xfel_data(logMsg.LogMsgBase):
         #import matplotlib.pyplot as plt
         #plt.show()
         #import pdb; pdb.set_trace()
+        return delta_x
+
+    def change_screen0(self, delta_x):
+        self.data['pyscan_result']['%s_axis_m' % self.tracker.structure.dim.lower()] += delta_x
 
     def screen_data_to_median(self):
         return data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)

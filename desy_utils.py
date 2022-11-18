@@ -34,7 +34,6 @@ def prepare_image_data(image_data):
         new_images[n_image] = new_image
     return new_images
 
-
 class Xfel_data(logMsg.LogMsgBase):
     def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
@@ -164,8 +163,11 @@ class Xfel_data(logMsg.LogMsgBase):
         #plt.show()
         #import pdb; pdb.set_trace()
 
+    def screen_data_to_median(self):
+        return data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
+
     def get_median_sd(self):
-        axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
+        axis, proj, _, index = self.screen_data_to_median()
         trans_dist = beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge)
         trans_dist.aggressive_cutoff(self.tracker.forward_options['screen_cutoff'])
         trans_dist.crop()
@@ -254,7 +256,7 @@ class XfelDistanceScan:
         self.bumps = bumps = np.zeros(len(filenames))
         self.orbits_mean = bumps.copy()
         self.orbits_rms = bumps.copy()
-        all_orbits = {bpm_name: [] for bpm_name, _ in self.bpm_names_factors}
+        self.all_orbits = all_orbits = {bpm_name: [] for bpm_name, _ in self.bpm_names_factors}
 
         for ctr, filename in enumerate(self.filenames):
             data = np.load(filename)
@@ -268,6 +270,9 @@ class XfelDistanceScan:
                     self.orbits_mean[ctr] = np.mean(orbits)
                     self.orbits_rms[ctr] = np.std(orbits)
 
+        for key, val in all_orbits.items():
+            all_orbits[key] = np.array(val)
+
     def sort(self, key='bump'):
         if key == 'bump':
             sort = np.argsort(self.bumps)
@@ -280,6 +285,9 @@ class XfelDistanceScan:
         self.orbits_rms = self.orbits_rms[sort]
         if self.first_images is not None:
             self.first_images = self.first_images[sort]
+
+        for key, val in self.all_orbits.items():
+            self.all_orbits[key] = val[sort]
 
     def get_first_images(self):
         self.first_images = []
@@ -301,5 +309,4 @@ class XfelDistanceScan:
             analyzer.tracker.find_beam_position_options['position_explore'] = 200e-6
             distances.append(analyzer.calibrate_distance())
         return np.array(distances)
-
 

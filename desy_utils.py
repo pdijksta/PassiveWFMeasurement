@@ -353,6 +353,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         orbits = []
         trackers = []
         raw_screens = []
+        crisp_profiles = []
 
         init_pos = config.init_plate_pos_dict[self.beamline]
 
@@ -397,13 +398,22 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                     orbits.append(orbit)
                     raw_screens.append(raw_screen)
                     trackers.append(tracker)
+                    if n_image < len(analyzer.raw_data['crisp_all']):
+                        crisp_xx, crisp_yy = analyzer.raw_data['crisp_all'][n_image]
+                        if np.any(crisp_yy):
+                            crisp_profile = beam_profile.BeamProfile(crisp_xx*1e-15, crisp_yy, self.energy_eV, self.charge)
+                            crisp_profile.crop()
+                            crisp_profile.reshape(5000)
+                            crisp_profiles.append(crisp_profile)
 
         sort = np.argsort(orbits)
         self.orbits = np.take(orbits, sort)
         self.trackers = list(np.take(trackers, sort))
         self.raw_screens = list(np.take(raw_screens, sort))
+        self.crisp_profiles = crisp_profiles
 
     def calibrate_plate_position(self):
+        self.logMsg('Calibrating struct pos with %i measurements' % len(self.raw_screens))
         t0 = time.time()
         plate_positions = []
         indices = []
@@ -441,7 +451,6 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             distances.insert(index, this_distances)
 
             indices.append(index)
-            #plate_positions_unsorted.append(plate_pos)
             return True
 
         def get_plate_pos():
@@ -471,7 +480,6 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         self.logMsg('Calibrated struct pos %.3f mm in %.1f s and %i iterations. Status: %i' % (plate_pos*1e3, time_spent, n_iter, status))
         outp = {
                 'plate_positions': np.array(plate_positions),
-                #'plate_positions_unsorted': np.array(plate_positions_unsorted),
                 'fit_params': fit_params,
                 'fit_slopes': np.array(fit_slopes),
                 'fit_covs': np.array(fit_covs),
@@ -485,8 +493,8 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 'options': self.structure_calib_options,
                 'orbits': self.orbits,
                 'raw_screens': self.raw_screens,
+                'crisp_profiles': self.crisp_profiles,
                 }
 
-        #import pdb; pdb.set_trace()
         return outp
 

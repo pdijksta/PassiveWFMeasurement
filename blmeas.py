@@ -1,7 +1,37 @@
+import copy
 import numpy as np
 
 from . import beam_profile
 from . import h5_storage
+
+def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
+    """
+    outp can be profile or index
+    """
+    profile_list = copy.deepcopy(profile_list0)
+    for bp in profile_list:
+        bp._yy = bp._yy - bp._yy.min()
+        bp.reshape(size)
+        bp.aggressive_cutoff(cutoff)
+        bp.crop()
+        bp.reshape(size)
+        bp.center('Mean')
+
+    squares_mat = np.zeros([len(profile_list)]*2, float)
+
+    for n_row in range(len(squares_mat)):
+        for n_col in range(n_row):
+            bp1 = profile_list[n_row]
+            bp2 = profile_list[n_col]
+            minus = bp1.charge_dist - bp2.charge_dist
+            squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.sum(minus**2)
+
+    squares = squares_mat.sum(axis=1)
+    n_best = np.argmin(squares)
+    if outp == 'profile':
+        return profile_list0[n_best]
+    elif outp == 'index':
+        return n_best
 
 def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, phases, cutoff=5e-2, size=int(1e3)):
     time_arr = y_axis / calibration
@@ -30,25 +60,7 @@ def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, p
         bp = beam_profile.BeamProfile(time_arr, curr, 1, 1)
         current_profiles0.append(bp)
 
-    for bp in current_profiles0:
-        bp._yy = bp._yy - bp._yy.min()
-        bp.reshape(size)
-        bp.aggressive_cutoff(cutoff)
-        bp.crop()
-        bp.reshape(size)
-        bp.center('Mean')
-
-    squares_mat = np.zeros([len(current_profiles0)]*2, float)
-
-    for n_row in range(len(squares_mat)):
-        for n_col in range(n_row):
-            bp1 = current_profiles0[n_row]
-            bp2 = current_profiles0[n_col]
-            minus = bp1.charge_dist - bp2.charge_dist
-            squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.sum(minus**2)
-
-    squares = squares_mat.sum(axis=1)
-    n_best = np.argmin(squares)
+    n_best = get_mean_profile(current_profiles0, outp='index', size=size, cutoff=cutoff)
 
     #import myplotstyle as ms
     #fignum = ms.plt.gcf().number

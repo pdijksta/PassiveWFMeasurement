@@ -348,6 +348,6 @@ fontsize = 8
 rho_label = r'$\rho$ (nC/m)'
 
 init_plate_pos_dict = {
-        'SASE2': 3.5e-3,
+        'SASE2': 3.55e-3,
         }
 

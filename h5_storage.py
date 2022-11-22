@@ -206,3 +206,6 @@ def loadH5Recursive(h5_file):
             recurse_load(f, 'key', saved_dict)
     return saved_dict
 
+def list_dict_to_list(dd):
+    return [dd['list_entry_%i' % i] for i in range(len(dd))]
+

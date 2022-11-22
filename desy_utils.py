@@ -109,7 +109,8 @@ class Xfel_data(logMsg.LogMsgBase):
         self.tracker.meta_data = self.data['meta_data_begin']
 
     def limit_images(self, limit):
-        self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]
+        if limit != np.inf:
+            self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]
 
     def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
         half_factor = 4
@@ -332,17 +333,23 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             ('BPMA.2467.T3', 1),
             ]
 
-    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file, logger=None):
+    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None):
         self.logger = logger
         self.pixelsize = pixelsize
         self.charge = charge
         self.energy_eV = energy_eV
         self.images_per_file = images_per_file
         self.beamline = beamline
-        self.structure_calib_options = config.get_default_structure_calibrator_options()
-        self.structure_calib_options['delta_gap_range'] = np.array([-delta_gap_range/2, delta_gap_range/2])
+        self.use_bpm = 'BPMA.2455.T3'
+        if structure_calib_options is None:
+            self.structure_calib_options = config.get_default_structure_calibrator_options()
+            self.structure_calib_options['delta_gap_range'] = np.array([-delta_gap_range/2, delta_gap_range/2])
+            self.structure_calib_options['max_iter'] = 5
+            self.structure_calib_options['prec'] = 2e-6
+        else:
+            self.structure_calib_options = structure_calib_options
 
-    def init_files(self, filenames):
+    def init_files(self, filenames, min_orbit=-np.inf, max_orbit=np.inf):
         orbits = []
         trackers = []
         raw_screens = []
@@ -354,9 +361,16 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             analyzer.limit_images(self.images_per_file)
             data = analyzer.raw_data
 
+            if self.images_per_file == np.inf:
+                images_per_file = len(data['orbit_list'])
+            else:
+                images_per_file = self.images_per_file
+
+            all_orbits = {}
             for bpm_name, factor in self.bpm_names_factors:
                 index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-                file_orbits = np.array(data['orbit_list'][:self.images_per_file,index,2], float)*factor
+                file_orbits = (np.array(data['orbit_list'][:images_per_file,index,2], float)*factor).squeeze()
+                all_orbits[bpm_name] = file_orbits
             analyzer.set_distance(init_pos-abs(file_orbits.mean()))
             analyzer.calibrate_screen0()
 
@@ -368,16 +382,21 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             elif dim == 'Y':
                 proj = pyscan_result['image'].sum(axis=-1, dtype=np.float64)
 
-            images_per_file2 = min(self.images_per_file, len(proj))
+            images_per_file2 = min(images_per_file, len(proj))
             for n_image in range(images_per_file2):
-                orbit = file_orbits[n_image]
-                orbits.append(orbit)
-                init_distance = init_pos - abs(orbit)
-                analyzer.set_distance(init_distance)
-                tracker = copy.deepcopy(analyzer.tracker)
-                trackers.append(tracker)
-                raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=self.charge)
-                raw_screens.append(raw_screen)
+                if images_per_file2 == 1:
+                    orbit = all_orbits[self.use_bpm]
+                else:
+                    orbit = all_orbits[self.use_bpm][n_image]
+                if orbit > min_orbit and orbit < max_orbit:
+                    init_distance = init_pos - abs(orbit)
+                    analyzer.set_distance(init_distance)
+                    tracker = copy.deepcopy(analyzer.tracker)
+                    raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=self.charge)
+
+                    orbits.append(orbit)
+                    raw_screens.append(raw_screen)
+                    trackers.append(tracker)
 
         sort = np.argsort(orbits)
         self.orbits = np.take(orbits, sort)
@@ -387,40 +406,49 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
     def calibrate_plate_position(self):
         t0 = time.time()
         plate_positions = []
+        indices = []
         fit_params = []
         fit_slopes = []
+        fit_covs = []
         rms_durations = []
         rec_profiles = []
-        prec = 1e-6
-        max_iter = 5
+        distances = []
+        prec = self.structure_calib_options['prec']
+        max_iter = self.structure_calib_options['max_iter']
 
         def do_calc(plate_pos):
             if plate_pos in plate_positions:
-                return False
-            this_profiles, this_rms_durations = [], []
+                return np.nan, False
+            this_profiles, this_rms_durations, this_distances = [], [], []
             for orbit, tracker, raw_screen in zip(self.orbits, self.trackers, self.raw_screens):
                 distance = plate_pos - abs(orbit)
+                this_distances.append(distance)
                 beam_position = tracker.structure_gap/2. - distance
                 gauss_dict = tracker.reconstruct_profile_Gauss_forced(tracker.structure_gap, beam_position, raw_screen)
                 profile = gauss_dict['reconstructed_profile']
                 this_profiles.append(profile)
                 this_rms_durations.append(profile.rms())
-            this_fit_params = np.poly1d(np.polyfit(self.orbits, this_rms_durations, 1))
+            fit, cov = np.polyfit(self.orbits, this_rms_durations, 1, cov=True)
+            this_fit_params = np.poly1d(fit)
             this_fit_slope = this_fit_params[1]
             index = bisect.bisect(fit_slopes, this_fit_slope)
             fit_slopes.insert(index, this_fit_slope)
             fit_params.insert(index, this_fit_params)
+            fit_covs.insert(index, cov)
             rms_durations.insert(index, this_rms_durations)
             rec_profiles.insert(index, this_profiles)
             plate_positions.insert(index, plate_pos)
+            distances.insert(index, this_distances)
+
+            indices.append(index)
+            #plate_positions_unsorted.append(plate_pos)
             return True
 
         def get_plate_pos():
-            assert min(fit_slopes) < 0
-            assert max(fit_slopes) > 0
+            status = (min(fit_slopes) < 0 and max(fit_slopes) > 0)
             plate_pos0 = np.interp(0, fit_slopes, plate_positions)
             plate_pos = np.round(plate_pos0/prec)*prec
-            return plate_pos
+            return status, plate_pos
 
         delta_pos_range = self.structure_calib_options['delta_gap_range']/2
 
@@ -429,21 +457,36 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             plate_pos = plate_pos0 + delta_pos
             do_calc(plate_pos)
 
-        #for n_iter in range(max_iter):
-        #    plate_pos = get_plate_pos()
-        #    status = do_calc(plate_pos)
-        #    if not status:
-        #        break
-        #plate_pos = get_plate_pos()
+        for n_iter in range(max_iter):
+            status, plate_pos = get_plate_pos()
+            if status:
+                status = do_calc(plate_pos)
+            if not status:
+                break
+        n_iter += 1
+
+        status, plate_pos = get_plate_pos()
 
         time_spent = time.time() - t0
-        self.logMsg('Calibrated struct pos %.2f um in %.1f s' % (plate_pos*1e6, time_spent))
+        self.logMsg('Calibrated struct pos %.3f mm in %.1f s and %i iterations. Status: %i' % (plate_pos*1e3, time_spent, n_iter, status))
         outp = {
                 'plate_positions': np.array(plate_positions),
+                #'plate_positions_unsorted': np.array(plate_positions_unsorted),
                 'fit_params': fit_params,
                 'fit_slopes': np.array(fit_slopes),
+                'fit_covs': np.array(fit_covs),
                 'rms_durations': np.array(rms_durations),
                 'rec_profiles': rec_profiles,
+                'distances': np.array(distances),
+                'status': status,
+                'iterations': n_iter,
+                'final_index': indices[-1],
+                'final_position': plate_pos,
+                'options': self.structure_calib_options,
+                'orbits': self.orbits,
+                'raw_screens': self.raw_screens,
                 }
+
+        #import pdb; pdb.set_trace()
         return outp
 

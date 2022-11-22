@@ -1,3 +1,6 @@
+import time
+import bisect
+import copy
 import numpy as np
 from scipy.signal import find_peaks
 
@@ -46,6 +49,7 @@ class Xfel_data(logMsg.LogMsgBase):
         self.optics_at_streaker = optics_at_streaker
         self.charge = charge
         self.rec_obj = None
+        self.gap = gap
 
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
@@ -77,8 +81,8 @@ class Xfel_data(logMsg.LogMsgBase):
                     },
                 'meta_data_begin': {
                     '%s:ENERGY' % beamline: energy_eV/1e6,
-                    '%s:GAP' % beamline: gap*1e3,
-                    '%s:CENTER' % beamline: -(gap/2-init_distance)*1e3,
+                    '%s:GAP' % beamline: self.gap*1e3,
+                    '%s:CENTER' % beamline: 0,
                     '%s:CHARGE' % beamline: charge*1e12,
                     },
                 }
@@ -98,6 +102,11 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker = tracking.Tracker(self.beamline, self.screen_name, self.structure_name, self.meta_data, calib0, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, gen_lat=False, matrix=self.matrix, logger=self.logger)
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
+        self.set_distance(init_distance)
+
+    def set_distance(self, distance):
+        self.data['meta_data_begin']['%s:CENTER' % self.beamline] = -(self.gap/2-distance)*1e3
+        self.tracker.meta_data = self.data['meta_data_begin']
 
     def limit_images(self, limit):
         self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]
@@ -120,6 +129,8 @@ class Xfel_data(logMsg.LogMsgBase):
             tracker.find_beam_position_options['method'] = 'beamsize'
             #tracker.find_beam_position_options['position_explore'] = 100e-6
             find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, profile)
+        #except:
+        #    import pdb; pdb.set_trace()
         finally:
             #tracker.find_beam_position_options['position_explore'] = position_explore0
             tracker.find_beam_position_options['method'] = method0
@@ -139,7 +150,6 @@ class Xfel_data(logMsg.LogMsgBase):
             interp_intensity[interp_intensity < interp_intensity.max()*0.2] = 0
             half_peak_x = np.interp(half_int, interp_intensity, interp_x)
             return half_peak_x, half_int, index
-
 
         forward_screen = find_beam_position_dict['sim_screen']
         forward_screen.normalize()
@@ -314,4 +324,126 @@ class XfelDistanceScan:
             analyzer.tracker.find_beam_position_options['position_explore'] = 200e-6
             distances.append(analyzer.calibrate_distance())
         return np.array(distances)
+
+class SingleSidedCalibration(logMsg.LogMsgBase):
+
+    bpm_names_factors = [
+            ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
+            ('BPMA.2467.T3', 1),
+            ]
+
+    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file, logger=None):
+        self.logger = logger
+        self.pixelsize = pixelsize
+        self.charge = charge
+        self.energy_eV = energy_eV
+        self.images_per_file = images_per_file
+        self.beamline = beamline
+        self.structure_calib_options = config.get_default_structure_calibrator_options()
+        self.structure_calib_options['delta_gap_range'] = np.array([-delta_gap_range/2, delta_gap_range/2])
+
+    def init_files(self, filenames):
+        orbits = []
+        trackers = []
+        raw_screens = []
+
+        init_pos = config.init_plate_pos_dict[self.beamline]
+
+        for filename in filenames:
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger)
+            analyzer.limit_images(self.images_per_file)
+            data = analyzer.raw_data
+
+            for bpm_name, factor in self.bpm_names_factors:
+                index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
+                file_orbits = np.array(data['orbit_list'][:self.images_per_file,index,2], float)*factor
+            analyzer.set_distance(init_pos-abs(file_orbits.mean()))
+            analyzer.calibrate_screen0()
+
+            dim = analyzer.tracker.structure.dim
+            pyscan_result = analyzer.data['pyscan_result']
+            axis = pyscan_result['%s_axis_m' % dim.lower()].astype(np.float64)
+            if dim == 'X':
+                proj = pyscan_result['image'].sum(axis=-2, dtype=np.float64)
+            elif dim == 'Y':
+                proj = pyscan_result['image'].sum(axis=-1, dtype=np.float64)
+
+            images_per_file2 = min(self.images_per_file, len(proj))
+            for n_image in range(images_per_file2):
+                orbit = file_orbits[n_image]
+                orbits.append(orbit)
+                init_distance = init_pos - abs(orbit)
+                analyzer.set_distance(init_distance)
+                tracker = copy.deepcopy(analyzer.tracker)
+                trackers.append(tracker)
+                raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=self.charge)
+                raw_screens.append(raw_screen)
+
+        sort = np.argsort(orbits)
+        self.orbits = np.take(orbits, sort)
+        self.trackers = list(np.take(trackers, sort))
+        self.raw_screens = list(np.take(raw_screens, sort))
+
+    def calibrate_plate_position(self):
+        t0 = time.time()
+        plate_positions = []
+        fit_params = []
+        fit_slopes = []
+        rms_durations = []
+        rec_profiles = []
+        prec = 1e-6
+        max_iter = 5
+
+        def do_calc(plate_pos):
+            if plate_pos in plate_positions:
+                return False
+            this_profiles, this_rms_durations = [], []
+            for orbit, tracker, raw_screen in zip(self.orbits, self.trackers, self.raw_screens):
+                distance = plate_pos - abs(orbit)
+                beam_position = tracker.structure_gap/2. - distance
+                gauss_dict = tracker.reconstruct_profile_Gauss_forced(tracker.structure_gap, beam_position, raw_screen)
+                profile = gauss_dict['reconstructed_profile']
+                this_profiles.append(profile)
+                this_rms_durations.append(profile.rms())
+            this_fit_params = np.poly1d(np.polyfit(self.orbits, this_rms_durations, 1))
+            this_fit_slope = this_fit_params[1]
+            index = bisect.bisect(fit_slopes, this_fit_slope)
+            fit_slopes.insert(index, this_fit_slope)
+            fit_params.insert(index, this_fit_params)
+            rms_durations.insert(index, this_rms_durations)
+            rec_profiles.insert(index, this_profiles)
+            plate_positions.insert(index, plate_pos)
+            return True
+
+        def get_plate_pos():
+            assert min(fit_slopes) < 0
+            assert max(fit_slopes) > 0
+            plate_pos0 = np.interp(0, fit_slopes, plate_positions)
+            plate_pos = np.round(plate_pos0/prec)*prec
+            return plate_pos
+
+        delta_pos_range = self.structure_calib_options['delta_gap_range']/2
+
+        for delta_pos in delta_pos_range.min(), delta_pos_range.max():
+            plate_pos0 = config.init_plate_pos_dict[self.beamline]
+            plate_pos = plate_pos0 + delta_pos
+            do_calc(plate_pos)
+
+        #for n_iter in range(max_iter):
+        #    plate_pos = get_plate_pos()
+        #    status = do_calc(plate_pos)
+        #    if not status:
+        #        break
+        #plate_pos = get_plate_pos()
+
+        time_spent = time.time() - t0
+        self.logMsg('Calibrated struct pos %.2f um in %.1f s' % (plate_pos*1e6, time_spent))
+        outp = {
+                'plate_positions': np.array(plate_positions),
+                'fit_params': fit_params,
+                'fit_slopes': np.array(fit_slopes),
+                'rms_durations': np.array(rms_durations),
+                'rec_profiles': rec_profiles,
+                }
+        return outp
 

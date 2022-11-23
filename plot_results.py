@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from . import myplotstyle as ms
@@ -5,6 +6,7 @@ from . import config
 from . import data_loader
 from . import image_analysis
 from . import beam_profile
+from . import h5_storage
 
 class dummy_plot:
     def __init__(self, *args, **kwargs):
@@ -766,4 +768,123 @@ def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=N
         subplots[ctr].errorbar(slice_time*1e15, mean*factor, yerr=err*factor, label=label)
 
     return (fig, subplots)
+
+def plot_single_sided_calib(calib_dict):
+    raw_screens0 = h5_storage.list_dict_to_list(calib_dict['raw_screens'])
+    raw_screens = [beam_profile.ScreenDistribution.from_dict(d) for d in raw_screens0]
+
+    crisp_profiles0 = h5_storage.list_dict_to_list(calib_dict['crisp_profiles'])
+    crisp_profiles = [beam_profile.BeamProfile.from_dict(d) for d in crisp_profiles0]
+
+
+    profiles0 = h5_storage.list_dict_to_list(calib_dict['rec_profiles'])
+    profiles = []
+    for p_dict in profiles0:
+        p_list = h5_storage.list_dict_to_list(p_dict)
+        p_list = [beam_profile.BeamProfile.from_dict(d) for d in p_list]
+        profiles.append(p_list)
+
+    orbits = calib_dict['orbits']
+
+    fig = ms.figure('Debug single plate calibrator', figsize=(16,10))
+    sp_ctr = 1
+    subplot = ms.subplot_factory(3, 3)
+
+    sp_screen = subplot(sp_ctr, title='Raw screens', xlabel='y (mm)', ylabel=config.rho_label)
+    sp_ctr += 1
+
+    sp_mean_rms = subplot(sp_ctr, title='Data consistency', xlabel='Orbit reading (mm)', ylabel='Mean / rms (mm)')
+    sp_ctr += 1
+
+    raw_screens2 = copy.deepcopy(raw_screens)
+    for screen in raw_screens2:
+        screen.aggressive_cutoff(0.05)
+        screen.crop()
+        screen.plot_standard(sp_screen)
+    mean_arr = np.array([s.mean() for s in raw_screens2])
+    rms_arr = np.array([s.rms() for s in raw_screens2])
+
+    sp_mean_rms.plot(orbits*1e3, np.abs(mean_arr)*1e3, label='Mean', marker='.', ls='None')
+    sp_mean_rms.plot(orbits*1e3, rms_arr*1e3, label='Rms', marker='.', ls='None')
+
+    sp_mean_rms.legend()
+
+    final_index = calib_dict['final_index']
+
+    rms_durations = calib_dict['rms_durations']
+    plate_positions  = calib_dict['plate_positions']
+    fit_slopes = calib_dict['fit_slopes']
+    fit_params = calib_dict['fit_params']
+    distances = calib_dict['distances']
+    final_pos = calib_dict['final_position']
+    profile_list = profiles[final_index]
+    peak_currents = np.array([[p.get_current().max() for p in a] for a in profiles])
+
+    sp_rms = subplot(sp_ctr, title='Rms durations', xlabel='Orbit reading (mm)', ylabel=r'$\tau$ (fs)')
+    sp_ctr += 1
+
+    sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel='$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
+    sp_ctr += 1
+    sp_err = sp_avg_dur.twinx()
+    sp_err.set_ylabel(r'$\delta\tau/\tau$')
+
+    sp_peak = subplot(sp_ctr, title='Peak currents', xlabel='Orbit reading (mm)', ylabel='Rec. peak current (kA)')
+    sp_ctr += 1
+
+    sp_avg_peak = subplot(sp_ctr, title='Average peak currents', xlabel='$\Delta$d ($\mu$m)', ylabel='Rec. peak current (kA)')
+    sp_ctr += 1
+    sp_peak_err = sp_avg_peak.twinx()
+    sp_peak_err.set_ylabel(r'$\delta$I (kA)')
+
+    sp_fit = subplot(sp_ctr, title='Fit slopes', xlabel='$\Delta$d ($\mu$m)', ylabel='Fit slope (fs/mm)')
+    sp_ctr += 1
+
+    delta_positions = plate_positions-final_pos
+
+    sp_fit.plot(delta_positions*1e6, fit_slopes*1e15*1e-3, marker='.', label='Fit slope')
+    err = np.sqrt(calib_dict['fit_covs'][final_index,0,0])
+    for factor, label in [(1, 'Slope fit error'), (-1, None)]:
+        hline = calib_dict['fit_slopes'][final_index] + factor*err
+        sp_fit.axhline(hline*1e15*1e-3, color='black', ls='--', label=label)
+
+    sp_fit.legend()
+
+    dur_mean = np.mean(rms_durations, axis=1)
+    dur_rms = np.std(rms_durations, axis=1)
+
+    sp_avg_dur.errorbar(delta_positions*1e6, dur_mean*1e15, yerr=dur_rms*1e15, label=r'$\tau$')
+    sp_err.plot(delta_positions*1e6, dur_rms/dur_mean, color='tab:orange', label=r'$\delta\tau$', marker='.')
+    ms.comb_legend(sp_avg_dur, sp_err)
+
+    peak_mean = np.mean(peak_currents, axis=1)
+    peak_rms = np.std(peak_currents, axis=1)
+    sp_avg_peak.errorbar(delta_positions*1e6, peak_mean*1e-3, yerr=peak_rms*1e-3, label=r'I')
+    sp_peak_err.plot(delta_positions*1e6, peak_rms/peak_mean, color='tab:orange', label=r'$\delta$I/I', marker='.')
+    ms.comb_legend(sp_avg_peak, sp_peak_err)
+
+    sp_distances = subplot(sp_ctr, title='Distances', xlabel='Orbit reading (mm)', ylabel='d ($\mu$m)')
+    sp_ctr += 1
+
+    for plate_pos, durations, params, ds, pc in zip(plate_positions, rms_durations, fit_params, distances, peak_currents):
+        label = '%.3f' % (plate_pos*1e3)
+        color = sp_rms.plot(orbits*1e3, durations*1e15, label=label, marker='.', ls='None')[0].get_color()
+        fit_yy = np.poly1d(params)(orbits)
+        sp_rms.plot(orbits*1e3, fit_yy*1e15, ls='--', color=color)
+        sp_distances.plot(orbits*1e3, ds*1e6, marker='.')
+        sp_peak.plot(orbits*1e3, pc/1e3, marker='.', ls='None')
+
+    sp_profile = subplot(sp_ctr, xlabel='t (fs)', ylabel='I (kA)', title='Final profiles for plate pos %.3f mm' % (final_pos*1e3))
+    sp_ctr += 1
+
+    for profile in profile_list:
+        profile.plot_standard(sp_profile, center='Max')
+
+    crisp_peak = [bp.get_current().max() for bp in crisp_profiles]
+    median_index = np.argmin((crisp_peak - np.median(crisp_peak))**2)
+    mean_crisp = crisp_profiles[median_index]
+    mean_crisp.plot_standard(sp_profile, center='Max', ls='--', color='black', label='CRISP')
+
+    sp_profile.legend()
+
+    return fig
 

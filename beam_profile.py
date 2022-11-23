@@ -5,6 +5,15 @@ from .gaussfit import GaussFit
 from . import blmeas
 from . import config
 
+def _mean(xx, yy):
+    return np.sum(xx*yy) / np.sum(yy)
+
+def _rms(xx, yy):
+    mean = _mean(xx, yy)
+    square = (xx - mean)**2
+    rms = np.sqrt(np.sum(square * yy) / np.sum(yy))
+    return rms
+
 def find_rising_flank(arr, method='Size'):
     """
     Method can be 'Length' or 'Size'
@@ -64,13 +73,25 @@ class Profile:
         self._xx, self._yy = _xx, _yy
 
     def mean(self):
-        return np.sum(self._xx*self._yy) / np.sum(self._yy)
+        return _mean(self._xx, self._yy)
 
     def rms(self):
-        mean = self.mean()
-        square = (self._xx - mean)**2
-        rms = np.sqrt(np.sum(square * self._yy) / np.sum(self._yy))
-        return rms
+        return _rms(self._xx, self._yy)
+
+    def rms_chargecut(self, cut, outp='rms'):
+        if cut == 0:
+            return self.rms()
+        assert 0 < cut < 1
+        int_charge = np.cumsum(self._yy)
+        int_charge /= int_charge[-1]
+        index_left = np.argmin((int_charge-cut/2)**2)
+        index_right = np.argmin((int_charge - (1-cut/2))**2)
+        if outp == 'indices':
+            return index_left, index_right
+        elif outp == 'rms':
+            xx = self._xx[index_left:index_right+1]
+            yy = self._yy[index_left:index_right+1]
+            return _rms(xx, yy)
 
     def fwhm(self):
         def get_lim(indices):

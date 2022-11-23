@@ -412,7 +412,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         self.raw_screens = list(np.take(raw_screens, sort))
         self.crisp_profiles = crisp_profiles
 
-    def calibrate_plate_position(self):
+    def calibrate_plate_position(self, rms_chargecut=0):
         self.logMsg('Calibrating struct pos with %i measurements' % len(self.raw_screens))
         t0 = time.time()
         plate_positions = []
@@ -437,7 +437,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 gauss_dict = tracker.reconstruct_profile_Gauss_forced(tracker.structure_gap, beam_position, raw_screen)
                 profile = gauss_dict['reconstructed_profile']
                 this_profiles.append(profile)
-                this_rms_durations.append(profile.rms())
+                this_rms_durations.append(profile.rms_chargecut(rms_chargecut))
             fit, cov = np.polyfit(self.orbits, this_rms_durations, 1, cov=True)
             this_fit_params = np.poly1d(fit)
             this_fit_slope = this_fit_params[1]

@@ -2,8 +2,7 @@ import os
 import numpy as np
 from scipy.interpolate import griddata
 
-correction_table = np.loadtxt(os.path.join(os.path.dirname(__file__), './data_BPMA_correction_x.txt'), delimiter=',', comments='#')
-xi, yi, xc = correction_table.T*1e-3
+_xi, _yi, _xc = np.loadtxt(os.path.join(os.path.dirname(__file__), './data_BPMA_correction_x.txt'), delimiter=',', comments='#').T*1e-3
 
 def bpm_correction(x_in, y_in, method='table'):
     x = np.cos(np.pi/4)*x_in - np.sin(np.pi/4)*y_in
@@ -29,8 +28,8 @@ def bpm_correction(x_in, y_in, method='table'):
         x_corr = poly(x, y)
         y_corr = poly(y, x)
     elif method == 'table':
-        x_corr = griddata((xi, yi), xc, (x, y), method='cubic')
-        y_corr = griddata((xi, yi), xc, (y, x), method='cubic')
+        x_corr = griddata((_xi, _yi), _xc, (x, y), method='cubic')
+        y_corr = griddata((_xi, _yi), _xc, (y, x), method='cubic')
     else:
         raise ValueError(method)
 

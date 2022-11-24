@@ -400,7 +400,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                     trackers.append(tracker)
                     if n_image < len(analyzer.raw_data['crisp_all']):
                         crisp_xx, crisp_yy = analyzer.raw_data['crisp_all'][n_image]
-                        if np.any(crisp_yy):
+                        if np.any(crisp_yy) and not np.any(np.isnan(crisp_yy)):
                             crisp_profile = beam_profile.BeamProfile(crisp_xx*1e-15, crisp_yy, self.energy_eV, self.charge)
                             crisp_profile.crop()
                             crisp_profile.reshape(5000)

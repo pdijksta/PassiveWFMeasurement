@@ -6,7 +6,6 @@ from . import config
 from . import data_loader
 from . import image_analysis
 from . import beam_profile
-from . import h5_storage
 
 class dummy_plot:
     def __init__(self, *args, **kwargs):
@@ -770,20 +769,9 @@ def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=N
     return (fig, subplots)
 
 def plot_single_sided_calib(calib_dict):
-    raw_screens0 = h5_storage.list_dict_to_list(calib_dict['raw_screens'])
-    raw_screens = [beam_profile.ScreenDistribution.from_dict(d) for d in raw_screens0]
-
-    crisp_profiles0 = h5_storage.list_dict_to_list(calib_dict['crisp_profiles'])
-    crisp_profiles = [beam_profile.BeamProfile.from_dict(d) for d in crisp_profiles0]
-
-
-    profiles0 = h5_storage.list_dict_to_list(calib_dict['rec_profiles'])
-    profiles = []
-    for p_dict in profiles0:
-        p_list = h5_storage.list_dict_to_list(p_dict)
-        p_list = [beam_profile.BeamProfile.from_dict(d) for d in p_list]
-        profiles.append(p_list)
-
+    raw_screens = calib_dict['raw_screens']
+    profiles = calib_dict['rec_profiles']
+    crisp_profiles = calib_dict['crisp_profiles']
     orbits = calib_dict['orbits']
 
     fig = ms.figure('Debug single plate calibrator', figsize=(16,10))

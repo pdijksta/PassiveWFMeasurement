@@ -282,7 +282,7 @@ class LasingReconstructionImages:
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
         self.meas_screen_centroids = np.array([abs(x.mean()) for x in self.meas_screens])
 
-    def get_current_profiles(self, blmeas_file=None):
+    def get_current_profiles(self):
         self.profiles = []
         for meas_screen in self.meas_screens:
             gd = self.tracker.reconstruct_profile_Gauss(meas_screen)
@@ -308,8 +308,10 @@ class LasingReconstructionImages:
         self.average_distance = self.gap/2. - abs(self.beam_positions.mean())
         return position_dicts
 
-    def calc_wake(self, beam_position=None):
+    def calc_wake(self, beam_position=None, profile=None):
         r12 = self.tracker.r12
+        if profile is None:
+            profile = self.profile
         profile2 = copy.deepcopy(self.profile)
         profile2.expand(0.3)
         wake_dict = self.tracker.calc_wake(profile2, 'Dipole', force_beam_position=beam_position)
@@ -322,13 +324,20 @@ class LasingReconstructionImages:
         self.cut_images = []
         x_min, x_max = self.wake_x.min(), self.wake_x.max()
         for ctr, img in enumerate(self.images_E):
-            if self.beam_positions is None:
-                img_cut = img.cut(x_min, x_max)
-                img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
-            else:
-                wake_t, wake_x = self.calc_wake(self.beam_positions[ctr])
+            if self.lasing_options['self_consistent_profile']:
+                if self.profiles is None:
+                    self.get_current_profiles()
+                wake_t, wake_x = self.calc_wake(profile=self.profiles[ctr])
                 img_cut = img.cut(wake_x.min(), wake_x.max())
                 img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
+            else:
+                if self.beam_positions is None:
+                    img_cut = img.cut(x_min, x_max)
+                    img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
+                else:
+                    wake_t, wake_x = self.calc_wake(self.beam_positions[ctr])
+                    img_cut = img.cut(wake_x.min(), wake_x.max())
+                    img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
             self.images_tE.append(img_tE)
             self.cut_images.append(img_cut)
 
@@ -430,7 +439,8 @@ class LasingReconstructionImages:
                 self.get_current_profiles()
                 self.set_profile()
             self.wake_t, self.wake_x = self.calc_wake()
-            self.get_streaker_offsets()
+            if self.lasing_options['adjust_beam_position']:
+                self.get_streaker_offsets()
             self.convert_x_wake()
         elif x_conversion  == 'linear':
             self.convert_x_linear(self.lasing_options['x_linear_factor'])

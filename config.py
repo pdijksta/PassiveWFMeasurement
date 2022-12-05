@@ -319,6 +319,8 @@ def get_default_lasing_options():
             'slice_method': 'cut',
             'plot_slice_analysis': False,
             'plot_slice_analysis_save_path': None,
+            'adjust_beam_position': True,
+            'self_consistent_profile': False,
             }.copy()
     return outp
 

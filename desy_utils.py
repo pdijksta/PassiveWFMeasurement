@@ -104,6 +104,18 @@ class Xfel_data(logMsg.LogMsgBase):
         self.tracker = tracker
         self.set_distance(init_distance)
 
+    def add_images(self, filename_or_data):
+        if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
+            data = filename_or_data
+        else:
+            data = np.load(filename_or_data)
+        images = prepare_image_data(data['images'])[:,::-1]
+        old_images = self.data['pyscan_result']['image']
+        new_images = np.concatenate([images, old_images], axis=0)
+        self.data['pyscan_result']['image'] = new_images
+
+
+
     def set_distance(self, distance):
         self.data['meta_data_begin']['%s:CENTER' % self.beamline] = -(self.gap/2-distance)*1e3
         self.tracker.meta_data = self.data['meta_data_begin']
@@ -215,13 +227,13 @@ class Xfel_data(logMsg.LogMsgBase):
         if lasing_options is None:
             lasing_options = config.get_default_lasing_options()
         lasing_options['subtract_quantile'] = 0
-        self.rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options)
+        self.rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options, profile=self.profile)
         self.rec_obj.add_dict(self.data)
 
-    def get_images(self, lasing_options=None):
+    def get_images(self, lasing_options=None, ref_slice_dict=None):
         if self.rec_obj is None:
             self.init_images(lasing_options=lasing_options)
-        self.rec_obj.process_data()
+        self.rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         return self.rec_obj
 
     def cut_axes(self, cutX=None, cutY=None):

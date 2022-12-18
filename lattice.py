@@ -55,10 +55,11 @@ class Lattice:
             ))
 
     def __init__(self, math5_file):
-        mat = h5_storage.loadH5Recursive(math5_file)['page1']
+        mat = self.mat = h5_storage.loadH5Recursive(math5_file)['page1']
         self.columns = mat['columns']
         self.types = np.array([x.decode() for x in self.columns['ElementType']])
         self.names = np.array([x.decode() for x in self.columns['ElementName']])
+        self.s = self.columns['s']
         self.raw_quad_names = self.names[self.types == 'QUAD'].copy()
         self.quad_names = np.unique([x.replace('.Q1','').replace('.Q2', '') for x in self.raw_quad_names])
         self.names_set = set(self.names)
@@ -67,7 +68,6 @@ class Lattice:
         names, types, columns = self.names, self.types, self.columns
         matrix = np.identity(6)
         ele_matrix = np.zeros_like(matrix)
-        all_matrices = []
         single_matrices = []
         element_status = []
         for n_element, (type_, name) in enumerate(zip(types, names)):
@@ -104,16 +104,16 @@ class Lattice:
                     ele_matrix[n_row-1,n_col-1] = columns['R%i%i' % (n_row, n_col)][n_element] * factor
                 single_matrices.append(ele_matrix)
             matrix = ele_matrix @ matrix
-            all_matrices.append(matrix)
             element_status.append(_element_status)
 
 
-        self.all_matrices = np.array(all_matrices)
         self.single_matrices = np.array(single_matrices)
         self.element_status = np.array(element_status)
         self.element_names = names
-        self.matrix_dict = {name: matrix for name, matrix in zip(names, all_matrices)}
         self.quad_k1l_dict = quad_k1l_dict
+
+    def get_index(self, element):
+        return int(np.argwhere(element == self.element_names).squeeze())
 
     def get_matrix(self, from_, to):
         if from_ not in self.names_set:
@@ -121,8 +121,8 @@ class Lattice:
         if to not in self.names_set:
             raise ValueError('%s not found' % to)
 
-        index_from = int(np.argwhere(from_ == self.element_names).squeeze())
-        index_to = int(np.argwhere(to == self.element_names).squeeze())
+        index_from = self.get_index(from_)
+        index_to = self.get_index(to)
         inverse = index_from > index_to
         if inverse:
             from_, to = to, from_

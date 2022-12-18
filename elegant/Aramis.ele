@@ -28,6 +28,12 @@
 	value = 0,
 &end
 
+&alter_elements
+	name = "SARUN*.UIND030",
+	item = K,
+	value = 1.69108,
+&end
+
 ! from Sven's OpticsServer (new version), 06.04.2020
 ! location: SARUN18.START
 &twiss_output

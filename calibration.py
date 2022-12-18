@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
@@ -167,6 +168,15 @@ class StructureCalibrator(LogMsgBase):
         n_images = images.shape[1]
         centroids = np.zeros([len(raw_struct_positions), n_images])
         rms = np.zeros_like(centroids)
+
+        images2 = np.zeros_like(images, dtype=np.float64)
+        for n_o, n_i in itertools.product(range(len(raw_struct_positions)), range(n_images)):
+            im = images[n_o,n_i].astype(np.float64)
+            im = im - np.median(im)
+            im = np.clip(im, 0, np.inf)
+            images2[n_o,n_i] = im
+        #import pdb; pdb.set_trace()
+        images = images2
         proj_x = images.sum(axis=-2, dtype=np.float64)
 
         where0 = np.argwhere(raw_struct_positions == 0).squeeze()
@@ -182,7 +192,8 @@ class StructureCalibrator(LogMsgBase):
                     centroids[n_o,n_i] = np.nan
                     rms[n_o,n_i] = np.nan
                 else:
-                    proj = proj - np.median(proj)
+                    #proj = proj - np.median(proj) #WTF was this??
+                    #import pdb; pdb.set_trace()
                     proj[proj<proj.max()*proj_cutoff] = 0
                     centroids[n_o,n_i] = cc = np.sum(proj*x_axis) / np.sum(proj)
                     rms[n_o, n_i] = np.sqrt(np.sum(proj*(x_axis-cc)**2) / np.sum(proj))

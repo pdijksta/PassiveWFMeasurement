@@ -1,6 +1,6 @@
 &run_setup
 	lattice		= ./Aramis_2021-12-07.lat,
-	use_beamline	= SARUN13_TO_END
+	use_beamline	= S30CB15_TO_END,
 	rootname	= Aramis,
 	output		= %s.out,
 	centroid	= %s.out,

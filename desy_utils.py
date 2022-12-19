@@ -2,12 +2,12 @@ import time
 import bisect
 import copy
 import numpy as np
-from scipy.signal import find_peaks
 
 from . import beam_profile
 from . import lasing
 from . import tracking
 from . import calibration
+from . import screen_calibration
 from . import data_loader
 from . import config
 from . import logMsg
@@ -126,6 +126,7 @@ class Xfel_data(logMsg.LogMsgBase):
 
     def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
         half_factor = 4
+        smoothen = 20e-6
         if profile is None:
             profile = self.profile
         if profile is None:
@@ -134,58 +135,9 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker = self.tracker
         axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
         trans_dist = self.get_median_sd()
-        trans_dist.smoothen(20e-6)
-
-        method0 = tracker.find_beam_position_options['method']
-        #position_explore0 = tracker.find_beam_position_options['position_explore']
-        try:
-            tracker.find_beam_position_options['method'] = 'beamsize'
-            #tracker.find_beam_position_options['position_explore'] = 100e-6
-            find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, profile)
-        #except:
-        #    import pdb; pdb.set_trace()
-        finally:
-            #tracker.find_beam_position_options['position_explore'] = position_explore0
-            tracker.find_beam_position_options['method'] = method0
-
-        def do_interp(trans_dist, half_int=None):
-            indices, _ = find_peaks(trans_dist.intensity, height=0.2*trans_dist.intensity.max())
-            if forward_screen.mean() > 0:
-                index = indices[0]
-                interp_intensity = trans_dist.intensity[:index].copy()
-                interp_x = trans_dist.x[:index]
-            else:
-                index = indices[-1]
-                interp_intensity = trans_dist.intensity[index:][::-1].copy()
-                interp_x = trans_dist.x[index:][::-1]
-            if half_int is None:
-                half_int = trans_dist.intensity[index]/half_factor
-            interp_intensity[interp_intensity < interp_intensity.max()*0.2] = 0
-            half_peak_x = np.interp(half_int, interp_intensity, interp_x)
-            return half_peak_x, half_int, index
-
-        forward_screen = find_beam_position_dict['sim_screen']
-        forward_screen.normalize()
-        half_peak_x_sim, half_int, index_sim = do_interp(forward_screen)
-
-        half_peak_x, _, index_meas = do_interp(trans_dist, half_int)
-
-        delta_x = -(half_peak_x - half_peak_x_sim)
+        delta_x = screen_calibration.calibrate_screen0(trans_dist, profile, tracker, smoothen, half_factor, sp)
         self.change_screen0(delta_x)
         self.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3))
-
-        # For debug only
-        if sp is not None:
-            sp.plot(forward_screen.x*1e3, forward_screen.intensity)
-            sp.plot(trans_dist.x*1e3, trans_dist.intensity)
-            sp.plot((trans_dist.x+delta_x)*1e3, trans_dist.intensity)
-            sp.axvline(trans_dist.x[index_meas]*1e3, color='black')
-            sp.axvline(half_peak_x*1e3, color='gray')
-            sp.axvline(forward_screen.x[index_sim]*1e3, color='black')
-            sp.axvline(half_peak_x_sim*1e3, color='gray')
-        #import matplotlib.pyplot as plt
-        #plt.show()
-        #import pdb; pdb.set_trace()
         return delta_x
 
     def change_screen0(self, delta_x):

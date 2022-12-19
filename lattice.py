@@ -106,7 +106,6 @@ class Lattice:
             matrix = ele_matrix @ matrix
             element_status.append(_element_status)
 
-
         self.single_matrices = np.array(single_matrices)
         self.element_status = np.array(element_status)
         self.element_names = names
@@ -121,6 +120,9 @@ class Lattice:
         if to not in self.names_set:
             raise ValueError('%s not found' % to)
 
+        if from_ == to:
+            return np.eye(6, dtype=np.float64)
+
         index_from = self.get_index(from_)
         index_to = self.get_index(to)
         inverse = index_from > index_to
@@ -132,7 +134,7 @@ class Lattice:
             not_good = status == 0
             bad_elements = self.element_names[index_from:index_to][not_good]
             raise ValueError(bad_elements)
-        outp = np.eye(6)
+        outp = np.eye(6, dtype=np.float64)
         for index in range(index_from, index_to):
             mat = self.single_matrices[index]
             outp = mat @ outp

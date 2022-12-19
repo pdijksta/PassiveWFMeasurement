@@ -1,6 +1,6 @@
 &run_setup
 	lattice		= ./Aramis_2021-12-07.lat,
-	use_beamline	= S30CB15_TO_END,
+	use_beamline	= S30CB10_TO_END,
 	rootname	= Aramis,
 	output		= %s.out,
 	centroid	= %s.out,
@@ -27,6 +27,79 @@
 	item = K1,
 	value = 0,
 &end
+
+&alter_elements
+	name = "S30CB10.RACC*",
+	type = "RFCW",
+	item = PHASE,
+	value = 106.973
+&end
+
+&alter_elements
+	name = "S30CB10.RACC*",
+	type = "RFCW",
+	item = VOLT,
+	value = 5.75e7
+&end
+
+&alter_elements
+	name = "S30CB11.RACC*",
+	type = "RFCW",
+	item = PHASE,
+	value = 58.0126
+&end
+
+&alter_elements
+	name = "S30CB11.RACC*",
+	type = "RFCW",
+	item = VOLT,
+	value = 6e7
+&end
+
+&alter_elements
+	name = "S30CB12.RACC*",
+	type = "RFCW",
+	item = PHASE,
+	value = 107.0717
+&end
+
+&alter_elements
+	name = "S30CB12.RACC*",
+	type = "RFCW",
+	item = VOLT,
+	value = 5.75e7
+&end
+
+&alter_elements
+	name = "S30CB13.RACC*",
+	type = "RFCW",
+	item = PHASE,
+	value = 90
+&end
+
+&alter_elements
+	name = "S30CB13.RACC*",
+	type = "RFCW",
+	item = VOLT,
+	value = 0
+&end
+
+&alter_elements
+	name = "*",
+	type = "RFCW",
+	item = ZWAKE,
+	value = 0
+&end
+
+&alter_elements
+	name = "*",
+	type = "RFCW",
+	item = TRWAKE,
+	value = 0
+&end
+
+
+
 
 &alter_elements
 	name = "SARUN*.UIND030",

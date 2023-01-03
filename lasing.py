@@ -473,6 +473,8 @@ class LasingReconstructionImages:
             images = self.cut_images
         elif type_ == 'tE':
             images = self.images_tE
+        elif type_ == 'xE':
+            images = self.images_E
         elif type_ == 'slice':
             images = self.images_sliced
 

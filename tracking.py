@@ -144,7 +144,7 @@ class Tracker(LogMsgBase):
             self.force_beam_position = old_bo
         return outp
 
-    def gen_beam(self, beamProfile, other_dim=False):
+    def gen_beam(self, beamProfile, other_dim=False, delta=False):
         dim = self.structure.dim.lower()
         dims = []
         if other_dim:
@@ -153,6 +153,8 @@ class Tracker(LogMsgBase):
             elif dim == 'y':
                 dims.append('x')
         dims.extend([dim, 't'])
+        if self.forward_options['long_wake'] or delta:
+            dims.append('delta')
         beam_options = self.beam_spec.copy()
         beam_optics0 = self.beam_optics
         if self.optics_at_streaker is None:
@@ -252,6 +254,7 @@ class Tracker(LogMsgBase):
         delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
+        long_wake = self.forward_options['long_wake']
         dim = self.structure.dim.lower()
         other_dim = 'x' if dim == 'y' else 'y'
 
@@ -268,6 +271,13 @@ class Tracker(LogMsgBase):
             delta_xp_coords_quad = 0.
 
         beam_after_streaker = beam.child()
+
+        if long_wake:
+            wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
+            delta_p = wake_dict_long['wake_potential']/energy_eV
+            delta_p_interp = np.interp(beam['t'], wake_time, delta_p)
+            beam_after_streaker['delta'] += delta_p_interp
+
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
         beam_after_streaker[dim+'p'] += delta_xp_coords_quad
         if quad_wake and other_dim in beam.dim_index:

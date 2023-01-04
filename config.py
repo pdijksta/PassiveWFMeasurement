@@ -257,6 +257,7 @@ def get_default_forward_options():
             'screen_bins': 1000,
             'screen_smoothen': 20e-6,
             'quad_wake': False,
+            'long_wake': False,
             'screen_cutoff': 2e-2,
             'len_screen': 5000,
             'n_particles': default_n_particles,

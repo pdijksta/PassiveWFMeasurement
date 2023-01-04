@@ -10,6 +10,7 @@ from . import calibration
 from . import screen_calibration
 from . import data_loader
 from . import config
+from . import desy_bpm
 from . import logMsg
 
 # From pptx by Nina
@@ -243,7 +244,10 @@ class XfelDistanceScan:
             bump = data['bump']*1e-3
             for bpm_name, factor in self.bpm_names_factors:
                 index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-                orbits = np.array(data['orbit_list'][:,index,2], float)*factor
+                orbits0y = np.array(data['orbit_list'][:,index,2], float)
+                orbits0x = np.array(data['orbit_list'][:,index,1], float)
+                orbits = desy_bpm.bpm_correction(orbits0x, orbits0y)[1]*factor
+                #import pdb; pdb.set_trace()
                 all_orbits[bpm_name].append(orbits)
                 if bpm_name == 'BPMA.2455.T3':
                     bumps[ctr] = bump
@@ -324,6 +328,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         for filename in filenames:
             analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger)
             analyzer.limit_images(self.images_per_file)
+            analyzer.tracker.find_beam_position_options['position_explore'] = 100e-6
             data = analyzer.raw_data
 
             if self.images_per_file == np.inf:
@@ -334,7 +339,9 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             all_orbits = {}
             for bpm_name, factor in self.bpm_names_factors:
                 index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-                file_orbits = (np.array(data['orbit_list'][:images_per_file,index,2], float)*factor).squeeze()
+                file_orbits0x = (np.array(data['orbit_list'][:images_per_file,index,1], float)).squeeze()
+                file_orbits0y = (np.array(data['orbit_list'][:images_per_file,index,2], float)).squeeze()
+                file_orbits = desy_bpm.bpm_correction(file_orbits0x, file_orbits0y)[1]*factor
                 all_orbits[bpm_name] = file_orbits
             analyzer.set_distance(init_pos-abs(file_orbits.mean()))
             analyzer.calibrate_screen0()

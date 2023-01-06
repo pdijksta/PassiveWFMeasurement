@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import os
 import itertools
+import warnings
 import scipy
 import numpy as np
 from scipy.constants import c
@@ -39,6 +40,29 @@ def transferMatrixQuad66(Lq, kini):
     Mq10 = np.array(Mq10, dtype=complex)
     #assert np.all(np.imag(Mq10) == 0)
     return np.real(Mq10)
+
+def transferMatrixQuad66_arr(Lq, kini):
+    # Using complex numbers, this method is valid for positive as well as negative k values
+    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+
+    kinix = kini
+    kiniy = -kini
+    phi10x = Lq * sqrt(kinix)
+    phi10y = Lq * sqrt(kiniy)
+    zero = np.zeros_like(kini, float)
+    one = np.ones_like(kini, float)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        Mq10 = np.array([[cos(phi10x), sin(phi10x) / sqrt(kinix), zero, zero, zero, zero],
+            [-sqrt(kinix) * sin(phi10x), cos(phi10x), zero, zero, zero, zero],
+            [zero, zero, cos(phi10y), sin(phi10y) / sqrt(kiniy), zero, zero],
+            [zero, zero, -sin(phi10y) * sqrt(kiniy), cos(phi10y), zero, zero],
+            [zero, zero, zero, zero, one, zero],
+            [zero, zero, zero, zero, zero, one]], dtype=complex)
+    Mq10[...,kini==0] = transferMatrixDrift66(Lq)[...,np.newaxis]
+    return np.real(Mq10)
+
 
 class Lattice:
     """

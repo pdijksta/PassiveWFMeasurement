@@ -161,6 +161,7 @@ class Tracker(LogMsgBase):
             beam_optics = self.lat.propagate_optics_dict(beam_optics0, self.matching_point.replace('-','.'), self.structure_name.replace('-','.'))
         else:
             beam_optics = self.optics_at_streaker
+        self.last_optics_at_streaker = beam_optics
         beam_options.update(beam_optics)
         beam = gen_beam.beam_from_spec(dims, beam_options, self.n_particles, beamProfile, self.total_charge, self.energy_eV)
         return beam
@@ -240,6 +241,16 @@ class Tracker(LogMsgBase):
         screen.crop()
         screen.reshape(self.forward_options['len_screen'])
         return screen
+
+    def forward_propagate(self, beam, plot_details=False, output_details=False):
+        method = self.forward_options['method']
+        if method == 'thicklens':
+            return self.forward_propagate_thicklens(beam, plot_details, output_details)
+        elif method == 'thinlens':
+            return self.forward_propagate_thinlens(beam, plot_details, output_details)
+        elif method == 'ocelot':
+            from . import ocelot_forward
+            return ocelot_forward.forward_propagate_ocelot(self, beam, plot_details, output_details)
 
     def forward_propagate_thicklens(self, beam, plot_details=False, output_details=False):
         """
@@ -336,7 +347,7 @@ class Tracker(LogMsgBase):
         return outp_dict
 
 
-    def forward_propagate(self, beam, plot_details=False, output_details=False):
+    def forward_propagate_thinlens(self, beam, plot_details=False, output_details=False):
         """
         beam: must correspond to middle of structure
         """

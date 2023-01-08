@@ -23,10 +23,11 @@ class CorrugatedStructure:
     g         longitudinal gap
     Ls        Length of structure
     """
-    def __init__(self, p, g, Ls, dim, logger=None):
+    def __init__(self, p, g, w, Ls, dim, logger=None):
         self.logger = logger
         self.p = p
         self.g = g
+        self.w = w
         self.Ls = Ls
         self.alpha = 1. - 0.465*sqrt(g/p) - 0.070*g/p
         self.dim = dim

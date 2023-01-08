@@ -65,12 +65,14 @@ aramis_structure_parameters = {
         'Ls': 1.,
         'p': 500e-6,
         'g': 250e-6,
+        'w': 40e-3,
         }
 
 xfel_structure_parameters = {
         'Ls': 5.,
         'p': 500e-6,
         'g': 250e-6,
+        'w': 40e-3,
         }
 
 structure_parameters = {
@@ -254,6 +256,10 @@ default_n_particles = int(1e5)
 
 def get_default_forward_options():
     return {
+            'method': 'thicklens', # can also be thinlens or ocelot
+            'ocelot_wake_step': 0.2,
+            'ocelot_unit_step': 0.2,
+            'ocelot_wake_sampling': 500,
             'screen_bins': 1000,
             'screen_smoothen': 20e-6,
             'quad_wake': False,

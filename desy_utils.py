@@ -39,7 +39,7 @@ def prepare_image_data(image_data):
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize, init_distance, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
         self.identifier = identifier
         self.logger = logger
@@ -103,7 +103,10 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker = tracking.Tracker(self.beamline, self.screen_name, self.structure_name, self.meta_data, calib0, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, gen_lat=False, matrix=self.matrix, logger=self.logger)
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
-        self.set_distance(init_distance)
+        if init_distance is not None:
+            self.set_distance(init_distance)
+        else:
+            self.set_distance
 
     def add_images(self, filename_or_data):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
@@ -114,8 +117,6 @@ class Xfel_data(logMsg.LogMsgBase):
         old_images = self.data['pyscan_result']['image']
         new_images = np.concatenate([images, old_images], axis=0)
         self.data['pyscan_result']['image'] = new_images
-
-
 
     def set_distance(self, distance):
         self.data['meta_data_begin']['%s:CENTER' % self.beamline] = -(self.gap/2-distance)*1e3
@@ -219,12 +220,22 @@ _z_corr1 = config.sase2_zpos_dict['CMY.2456.T3']
 _z_corr0 = config.sase2_zpos_dict['CMY.2443.T3']
 _z_bpm0 = config.sase2_zpos_dict['BPMA.2455.T3']
 
-class XfelDistanceScan:
+bpm_names_factors = [
+        ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
+        ('BPMA.2467.T3', 1),
+        ]
 
-    bpm_names_factors = [
-            ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
-            ('BPMA.2467.T3', 1),
-            ]
+def bpm_info_from_saved(data):
+    all_orbits = {}
+    for bpm_name, factor in bpm_names_factors:
+        index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
+        orbits0y = np.array(data['orbit_list'][:,index,2], float)
+        orbits0x = np.array(data['orbit_list'][:,index,1], float)
+        orbits = desy_bpm.bpm_correction(orbits0x, orbits0y)[1]*factor
+        all_orbits[bpm_name] = orbits
+    return all_orbits
+
+class XfelDistanceScan:
 
     def __init__(self, filenames, charge, energy_eV, pixelsize):
         self.filenames = self.filenames0 = filenames
@@ -237,20 +248,16 @@ class XfelDistanceScan:
         self.bumps = bumps = np.zeros(len(filenames))
         self.orbits_mean = bumps.copy()
         self.orbits_rms = bumps.copy()
-        self.all_orbits = all_orbits = {bpm_name: [] for bpm_name, _ in self.bpm_names_factors}
+        self.all_orbits = all_orbits = {bpm_name: [] for bpm_name, _ in bpm_names_factors}
 
         for ctr, filename in enumerate(self.filenames):
             data = np.load(filename)
-            bump = data['bump']*1e-3
-            for bpm_name, factor in self.bpm_names_factors:
-                index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-                orbits0y = np.array(data['orbit_list'][:,index,2], float)
-                orbits0x = np.array(data['orbit_list'][:,index,1], float)
-                orbits = desy_bpm.bpm_correction(orbits0x, orbits0y)[1]*factor
-                #import pdb; pdb.set_trace()
+            bumps[ctr] = data['bump']*1e-3
+            these_orbits = bpm_info_from_saved(data)
+            for bpm_name in these_orbits.keys():
+                orbits = these_orbits[bpm_name]
                 all_orbits[bpm_name].append(orbits)
                 if bpm_name == 'BPMA.2455.T3':
-                    bumps[ctr] = bump
                     self.orbits_mean[ctr] = np.mean(orbits)
                     self.orbits_rms[ctr] = np.std(orbits)
 
@@ -296,11 +303,6 @@ class XfelDistanceScan:
 
 class SingleSidedCalibration(logMsg.LogMsgBase):
 
-    bpm_names_factors = [
-            ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
-            ('BPMA.2467.T3', 1),
-            ]
-
     def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None):
         self.logger = logger
         self.pixelsize = pixelsize
@@ -336,14 +338,8 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
             else:
                 images_per_file = self.images_per_file
 
-            all_orbits = {}
-            for bpm_name, factor in self.bpm_names_factors:
-                index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-                file_orbits0x = (np.array(data['orbit_list'][:images_per_file,index,1], float)).squeeze()
-                file_orbits0y = (np.array(data['orbit_list'][:images_per_file,index,2], float)).squeeze()
-                file_orbits = desy_bpm.bpm_correction(file_orbits0x, file_orbits0y)[1]*factor
-                all_orbits[bpm_name] = file_orbits
-            analyzer.set_distance(init_pos-abs(file_orbits.mean()))
+            all_orbits = bpm_info_from_saved(data)
+            analyzer.set_distance(init_pos-abs(all_orbits['BPMA.2455.T3'].mean()))
             analyzer.calibrate_screen0()
 
             dim = analyzer.tracker.structure.dim

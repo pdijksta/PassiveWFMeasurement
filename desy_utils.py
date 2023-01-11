@@ -103,10 +103,14 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker = tracking.Tracker(self.beamline, self.screen_name, self.structure_name, self.meta_data, calib0, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, gen_lat=False, matrix=self.matrix, logger=self.logger)
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
+
         if init_distance is not None:
             self.set_distance(init_distance)
         else:
-            self.set_distance
+            bpm_data = bpm_info_from_saved(self.raw_data)
+            mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
+            distance = init_plate_pos - mean_bpm
+            self.set_distance(distance)
 
     def add_images(self, filename_or_data):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):

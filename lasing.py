@@ -454,10 +454,7 @@ class LasingReconstructionImages:
 
         if ref_slice_dict is not None:
             self.ref_slice_dict = ref_slice_dict
-        elif self.ref_slice_dict is not None:
-            pass
-        else:
-            print("Fix this!")
+        elif self.ref_slice_dict is None:
             self.ref_slice_dict = self.slice_dicts[0]
 
         if self.ref_slice_dict is None:

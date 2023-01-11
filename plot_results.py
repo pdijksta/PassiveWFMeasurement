@@ -745,13 +745,14 @@ def clear_slice_dict_figure(sp_current, sp_loss, sp_chirp, sp_spread):
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=None):
+def plot_all_slice_dict(all_slice_dict, current_cutoff=None, plot_handles=None, figsize=None, label=None):
     if plot_handles is None:
         fig, subplots = all_slice_dict_figure(figsize=figsize)
     else:
         fig, subplots = plot_handles
 
     slice_time = all_slice_dict['t'][0]
+
     for ctr, (key, factor, sqrt) in enumerate([
             ('current', 1e-3, False),
             ('loss', 1e-6, False),
@@ -764,7 +765,14 @@ def plot_all_slice_dict(all_slice_dict, plot_handles=None, figsize=None, label=N
             arr = np.sqrt(arr)
         mean = np.mean(arr, axis=0)
         err = np.std(arr, axis=0)
-        subplots[ctr].errorbar(slice_time*1e15, mean*factor, yerr=err*factor, label=label)
+
+        if ctr == 0:
+            if current_cutoff:
+                mask = mean > current_cutoff
+            else:
+                mask = np.ones_like(mean, dtype=bool)
+
+        subplots[ctr].errorbar(slice_time[mask]*1e15, mean[mask]*factor, yerr=err[mask]*factor, label=label)
 
     return (fig, subplots)
 

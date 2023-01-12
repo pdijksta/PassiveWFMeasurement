@@ -56,7 +56,7 @@ class Xfel_data(logMsg.LogMsgBase):
             data = filename_or_data
         else:
             data = np.load(filename_or_data)
-        self.raw_data = data
+        self.raw_data = {x: y for x, y in data.items()}
 
         self.profile = profile
         if profile is None:
@@ -107,6 +107,8 @@ class Xfel_data(logMsg.LogMsgBase):
         if init_distance is not None:
             self.set_distance(init_distance)
         else:
+            if 'orbit_list' not in self.raw_data:
+                self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
             bpm_data = bpm_info_from_saved(self.raw_data)
             mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
             distance = init_plate_pos - mean_bpm

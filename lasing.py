@@ -269,7 +269,8 @@ class LasingReconstructionImages:
         for n_image, img in enumerate(images):
             if max_index is not None and n_image >= max_index:
                 break
-            img = img - np.quantile(img, subtract_quantile)
+            if subtract_quantile is not None:
+                img = img - np.quantile(img, subtract_quantile)
             if max_quantile is not None:
                 img = img.clip(0, np.quantile(img, max_quantile))
             else:

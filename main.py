@@ -282,7 +282,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.reconstruction_fig, self.reconstruction_plot_handles = plot_results.reconstruction_figure()
         self.rec_plot_tab_index, self.rec_canvas = get_new_tab(self.reconstruction_fig, 'P I(t)')
 
-        self.all_lasing_fig, self.all_lasing_plot_handles = plot_results.lasing_figure()
+        self.all_lasing_fig, self.all_lasing_subplots = plot_results.lasing_figure()
         self.all_lasing_tab_index, self.all_lasing_canvas = get_new_tab(self.all_lasing_fig, 'P P(t)')
 
         self.resolution_fig, self.resolution_plot_handles = plot_results.resolution_figure()
@@ -383,7 +383,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.screen_calib_canvas.draw()
 
     def clear_all_lasing_plots(self):
-        plot_results.clear_lasing_figure(*self.all_lasing_plot_handles)
+        plot_results.clear_lasing_figure(*self.all_lasing_subplots)
         self.all_lasing_canvas.draw()
 
     def clear_resolution_plots(self):
@@ -829,7 +829,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
         tracker = self.get_tracker(lasing_off_dict['meta_data_begin'])
         result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, self.get_lasing_options(), pulse_energy)['result_dict']
-        plot_results.plot_lasing(result_dict, plot_handles=self.all_lasing_plot_handles)
+        plot_results.plot_lasing(result_dict, plot_handles=(self.all_lasing_fig, self.all_lasing_subplots))
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
 

@@ -126,6 +126,11 @@ class Xfel_data(logMsg.LogMsgBase):
         self.data['meta_data_begin']['%s:CENTER' % self.beamline] = -(self.gap/2-distance)*1e3
         self.tracker.meta_data = self.data['meta_data_begin']
 
+    def get_distance(self):
+        center = self.data['meta_data_begin']['%s:CENTER' % self.beamline]*1e-3
+        distance = self.gap/2 - abs(center)
+        return distance
+
     def limit_images(self, limit):
         if limit != np.inf:
             self.data['pyscan_result']['image'] = self.data['pyscan_result']['image'][:limit]

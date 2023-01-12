@@ -79,6 +79,12 @@ class Image(LogMsgBase):
     def transpose(self):
         return self.child(self.image.T.copy(), self.y_axis.copy(), self.x_axis.copy(), self.y_unit, self.x_unit, self.ylabel, self.xlabel)
 
+    def invertX(self):
+        return self.child(self.image.copy()[:,::-1], self.x_axis.copy(), self.y_axis.copy())
+
+    def invertY(self):
+        return self.child(self.image.copy()[::-1], self.x_axis.copy(), self.y_axis.copy())
+
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)

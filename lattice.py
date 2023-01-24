@@ -16,7 +16,6 @@ def transferMatrixDrift66(Ld):
            [0, 0, 0, 1, 0, 0],
            [0, 0, 0, 0, 1, 0],
            [0, 0, 0, 0, 0, 1]]
-
     return np.array(Md1, dtype=float)
 
 def transferMatrixQuad66(Lq, kini):
@@ -41,9 +40,45 @@ def transferMatrixQuad66(Lq, kini):
     #assert np.all(np.imag(Mq10) == 0)
     return np.real(Mq10)
 
+def transferMatrixBend66(Lb, angle, orientation):
+    """
+    Lb: arc length
+    angle: deflection angle
+    orientation: X or Y
+    """
+    # taken from P. Castro, DESY Technical Note TN-2003-01 (2003), p. 14
+    r = Lb / angle
+    C = np.cos(angle)
+    S = np.sin(angle)
+
+    mat_xx = np.array([[C, r*S], [-S/r, C]])
+    mat_yy = np.array([[1, Lb], [0, 1]])
+    mat_xL = np.array([[0, r*(1-C)], [0, S]])
+    mat_yL = np.array([[0, 0], [0, 0]])
+    mat_Lx = np.array([[-S, -r*(1-C)], [0, 0]])
+    mat_Ly = mat_yL
+    mat_LL = np.array([[1, -r*(angle-S)], [0, 1]])
+
+    outp = np.zeros([6, 6], float)
+    outp[4:6,4:6] = mat_LL
+    if orientation == 'X':
+        outp[0:2,0:2] = mat_xx
+        outp[2:4,2:4] = mat_yy
+        outp[0:2,4:6] = mat_xL
+        outp[2:4,4:6] = mat_yL
+        outp[4:6,0:2] = mat_Lx
+        outp[4:6,2:4] = mat_Ly
+    elif orientation == 'Y':
+        outp[0:2,0:2] = mat_yy
+        outp[2:4,2:4] = mat_xx
+        outp[0:2,4:6] = mat_yL
+        outp[2:4,4:6] = mat_xL
+        outp[4:6,0:2] = mat_Ly
+        outp[4:6,2:4] = mat_Lx
+    return outp
+
 def transferMatrixQuad66_arr(Lq, kini):
-    # Using complex numbers, this method is valid for positive as well as negative k values
-    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt
 
     kinix = kini
     kiniy = -kini

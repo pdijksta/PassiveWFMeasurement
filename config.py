@@ -19,6 +19,7 @@ beamlines = [
         'Athos Pre-Undulator',
         'Athos Post-Undulator',
         'SASE2',
+        'LCLS',
         ]
 
 structure_names = {
@@ -39,7 +40,10 @@ structure_names = {
             ],
         'SASE2': [
             'SASE2',
-            ]
+            ],
+        'LCLS': [
+            'LCLS',
+            ],
         }
 
 screen_names = {
@@ -58,7 +62,10 @@ screen_names = {
             ],
         'SASE2': [
             'SASE2',
-            ]
+            ],
+        'LCLS': [
+            'LCLS',
+            ],
         }
 
 aramis_structure_parameters = {
@@ -75,6 +82,13 @@ xfel_structure_parameters = {
         'w': 40e-3,
         }
 
+lcls_structure_parameters = {
+        'Ls': 2.,
+        'p': 500e-6,
+        'g': 250e-6,
+        'w': 40e-3,
+        }
+
 structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
@@ -86,6 +100,7 @@ structure_parameters = {
         'SATCL02-UDCP300': aramis_structure_parameters,
         'SATCL02-UDCP400': aramis_structure_parameters,
         'SASE2': xfel_structure_parameters,
+        'LCLS': lcls_structure_parameters,
         }
 
 structure_dimensions = {
@@ -99,6 +114,7 @@ structure_dimensions = {
         'SATCL02-UDCP300': 'Y',
         'SATCL02-UDCP400': 'X',
         'SASE2': 'Y',
+        'LCLS': 'X',
         }
 
 beamline_quads = {
@@ -141,6 +157,7 @@ beamline_quads = {
             'SATCL02-MQUA430',
             ],
         'SASE2': [],
+        'LCLS': [],
         }
 
 beamline_undulators = {
@@ -148,6 +165,7 @@ beamline_undulators = {
         'Athos Post-Undulator': ['SATUN%02i-UIND030:K_SET' % x for x in list(range(6, 14))+list(range(15, 22))],
         'Athos Pre-Undulator': [],
         'SASE2': [],
+        'LCLS': [],
         }
 
 beamline_chargepv = {
@@ -155,6 +173,7 @@ beamline_chargepv = {
         'Athos Post-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         'Athos Pre-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         'SASE2': 'SASE2:CHARGE',
+        'LCLS': 'LCLS:CHARGE',
         }
 
 beamline_energypv = {
@@ -162,6 +181,7 @@ beamline_energypv = {
         'Athos Post-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         'Athos Pre-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         'SASE2': 'SASE2:ENERGY',
+        'LCLS': 'LCLS:ENERGY',
         }
 
 gas_monitor_pvs = {
@@ -169,6 +189,7 @@ gas_monitor_pvs = {
         'Athos Post-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         'Athos Pre-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         'SASE2': 'SASE2:FEL-ENERGY',
+        'LCLS': 'LCLS:FEL-ENERGY',
         }
 
 default_optics = {
@@ -196,6 +217,12 @@ default_optics = {
             'betay': 50,
             'alphay': 0,
             },
+        'LCLS': {
+            'betax': 4.502,
+            'alphax': -0.02,
+            'betay': 23.541,
+            'alphay': -1.559,
+            },
         }
 
 optics_matching_points = {
@@ -203,6 +230,7 @@ optics_matching_points = {
         'Athos Post-Undulator': 'SATUN22.MQUA080.START',
         'Athos Pre-Undulator': 'SATDI01.MQUA250.START',
         'SASE2': None,
+        'LCLS': None,
         }
 
 custom_optics = {

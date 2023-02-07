@@ -244,6 +244,8 @@ class Tracker(LogMsgBase):
         return screen
 
     def forward_propagate(self, beam, plot_details=False, output_details=False):
+        global forward_ctr
+        forward_ctr += 1
         method = self.forward_options['method']
         if method == 'thicklens':
             return self.forward_propagate_thicklens(beam, plot_details, output_details)
@@ -257,8 +259,6 @@ class Tracker(LogMsgBase):
         """
         beam: must correspond to middle of structure
         """
-        global forward_ctr
-        forward_ctr += 1
 
 
         wake_time = beam.beamProfile.time

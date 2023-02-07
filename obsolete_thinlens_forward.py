@@ -6,8 +6,6 @@ def forward_propagate_thinlens(self, beam, plot_details=False, output_details=Fa
     """
     beam: must correspond to middle of structure
     """
-    global forward_ctr
-    forward_ctr += 1
 
     wake_time = beam.beamProfile.time
     energy_eV = beam.energy_eV

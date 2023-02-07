@@ -122,12 +122,7 @@ class LasingReconstruction:
 
         mean_slice_dict = self.mean_slice_dict = {}
         for title in 'Lasing Off', 'Lasing On':
-            mean_slice_dict[title] = {}
-            for key, arr in self.all_slice_dict[title].items():
-                mean_slice_dict[title][key] = {
-                        'mean': np.nanmean(arr, axis=0),
-                        'std': np.nanstd(arr, axis=0),
-                        }
+            mean_slice_dict[title] = all_slice_to_mean_slice_dict(self.all_slice_dict[title])
 
     def lasing_analysis(self, photon_energy_factors=None, norm_factor=None):
         all_slice_dict = self.all_slice_dict
@@ -532,4 +527,13 @@ def subtract_long_wake(all_slice_dict, tracker, profile):
             'all_slice_dict': outp,
             'long_wake_dict': long_wake,
             }
+
+def all_slice_to_mean_slice_dict(all_slice_dict):
+    mean_slice_dict = {}
+    for key, arr in all_slice_dict.items():
+        mean_slice_dict[key] = {
+                'mean': np.nanmean(arr, axis=0),
+                'std': np.nanstd(arr, axis=0),
+                }
+    return mean_slice_dict
 

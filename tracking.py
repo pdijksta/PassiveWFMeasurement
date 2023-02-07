@@ -10,6 +10,7 @@ from . import beam_profile
 from . import gen_beam
 from . import myplotstyle as ms
 from .logMsg import LogMsgBase
+from . import obsolete_thinlens_forward
 
 forward_ctr, backward_ctr, rec_ctr = 0, 0, 0
 
@@ -247,7 +248,7 @@ class Tracker(LogMsgBase):
         if method == 'thicklens':
             return self.forward_propagate_thicklens(beam, plot_details, output_details)
         elif method == 'thinlens':
-            return self.forward_propagate_thinlens(beam, plot_details, output_details)
+            return obsolete_thinlens_forward.forward_propagate_thinlens(self, beam, plot_details, output_details)
         elif method == 'ocelot':
             from . import ocelot_forward
             return ocelot_forward.forward_propagate_ocelot(self, beam, plot_details, output_details)
@@ -267,6 +268,7 @@ class Tracker(LogMsgBase):
         delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
         quad_wake = self.forward_options['quad_wake']
         long_wake = self.forward_options['long_wake']
+        long_wake_correction = self.forward_options['long_wake_correction']
         dim = self.structure.dim.lower()
 
         if quad_wake:
@@ -282,13 +284,13 @@ class Tracker(LogMsgBase):
             if 'x' in beam.dim_index:
                 x, xp = beam_before['x'], beam_before['xp']
                 x = x - x.mean()
-                xp = xp -xp.mean()
+                xp = xp - xp.mean()
                 beam_after['x'] = quad_matrix[0,0] * x + quad_matrix[0,1] * xp
                 beam_after['xp'] = quad_matrix[1,0] * x + quad_matrix[1,1] * xp
             if 'y' in beam.dim_index:
                 y, yp = beam_before['y'], beam_before['yp']
                 y = y - y.mean()
-                yp = yp -yp.mean()
+                yp = yp - yp.mean()
                 beam_after['y'] = quad_matrix[2,2] * y + quad_matrix[2,3] * yp
                 beam_after['yp'] = quad_matrix[3,2] * y + quad_matrix[3,3] * yp
             beam = beam_after.linear_propagate(halfmat)
@@ -299,95 +301,24 @@ class Tracker(LogMsgBase):
 
         beam_after_streaker = beam.child()
 
+        wake_dict_long = wake_dict_c1 = wake_dict_c2 = None
         if long_wake:
             wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
             delta_p = wake_dict_long['wake_potential']/energy_eV
             delta_p_interp = np.interp(beam['t'], wake_time, delta_p)
-            beam_after_streaker['delta'] += delta_p_interp
-
-        beam_after_streaker[dim+'p'] += delta_xp_coords_dip
-
-        beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
-        screen = self._beam2screen(beam_at_screen)
-        outp_dict = {'screen': screen}
-        if output_details:
-            outp_dict.update({
-                'beam': beam,
-                'beam_after_streaker': beam_after_streaker,
-                'beam_at_screen': beam_at_screen,
-                'wake_dict_dipole': wake_dict_dipole,
-                'wake_dict_quadrupole': wake_dict_quadrupole,
-                'transport_matrix': self.matrix,
-                })
-
-        if plot_details:
-            if ms.plt.get_fignums():
-                fig_number = ms.plt.gcf().number
+            if long_wake_correction:
+                wake_dict_c1 = self.calc_wake(beam.beamProfile, 'LongitudinalC1')
+                wake_dict_c2 = self.calc_wake(beam.beamProfile, 'LongitudinalC2')
+                corr1 = wake_dict_c1['wake_potential']/energy_eV
+                corr2 = wake_dict_c2['wake_potential']/energy_eV
+                corr1_interp = np.interp(beam['t'], wake_time, corr1) * -(beam[dim] - beam[dim].mean())
+                other_dim = 'x' if dim == 'y' else 'y'
+                corr2_interp = np.interp(beam['t'], wake_time, corr2) * 0.5 * (-(beam[dim] - beam[dim].mean())**2 + (beam[other_dim] - beam[other_dim].mean())**2)
             else:
-                fig_number = None
-            ms.figure('Forward details')
-            subplot = ms.subplot_factory(2,2)
-            sp_ctr = 1
-            sp_profile = subplot(sp_ctr, xlabel='t (fs)', ylabel='I (kA)')
-            sp_ctr += 1
-            beam.beamProfile.plot_standard(sp_profile, center='Mean')
-
-            sp_screen = subplot(sp_ctr, title='Screen dist', xlabel='x (mm)', ylabel='Intensity (arb. units)')
-            sp_ctr += 1
-            screen.plot_standard(sp_screen)
-
-            sp_wake = subplot(sp_ctr, title='Wake', xlabel='t (fs)', ylabel='Wake effect [mrad]')
-            sp_ctr += 1
-            sp_wake.plot(wake_time*1e15, delta_xp_dipole*1e3)
-
-            if fig_number is not None:
-                ms.plt.figure(fig_number)
-
-        #self.logMsg('Forward propagated profile with rms %.1f fs to screen with %.1f um mean' % (beam.beamProfile.rms()*1e15, screen.mean()*1e6))
-        return outp_dict
-
-
-    def forward_propagate_thinlens(self, beam, plot_details=False, output_details=False):
-        """
-        beam: must correspond to middle of structure
-        """
-        global forward_ctr
-        forward_ctr += 1
-
-        wake_time = beam.beamProfile.time
-        energy_eV = beam.energy_eV
-        wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
-        delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
-        delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
-        quad_wake = self.forward_options['quad_wake']
-        long_wake = self.forward_options['long_wake']
-        dim = self.structure.dim.lower()
-        other_dim = 'x' if dim == 'y' else 'y'
-
-        if quad_wake:
-            wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
-            delta_xp_quadrupole = wake_dict_quadrupole['wake_potential']/energy_eV
-            delta_xp_interp = np.interp(beam['t'], wake_time, delta_xp_quadrupole)
-            delta_xp_coords_quad = delta_xp_interp*(beam[dim]-beam[dim].mean())
-            if other_dim in beam.dim_index:
-                delta_yp_coords_quad = -delta_xp_interp*(beam[other_dim]-beam[other_dim].mean())
-        else:
-            wake_dict_quadrupole = None
-            delta_xp_quadrupole = 0.
-            delta_xp_coords_quad = 0.
-
-        beam_after_streaker = beam.child()
-
-        if long_wake:
-            wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
-            delta_p = wake_dict_long['wake_potential']/energy_eV
-            delta_p_interp = np.interp(beam['t'], wake_time, delta_p)
-            beam_after_streaker['delta'] += delta_p_interp
+                corr1_interp = corr2_interp = 0
+            beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
 
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
-        beam_after_streaker[dim+'p'] += delta_xp_coords_quad
-        if quad_wake and other_dim in beam.dim_index:
-            beam_after_streaker[other_dim+'p'] += delta_yp_coords_quad
 
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)
@@ -399,6 +330,9 @@ class Tracker(LogMsgBase):
                 'beam_at_screen': beam_at_screen,
                 'wake_dict_dipole': wake_dict_dipole,
                 'wake_dict_quadrupole': wake_dict_quadrupole,
+                'wake_dict_long': wake_dict_long,
+                'wake_dict_c1': wake_dict_c1,
+                'wake_dict_c2': wake_dict_c2,
                 'transport_matrix': self.matrix,
                 })
 

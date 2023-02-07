@@ -35,6 +35,8 @@ class CorrugatedStructure:
                 'Dipole': {},
                 'Quadrupole': {},
                 'Longitudinal': {},
+                'LongitudinalC1': {},
+                'LongitudinalC2': {},
                 }
 
     # __hash__ and __eq__ are implemented so that this class can be used as keys in dictionaries
@@ -67,6 +69,10 @@ class CorrugatedStructure:
             func = self.wxd
         elif spw_type == 'Longitudinal':
             func = self.wld
+        elif spw_type == 'LongitudinalC1':
+            func = self.wld_corr1
+        elif spw_type == 'LongitudinalC2':
+            func = self.wld_corr2
         self.spw_dict[spw_type][dict_key] = func(time_grid0, semigap, beam_position)
         #self.logMsg('spw calculated for semigap %.2f mm and beam position %.2f mm' % (semigap*1e3, beam_position*1e3))
 
@@ -150,6 +156,25 @@ class CorrugatedStructure:
         s0l_ = self.s0l(a, x)
         t4 = exp(-sqrt(c*t/s0l_))
         return - t1 * t2 * t3 * t4 * self.Ls
+
+    def wld_corr1(self, t, a, x):
+        t2 = pi**3 / (4*a**3)
+        arg = pi*x/(2*a)
+        t3 = 1./cos(arg)**2
+        t4 = tan(arg)
+        t5 = self.s0yd(a, x)
+        t6 = np.exp(-sqrt(c*t/t5))
+        return -1 * t1 * t2 * t3 * t4 * t6 / 2 * self.Ls
+
+    def wld_corr2(self, t, a, x):
+        arg = pi*x/a
+        t2 = pi**4/(16*a**4)
+        t3 = 2 - cos(arg)
+        t4 = 1/cos(arg/2)**4
+        t5 = self.s0yq(a, x)
+        sqr = sqrt(c*t/t5)
+        t6 = exp(-sqr)
+        return -1 * t1 * t2 * t3 * t4 * t6 / 2 * self.Ls
 
     def generate_elegant_wf(self, filename, xx, semigap, beam_offset):
         xx -= xx.min()

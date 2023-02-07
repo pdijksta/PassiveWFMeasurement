@@ -5,7 +5,7 @@ from . import lattice
 
 from ocelot.cpbd.wake3D import WakeTableDechirperOffAxis, Wake
 from ocelot.cpbd.elements import Drift, Marker
-from ocelot.cpbd.optics import MethodTM, SecondTM, Navigator
+from ocelot.cpbd.optics import SecondTM, Navigator
 from ocelot.cpbd.magnetic_lattice import MagneticLattice
 from ocelot.cpbd.beam import ParticleArray
 from ocelot.cpbd.track import track
@@ -45,9 +45,7 @@ def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=F
     D01m = Drift(l=self.structure.Ls)
 
     lat_list = (w_start, D01m, w_stop)
-    method = MethodTM()
-    method.global_method = SecondTM
-    lat = MagneticLattice(lat_list, method=method)
+    lat = MagneticLattice(lat_list, method={"global": SecondTM})
 
     rparticles = np.zeros([6, self.n_particles], float)
     rparticles[0] = beam_before_streaker['x'] #+ tracker.beam_position

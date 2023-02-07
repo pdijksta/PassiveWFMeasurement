@@ -271,6 +271,7 @@ class Tracker(LogMsgBase):
         long_wake_correction = self.forward_options['long_wake_correction']
         dim = self.structure.dim.lower()
 
+        wake_dict_quadrupole = None
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             eff_quad_pot = wake_dict_quadrupole['wake_potential']/energy_eV
@@ -294,14 +295,11 @@ class Tracker(LogMsgBase):
                 beam_after['y'] = quad_matrix[2,2] * y + quad_matrix[2,3] * yp
                 beam_after['yp'] = quad_matrix[3,2] * y + quad_matrix[3,3] * yp
             beam = beam_after.linear_propagate(halfmat)
-            #import pdb; pdb.set_trace()
-
-        else:
-            wake_dict_quadrupole = None
 
         beam_after_streaker = beam.child()
 
         wake_dict_long = wake_dict_c1 = wake_dict_c2 = None
+        corr1_interp = corr2_interp = 0
         if long_wake:
             wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
             delta_p = wake_dict_long['wake_potential']/energy_eV
@@ -314,12 +312,9 @@ class Tracker(LogMsgBase):
                 corr1_interp = np.interp(beam['t'], wake_time, corr1) * -(beam[dim] - beam[dim].mean())
                 other_dim = 'x' if dim == 'y' else 'y'
                 corr2_interp = np.interp(beam['t'], wake_time, corr2) * 0.5 * (-(beam[dim] - beam[dim].mean())**2 + (beam[other_dim] - beam[other_dim].mean())**2)
-            else:
-                corr1_interp = corr2_interp = 0
             beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
 
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
-
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)
         outp_dict = {'screen': screen}

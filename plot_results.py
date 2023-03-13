@@ -571,7 +571,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     mask = abs(mean_current) > current_cutoff
 
     if plot_handles is None:
-        _, plot_handles = lasing_figure(figsize=figsize, sharex=sharex)
+        plot_handles = lasing_figure(figsize=figsize, sharex=sharex)
     _, (sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit) = plot_handles
 
     for sp_image_tE, sp_image_xy, key in [

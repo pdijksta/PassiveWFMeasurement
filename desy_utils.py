@@ -40,6 +40,8 @@ default_optics = {
         'alphay': -1.864,
         }
 
+use_R = False
+
 def prepare_image_data(image_data):
     new_images = np.zeros_like(image_data, dtype=float)
     for n_image, image in enumerate(image_data):
@@ -56,7 +58,6 @@ class Xfel_data(logMsg.LogMsgBase):
         self.beamline = beamline = 'SASE2'
         self.structure_name = 'SASE2'
         self.screen_name = 'SASE2'
-        self.matrix = matrix
         self.optics_at_streaker = optics_at_streaker
         self.charge = charge
         self.rec_obj = None
@@ -67,6 +68,10 @@ class Xfel_data(logMsg.LogMsgBase):
         else:
             data = np.load(filename_or_data)
         self.raw_data = {x: y for x, y in data.items()}
+        if use_R and 'R' in self.raw_data:
+            self.matrix = self.raw_data['R']
+        else:
+            self.matrix = matrix
 
         self.profile = profile
         if profile is None:
@@ -324,7 +329,7 @@ class XfelDistanceScan:
 
 class SingleSidedCalibration(logMsg.LogMsgBase):
 
-    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None):
+    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None, init_pos=None):
         self.logger = logger
         self.pixelsize = pixelsize
         self.charge = charge
@@ -332,6 +337,9 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         self.images_per_file = images_per_file
         self.beamline = beamline
         self.use_bpm = 'BPMA.2455.T3'
+        if init_pos is None:
+            init_pos = config.init_plate_pos_dict[self.beamline]
+        self.init_pos = init_pos
         if structure_calib_options is None:
             self.structure_calib_options = config.get_default_structure_calibrator_options()
             self.structure_calib_options['delta_gap_range'] = np.array([-delta_gap_range/2, delta_gap_range/2])
@@ -346,8 +354,6 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         raw_screens = []
         crisp_profiles = []
 
-        init_pos = config.init_plate_pos_dict[self.beamline]
-
         for filename in filenames:
             analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger)
             analyzer.limit_images(self.images_per_file)
@@ -360,7 +366,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 images_per_file = self.images_per_file
 
             all_orbits = bpm_info_from_saved(data)
-            analyzer.set_distance(init_pos-abs(all_orbits['BPMA.2455.T3'].mean()))
+            analyzer.set_distance(self.init_pos-abs(all_orbits['BPMA.2455.T3'].mean()))
             analyzer.calibrate_screen0()
 
             dim = analyzer.tracker.structure.dim
@@ -378,7 +384,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 else:
                     orbit = all_orbits[self.use_bpm][n_image]
                 if orbit > min_orbit and orbit < max_orbit:
-                    init_distance = init_pos - abs(orbit)
+                    init_distance = self.init_pos - abs(orbit)
                     analyzer.set_distance(init_distance)
                     tracker = copy.deepcopy(analyzer.tracker)
                     raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=self.charge)
@@ -450,7 +456,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         delta_pos_range = self.structure_calib_options['delta_gap_range']/2
 
         for delta_pos in delta_pos_range.min(), delta_pos_range.max():
-            plate_pos0 = config.init_plate_pos_dict[self.beamline]
+            plate_pos0 = self.init_pos
             plate_pos = plate_pos0 + delta_pos
             do_calc(plate_pos)
 
@@ -482,6 +488,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 'orbits': self.orbits,
                 'raw_screens': self.raw_screens,
                 'crisp_profiles': self.crisp_profiles,
+                'rms_chargecut': rms_chargecut,
                 }
 
         return outp

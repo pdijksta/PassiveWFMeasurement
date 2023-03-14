@@ -873,14 +873,18 @@ def plot_single_sided_calib(calib_dict):
     sp_ctr += 1
 
     for profile in profile_list:
-        profile.plot_standard(sp_profile, center='Max')
+        profile.plot_standard(sp_profile, center='Mean')
 
     crisp_peak = [bp.get_current().max() for bp in crisp_profiles]
     median_index = np.argmin((crisp_peak - np.median(crisp_peak))**2)
     mean_crisp = crisp_profiles[median_index]
     mean_crisp.plot_standard(sp_profile, center='Max', ls='--', color='black', label='CRISP')
 
+    rms_crisp = mean_crisp.rms_chargecut(calib_dict['rms_chargecut'])
+    sp_rms.axhline(rms_crisp*1e15, color='black', ls='--', label='CRISP')
+
     sp_profile.legend()
+    sp_rms.legend(title='Plate pos (mm)')
 
     return fig
 

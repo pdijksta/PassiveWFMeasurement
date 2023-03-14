@@ -92,6 +92,10 @@ class Profile:
             xx = self._xx[index_left:index_right+1]
             yy = self._yy[index_left:index_right+1]
             return _rms(xx, yy)
+        elif outp == 'mean_rms':
+            xx = self._xx[index_left:index_right+1]
+            yy = self._yy[index_left:index_right+1]
+            return _mean(xx, yy), _rms(xx, yy)
 
     def fwhm(self):
         def get_lim(indices):

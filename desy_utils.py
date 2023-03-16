@@ -245,9 +245,10 @@ class BumpCalibration:
 _z_corr1 = config.sase2_zpos_dict['CMY.2456.T3']
 _z_corr0 = config.sase2_zpos_dict['CMY.2443.T3']
 _z_bpm0 = config.sase2_zpos_dict['BPMA.2455.T3']
+_bpma_2455_factor = (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)
 
 bpm_names_factors = [
-        ('BPMA.2455.T3', (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)),
+        ('BPMA.2455.T3', _bpma_2455_factor),
         ('BPMA.2467.T3', 1),
         ]
 

@@ -807,6 +807,7 @@ def plot_single_sided_calib(calib_dict):
 
     final_index = calib_dict['final_index']
 
+    rms_chargecut = calib_dict['rms_chargecut']
     rms_durations = calib_dict['rms_durations']
     plate_positions  = calib_dict['plate_positions']
     fit_slopes = calib_dict['fit_slopes']
@@ -816,7 +817,7 @@ def plot_single_sided_calib(calib_dict):
     profile_list = profiles[final_index]
     peak_currents = np.array([[p.get_current().max() for p in a] for a in profiles])
 
-    sp_rms = subplot(sp_ctr, title='Rms durations', xlabel='Orbit reading (mm)', ylabel=r'$\tau$ (fs)')
+    sp_rms = subplot(sp_ctr, title='Rms durations with %.1f%% charge cut' % (rms_chargecut*100), xlabel='Orbit reading (mm)', ylabel=r'$\tau$ (fs)')
     sp_ctr += 1
 
     sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel='$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
@@ -878,9 +879,9 @@ def plot_single_sided_calib(calib_dict):
     crisp_peak = [bp.get_current().max() for bp in crisp_profiles]
     median_index = np.argmin((crisp_peak - np.median(crisp_peak))**2)
     mean_crisp = crisp_profiles[median_index]
-    mean_crisp.plot_standard(sp_profile, center='Max', ls='--', color='black', label='CRISP')
+    mean_crisp.plot_standard(sp_profile, center='Mean', ls='--', color='black', label='CRISP')
 
-    rms_crisp = mean_crisp.rms_chargecut(calib_dict['rms_chargecut'])
+    rms_crisp = mean_crisp.rms_chargecut(rms_chargecut)
     sp_rms.axhline(rms_crisp*1e15, color='black', ls='--', label='CRISP')
 
     sp_profile.legend()

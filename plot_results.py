@@ -820,19 +820,6 @@ def plot_single_sided_calib(calib_dict):
     sp_rms = subplot(sp_ctr, title='Rms durations with %.1f%% charge cut' % (rms_chargecut*100), xlabel='Orbit reading (mm)', ylabel=r'$\tau$ (fs)')
     sp_ctr += 1
 
-    sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel='$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
-    sp_ctr += 1
-    sp_err = sp_avg_dur.twinx()
-    sp_err.set_ylabel(r'$\delta\tau/\tau$')
-
-    sp_peak = subplot(sp_ctr, title='Peak currents', xlabel='Orbit reading (mm)', ylabel='Rec. peak current (kA)')
-    sp_ctr += 1
-
-    sp_avg_peak = subplot(sp_ctr, title='Average peak currents', xlabel='$\Delta$d ($\mu$m)', ylabel='Rec. peak current (kA)')
-    sp_ctr += 1
-    sp_peak_err = sp_avg_peak.twinx()
-    sp_peak_err.set_ylabel(r'$\delta$I (kA)')
-
     sp_fit = subplot(sp_ctr, title='Fit slopes', xlabel='$\Delta$d ($\mu$m)', ylabel='Fit slope (fs/mm)')
     sp_ctr += 1
 
@@ -845,6 +832,19 @@ def plot_single_sided_calib(calib_dict):
         sp_fit.axhline(hline*1e15*1e-3, color='black', ls='--', label=label)
 
     sp_fit.legend()
+
+    sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel='$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
+    sp_ctr += 1
+    sp_err = sp_avg_dur.twinx()
+    sp_err.set_ylabel(r'$\delta\tau/\tau$')
+
+    sp_peak = subplot(sp_ctr, title='Peak currents', xlabel='Orbit reading (mm)', ylabel='Rec. peak current (kA)')
+    sp_ctr += 1
+
+    sp_avg_peak = subplot(sp_ctr, title='Average peak currents', xlabel='$\Delta$d ($\mu$m)', ylabel='Rec. peak current (kA)')
+    sp_ctr += 1
+    sp_peak_err = sp_avg_peak.twinx()
+    sp_peak_err.set_ylabel(r'$\delta$I (kA)')
 
     dur_mean = np.mean(rms_durations, axis=1)
     dur_rms = np.std(rms_durations, axis=1)

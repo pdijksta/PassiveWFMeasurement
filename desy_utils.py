@@ -33,6 +33,15 @@ matrix_0000 = np.array([
     [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000],
     ])
 
+matrix_0380 = np.array([
+    [0.270625, -3.097782, 0.000000, 0.000000, 0.000000, 0.380000,],
+    [0.153215, 1.941340, 0.000000, 0.000000, 0.000000, 0.080015,],
+    [0.000000, 0.000000, 1.527172, -39.565286, 0.000000, 0.000000,],
+    [0.000000, 0.000000, -0.087384, 2.918699, 0.000000, 0.000000,],
+    [0.036567, 0.985579, 0.000000, 0.000000, 1.000000, -0.000199,],
+    [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000,],
+    ])
+
 default_optics = {
         'betax': 34.509,
         'alphax': 1.068,
@@ -330,7 +339,7 @@ class XfelDistanceScan:
 
 class SingleSidedCalibration(logMsg.LogMsgBase):
 
-    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None, init_pos=None):
+    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None, init_pos=None, ref_profile=None):
         self.logger = logger
         self.pixelsize = pixelsize
         self.charge = charge
@@ -341,6 +350,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         if init_pos is None:
             init_pos = config.init_plate_pos_dict[self.beamline]
         self.init_pos = init_pos
+        self.ref_profile = ref_profile
         if structure_calib_options is None:
             self.structure_calib_options = config.get_default_structure_calibrator_options()
             self.structure_calib_options['delta_gap_range'] = np.array([-delta_gap_range/2, delta_gap_range/2])
@@ -356,7 +366,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         crisp_profiles = []
 
         for filename in filenames:
-            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger)
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger, profile=self.ref_profile)
             analyzer.limit_images(self.images_per_file)
             analyzer.tracker.find_beam_position_options['position_explore'] = 100e-6
             data = analyzer.raw_data

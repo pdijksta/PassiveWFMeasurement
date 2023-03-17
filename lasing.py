@@ -470,6 +470,8 @@ class LasingReconstructionImages:
             images = self.images_E
         elif type_ == 'slice':
             images = self.images_sliced
+        else:
+            raise ValueError('%s is not a valid key.' % type_)
 
         sp_ctr = np.inf
         ny, nx = 3, 3

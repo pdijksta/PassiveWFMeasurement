@@ -321,6 +321,7 @@ class Tracker(LogMsgBase):
         if output_details:
             outp_dict.update({
                 'beam': beam,
+                'beam_before_streaker': beam_before,
                 'beam_after_streaker': beam_after_streaker,
                 'beam_at_screen': beam_at_screen,
                 'wake_dict_dipole': wake_dict_dipole,

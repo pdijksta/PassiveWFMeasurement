@@ -309,9 +309,11 @@ class Tracker(LogMsgBase):
                 wake_dict_c2 = self.calc_wake(beam.beamProfile, 'LongitudinalC2')
                 corr1 = wake_dict_c1['wake_potential']/energy_eV
                 corr2 = wake_dict_c2['wake_potential']/energy_eV
-                corr1_interp = np.interp(beam['t'], wake_time, corr1) * -(beam[dim] - beam[dim].mean())
+                delta_dim = beam[dim] - beam[dim].mean()
                 other_dim = 'x' if dim == 'y' else 'y'
-                corr2_interp = np.interp(beam['t'], wake_time, corr2) * 0.5 * (-(beam[dim] - beam[dim].mean())**2 + (beam[other_dim] - beam[other_dim].mean())**2)
+                delta_other = beam[other_dim] - beam[other_dim].mean()
+                corr1_interp = np.interp(beam['t'], wake_time, corr1) * -delta_dim
+                corr2_interp = np.interp(beam['t'], wake_time, corr2) * (-delta_dim**2 + delta_other**2)/2
             beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
 
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip

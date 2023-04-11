@@ -1,6 +1,6 @@
 import numpy as np
 
-def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False):
+def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False, long_wake=False):
     #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
     beam_spec = tracker.beam_spec.copy()
     beam_spec.update(tracker.beam_optics)
@@ -32,6 +32,7 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
             'resolution': resolution,
             'r12': r12,
             'wf_%s' % dim: wf_x,
+            'center': mean_x,
             'beamsize': beamsize,
             'streaking_strength': streaking_strength,
             'beam': beam,
@@ -45,6 +46,7 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
         other_dim = 'x' if dim == 'y' else 'y'
         beam_y = beam[other_dim] + np.random.randn(beam_t.size)*camera_res
         hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam_y, bins=bins)
+        current_t = hist.sum(axis=1)
         y_axis = (yedges[1:] + yedges[:-1])/2.
         y_axis2 = np.ones_like(hist)*y_axis
         mean_y = np.sum(hist*y_axis, axis=1) / current_t
@@ -52,6 +54,20 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
         beamsize_ysq = np.sum(hist*(y_axis2 - mean_y2)**2, axis=1) / current_t
         beamsize_y = np.sqrt(beamsize_ysq)
         output['other_beamsize'] = beamsize_y
+        output['other_center'] = mean_y
+    if long_wake:
+        hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam['delta'], bins=bins)
+        y_axis = (yedges[1:] + yedges[:-1])/2.
+        y_axis2 = np.ones_like(hist)*y_axis
+        current_t = hist.sum(axis=1)
+        mean_y = np.sum(hist*y_axis, axis=1) / current_t
+        mean_y2 = np.ones_like(hist)*mean_y[:,np.newaxis]
+        beamsize_ysq = np.sum(hist*(y_axis2 - mean_y2)**2, axis=1) / current_t
+        beamsize_y = np.sqrt(beamsize_ysq)
+        output['delta_beamsize'] = beamsize_y
+        output['delta_center'] = mean_y
+
+
     return output
 
 def plot_resolution(res_dict, sp_current, sp_res, max_res=20e-15):

@@ -89,6 +89,16 @@ class Beam:
         self.energy_eV = energy_eV
         self.ignore_time = True
 
+    def to_dict_custom(self):
+        outp = {
+                'arr': self.arr,
+                'dim_index': self.dim_index,
+                'beamProfile': self.beamProfile,
+                'total_charge': self.total_charge,
+                'energy_eV': self.energy_eV,
+                }
+        return outp
+
     def child(self, new_arr=None):
         if new_arr is None:
             new_arr = self.arr.copy()

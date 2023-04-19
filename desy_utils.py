@@ -76,7 +76,7 @@ class Xfel_data(logMsg.LogMsgBase):
             data = filename_or_data
         else:
             data = np.load(filename_or_data)
-        self.raw_data = {x: y for x, y in data.items()}
+        self.raw_data = dict(data)
         if use_R and 'R' in self.raw_data:
             self.matrix = self.raw_data['R']
         else:

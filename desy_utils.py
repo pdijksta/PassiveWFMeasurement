@@ -54,9 +54,12 @@ use_R = False
 def prepare_image_data(image_data):
     new_images = np.zeros_like(image_data, dtype=float)
     for n_image, image in enumerate(image_data):
-        new_image = image - np.quantile(image, 0.5)
+        delta = np.quantile(image, 0.75)
+        #delta = 0
+        new_image = image - delta
         new_image = np.clip(new_image, 0, None)
         new_images[n_image] = new_image
+        #import pdb; pdb.set_trace()
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):

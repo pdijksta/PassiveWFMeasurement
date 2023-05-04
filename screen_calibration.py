@@ -35,6 +35,8 @@ def calibrate_screen0(trans_dist, profile, tracker, smoothen, half_factor=4, sp=
 
     delta_x = -(half_peak_x - half_peak_x_sim)
 
+    #import pdb; pdb.set_trace()
+
     # For debug only
     if sp is not None:
         sp.plot(forward_screen.x*1e3, forward_screen.intensity)

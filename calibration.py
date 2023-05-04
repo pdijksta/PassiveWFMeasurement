@@ -30,7 +30,7 @@ class StructureCalibration:
         beam_position = -(structure_position - self.structure_position0)
         distance = gap/2. - abs(beam_position)
         if distance < 0:
-            raise ValueError('Distance between beam and gap is negative')
+            raise ValueError('Distance between beam and gap is negative: %.3e' % distance)
 
         return {
                 'gap0': gap0,

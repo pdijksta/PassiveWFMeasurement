@@ -272,6 +272,7 @@ class Tracker(LogMsgBase):
         dim = self.structure.dim.lower()
 
         wake_dict_quadrupole = None
+        beam_before = None
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             eff_quad_pot = wake_dict_quadrupole['wake_potential']/energy_eV

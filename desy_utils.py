@@ -63,7 +63,7 @@ def prepare_image_data(image_data):
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
         self.identifier = identifier
         self.logger = logger
@@ -98,8 +98,13 @@ class Xfel_data(logMsg.LogMsgBase):
             else:
                 self.logMsg('All zeros in crisp intensity')
 
-        x_axis_m = np.arange(0, data['images'][0].shape[1], dtype=float)*pixelsize
-        y_axis_m = np.arange(0, data['images'][0].shape[0], dtype=float)*pixelsize
+        if 'pixelsizes' in data:
+            pixelsizeX, pixelsizeY = data['pixelsizes']
+        else:
+            pixelsizeX = pixelsizeY = pixelsize
+
+        x_axis_m = np.arange(0, data['images'][0].shape[1], dtype=float)*pixelsizeX
+        y_axis_m = np.arange(0, data['images'][0].shape[0], dtype=float)*pixelsizeY
         new_images = prepare_image_data(data['images'])
         self.data = data = {
                 'pyscan_result': {

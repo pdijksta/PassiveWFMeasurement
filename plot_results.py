@@ -635,7 +635,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     else:
         current_center_plot = np.mean(current_center)
     if current_profile is not None:
-        current_profile.plot_standard(sp_current, center_float=current_center_plot, label='Reconstructed', color='black')
+        current_profile.plot_standard(sp_current, center_float=current_center_plot, label='Reference', color='black')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
     sp_current.legend()
     sp_slice_mean.legend()

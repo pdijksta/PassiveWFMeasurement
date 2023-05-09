@@ -63,7 +63,7 @@ def prepare_image_data(image_data):
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, identifier, filename_or_data, charge, energy_eV, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge, energy_ch=None, energy_eV=None, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
         self.identifier = identifier
         self.logger = logger
@@ -78,12 +78,34 @@ class Xfel_data(logMsg.LogMsgBase):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
         else:
-            data = np.load(filename_or_data)
-        self.raw_data = dict(data)
+            data = dict(np.load(filename_or_data))
+        self.raw_data = data
         if use_R and 'R' in self.raw_data:
             self.matrix = self.raw_data['R']
         else:
             self.matrix = matrix
+
+        if 'pixelsizes' in data:
+            pixelsizeX, pixelsizeY = data['pixelsizes']
+            if pixelsize is not None:
+                print('Using pixelsizes is deprecated for this dataset!')
+        else:
+            if pixelsize is None:
+                print('Need to supply pixelsize for this dataset!')
+            pixelsizeX = pixelsizeY = pixelsize
+
+        if energy_ch is not None:
+            if energy_ch in data:
+                energy_eV = data[energy_ch]*1e6
+                if energy_eV is not None:
+                    print('energy_eV is deprecated for this dataset')
+            if energy_ch not in data:
+                raise ValueError('Information %s not in dataset' % energy_ch)
+        elif energy_ch is None:
+            if energy_eV is not None:
+                pass
+            else:
+                raise ValueError('Need to provide energy information somehow!')
 
         self.profile = profile
         if profile is None:
@@ -97,11 +119,6 @@ class Xfel_data(logMsg.LogMsgBase):
                 self.profile = crisp_profile
             else:
                 self.logMsg('All zeros in crisp intensity')
-
-        if 'pixelsizes' in data:
-            pixelsizeX, pixelsizeY = data['pixelsizes']
-        else:
-            pixelsizeX = pixelsizeY = pixelsize
 
         x_axis_m = np.arange(0, data['images'][0].shape[1], dtype=float)*pixelsizeX
         y_axis_m = np.arange(0, data['images'][0].shape[0], dtype=float)*pixelsizeY

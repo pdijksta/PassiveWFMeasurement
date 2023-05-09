@@ -735,7 +735,7 @@ def clear_slice_dict_figure(sp_current, sp_loss, sp_chirp, sp_spread):
 
     for sp, title, xlabel, ylabel in [
             (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
-            (sp_loss, 'Energy loss', 't (fs)', '$\Delta$E (MeV)'),
+            (sp_loss, 'Energy profile', 't (fs)', '$\Delta$E (MeV)'),
             (sp_chirp, 'Energy chirp', 't (fs)', 'C (MeV/fs)'),
             (sp_spread, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
             ]:

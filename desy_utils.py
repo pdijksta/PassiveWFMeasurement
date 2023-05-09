@@ -63,7 +63,7 @@ def prepare_image_data(image_data):
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, identifier, filename_or_data, charge, energy_ch=None, energy_eV=None, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge=None, energy_eV=None, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
         self.identifier = identifier
         self.logger = logger
@@ -71,7 +71,6 @@ class Xfel_data(logMsg.LogMsgBase):
         self.structure_name = 'SASE2'
         self.screen_name = 'SASE2'
         self.optics_at_streaker = optics_at_streaker
-        self.charge = charge
         self.rec_obj = None
         self.gap = gap
 
@@ -94,28 +93,42 @@ class Xfel_data(logMsg.LogMsgBase):
                 print('Need to supply pixelsize for this dataset!')
             pixelsizeX = pixelsizeY = pixelsize
 
-        if energy_ch is not None:
-            if energy_ch in data:
-                energy_eV = data[energy_ch]*1e6
-                if energy_eV is not None:
-                    print('energy_eV is deprecated for this dataset')
-            if energy_ch not in data:
-                raise ValueError('Information %s not in dataset' % energy_ch)
-        elif energy_ch is None:
+        if 'location' in data:
+            location = data['location']
+        else:
+            location = 'postSA2'
+            print('Assuming location: %s' % location)
+        energy_ch = config.xfel_energy_pv[location]
+
+        if energy_ch in data:
             if energy_eV is not None:
+                print('energy_eV arg/kwarg is deprecated for this function with this dataset')
+            self.energy_eV = data[energy_ch]
+        else:
+            if self.energy_eV is not None:
                 pass
             else:
                 raise ValueError('Need to provide energy information somehow!')
+
+
+        if config.xfel_charge_pv in data:
+            self.charge = data[config.xfel_charge_pv]
+        else:
+            if charge is not None:
+                self.charge = charge
+            else:
+                raise ValueError('Need to provide charge information somehow!')
+
 
         self.profile = profile
         if profile is None:
             crisp_intensity = np.nan_to_num(data['crisp'][1])
             crisp_intensity2 = np.nan_to_num(data['crisp_all'][0][1])
             if np.any(crisp_intensity):
-                crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, energy_eV, charge)
+                crisp_profile = beam_profile.BeamProfile(data['crisp'][0]*1e-15, crisp_intensity, self.energy_eV, self.charge)
                 self.profile = crisp_profile
             elif np.any(crisp_intensity2):
-                crisp_profile = beam_profile.BeamProfile(data['crisp_all'][0][0]*1e-15, crisp_intensity2, energy_eV, charge)
+                crisp_profile = beam_profile.BeamProfile(data['crisp_all'][0][0]*1e-15, crisp_intensity2, self.energy_eV, self.charge)
                 self.profile = crisp_profile
             else:
                 self.logMsg('All zeros in crisp intensity')
@@ -130,10 +143,10 @@ class Xfel_data(logMsg.LogMsgBase):
                     'image': new_images[:,::-1],
                     },
                 'meta_data_begin': {
-                    '%s:ENERGY' % beamline: energy_eV/1e6,
+                    '%s:ENERGY' % beamline: self.energy_eV/1e6,
                     '%s:GAP' % beamline: self.gap*1e3,
                     '%s:CENTER' % beamline: 0,
-                    '%s:CHARGE' % beamline: charge*1e12,
+                    '%s:CHARGE' % beamline: self.charge*1e12,
                     },
                 }
         self.meta_data = data['meta_data_end'] = data['meta_data_begin']

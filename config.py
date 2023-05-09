@@ -369,6 +369,14 @@ def get_default_find_beam_position_options():
             }.copy()
     return outp
 
+xfel_charge_pv = 'XFEL.DIAG/CHARGE.ML/TORA.25.I1/CHARGE.ALL'
+
+xfel_energy_pv= {
+        'preSA1': 'XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/CL/ENERGY.ALL',
+        'postSA2': 'XFEL.DIAG/BEAM_ENERGY_MEASUREMENT/CL/ENERGY.ALL',
+        }
+
+
 sase2_zpos_dict = {
         'CMY.2443.T3': 2443.4426,
         'BPMA.2455.T3': 2455.3481,

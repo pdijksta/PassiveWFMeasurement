@@ -80,6 +80,14 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
     else:
         lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
     las_rec_images = {}
+
+    # Allow supply of two trackers, the first for lasing off and the second for lasing on
+    if hasattr(tracker, '__iter__'):
+        tracker1, tracker2 = tracker
+    else:
+        tracker1 = tracker2 = tracker
+    trackers = [tracker1, tracker2]
+
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
         if main_ctr == 0:
             ref_y = None
@@ -92,7 +100,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             profile = None
             ref_slice_dict = None
 
-        rec_obj = LasingReconstructionImages(title, tracker, lasing_options, profile=profile, ref_y=ref_y)
+        rec_obj = LasingReconstructionImages(title, trackers[main_ctr], lasing_options, profile=profile, ref_y=ref_y)
         rec_obj.add_dict(data_dict)
         rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         las_rec_images[title] = rec_obj

@@ -105,8 +105,8 @@ class Xfel_data(logMsg.LogMsgBase):
                 print('energy_eV arg/kwarg is deprecated for this function with this dataset')
             self.energy_eV = data[energy_ch]
         else:
-            if self.energy_eV is not None:
-                pass
+            if energy_eV is not None:
+                self.energy_eV = energy_eV
             else:
                 raise ValueError('Need to provide energy information somehow!')
 

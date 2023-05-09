@@ -732,7 +732,6 @@ def all_slice_dict_figure(figsize=None):
     return fig, subplots
 
 def clear_slice_dict_figure(sp_current, sp_loss, sp_chirp, sp_spread):
-
     for sp, title, xlabel, ylabel in [
             (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
             (sp_loss, 'Energy profile', 't (fs)', '$\Delta$E (MeV)'),

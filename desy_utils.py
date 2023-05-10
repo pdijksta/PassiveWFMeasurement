@@ -82,6 +82,8 @@ class Xfel_data(logMsg.LogMsgBase):
         if use_R and 'R' in self.raw_data:
             self.matrix = self.raw_data['R']
         else:
+            print('Warning: R matrix not saved. Use:')
+            print(matrix)
             self.matrix = matrix
 
         if 'pixelsizes' in data:
@@ -110,7 +112,6 @@ class Xfel_data(logMsg.LogMsgBase):
             else:
                 raise ValueError('Need to provide energy information somehow!')
 
-
         if config.xfel_charge_pv in data:
             self.charge = data[config.xfel_charge_pv]
         else:
@@ -118,7 +119,6 @@ class Xfel_data(logMsg.LogMsgBase):
                 self.charge = charge
             else:
                 raise ValueError('Need to provide charge information somehow!')
-
 
         self.profile = profile
         if profile is None:

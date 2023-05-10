@@ -667,7 +667,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         delta_distance = result_dict[key]['delta_distances']
         mean_x = result_dict[key]['meas_screen_centroids']
         if delta_distance is not None:
-            sp_orbit.scatter(mean_x*1e3, delta_distance*1e6, label=label, color=color)
+            sp_orbit.plot(mean_x*1e3, delta_distance*1e6, label=label, color=color, ls='None', marker='.')
 
     if delta_distance is not None:
         sp_orbit.legend()

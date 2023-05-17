@@ -30,7 +30,7 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
             'power_err': power_err,
             }
 
-def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total, photon_energy_factors=1, norm_factor=None):
+def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total=None, photon_energy_factors=1, norm_factor=None):
     power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * photon_energy_factors
     if norm_factor is None:
         mask = np.ones_like(slice_t, dtype=bool)
@@ -132,6 +132,8 @@ class LasingReconstruction:
         for title in 'Lasing Off', 'Lasing On':
             mean_slice_dict[title] = all_slice_to_mean_slice_dict(self.all_slice_dict[title])
 
+        self.analysis_complete = False
+
     def lasing_analysis(self, photon_energy_factors=None, norm_factor=None):
         all_slice_dict = self.all_slice_dict
         mean_slice_dict = self.mean_slice_dict
@@ -192,6 +194,8 @@ class LasingReconstruction:
         lasing_dict['all_Eloss'] = all_loss
         lasing_dict['all_Espread'] = all_spread
 
+        self.analysis_complete = True
+
     def get_result_dict(self):
         outp = {
                 'lasing_dict': self.lasing_dict,
@@ -211,6 +215,48 @@ class LasingReconstruction:
             d['meas_screen_centroids'] = obj.meas_screen_centroids
         return outp
 
+    def live_reconstruction(self, raw_image, screen0=0):
+        x_axis = self.images_on.x_axis - screen0
+        y_axis = self.images_on.y_axis
+        tracker = self.images_on.tracker
+        charge = tracker.total_charge
+        ref_profile = tracker.profile
+        raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
+        image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
+        image_E = self.images_on.convert_y_single(image_xy)
+
+        meas_screen = beam_profile.ScreenDistribution(image_E.x_axis, image_E.image.sum(axis=-2), total_charge=charge)
+        if self.lasing_options['adjust_beam_position']:
+            position_dict = tracker.find_beam_position(tracker.beam_position, meas_screen, ref_profile)
+            beam_position = position_dict['beam_position']
+        else:
+            beam_position = None
+        wake_t, wake_x = self.images_on.calc_wake(beam_position=beam_position)
+        cut_image = image_E.cut(wake_x.min(), wake_x.max())
+        image_tE = cut_image.x_to_t(wake_x, wake_t)
+
+        slice_dict = image_tE.fit_slice(
+                rms_sigma=self.lasing_options['rms_sigma'],
+                current_cutoff=self.lasing_options['current_cutoff'],
+                E_lims=self.lasing_options['E_lims'],
+                )
+        slice_dict = interpolate_slice_dicts(self.images_on.ref_slice_dict, slice_dict)
+        slice_method = self.lasing_options['slice_method']
+        espread_increase_sq = slice_dict[slice_method]['sigma_sq'] - self.mean_slice_dict['Lasing Off']['spread']['mean']
+        norm_factor = self.lasing_dict['Espread']['norm_factor']
+        pEspread = power_Espread(slice_dict['slice_t'], slice_dict['slice_current'], espread_increase_sq, norm_factor=norm_factor)
+
+        outp = {
+                'image_xy': image_xy,
+                'image_tE': image_tE,
+                'beam_position': beam_position,
+                'screen0': screen0,
+                'slice_dict': slice_dict,
+                'power_Espread': pEspread,
+                }
+        return outp
+
+
 class LasingReconstructionImages:
     def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
         self.identifier = identifier
@@ -219,7 +265,7 @@ class LasingReconstructionImages:
         self.profile = profile
         self.lasing_options = lasing_options
 
-        self.ref_slice_dict = None
+        self.ref_slice_dict = ref_slice_dict
         self.ref_y = ref_y
 
         self.do_recon_plot = False
@@ -272,12 +318,7 @@ class LasingReconstructionImages:
         for n_image, img in enumerate(images):
             if max_index is not None and n_image >= max_index:
                 break
-            if subtract_quantile is not None:
-                img = img - np.quantile(img, subtract_quantile)
-            if max_quantile is not None:
-                img = img.clip(0, np.quantile(img, max_quantile))
-            else:
-                img = img.clip(0, None)
+            img = prepare_raw_image(img, subtract_quantile, max_quantile)
             image = image_analysis.Image(img, self.x_axis, y_axis, self.charge)
             self.images_xy.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)
@@ -365,6 +406,9 @@ class LasingReconstructionImages:
                 ref_y0 = ref_y
             self.images_E.append(image_E)
             self.ref_y_list.append(ref_y)
+
+    def convert_y_single(self, image):
+        return image.y_to_eV(self.dispersion, self.tracker.energy_eV, ref_y=self.ref_y)
 
     def slice_x(self):
         slice_factor = self.lasing_options['slice_factor']
@@ -546,4 +590,13 @@ def all_slice_to_mean_slice_dict(all_slice_dict):
                 'std': np.nanstd(arr, axis=0),
                 }
     return mean_slice_dict
+
+def prepare_raw_image(img, subtract_quantile, max_quantile):
+    if subtract_quantile is not None:
+        img = img - np.quantile(img, subtract_quantile)
+    if max_quantile is not None:
+        img = img.clip(0, np.quantile(img, max_quantile))
+    else:
+        img = img.clip(0, None)
+    return img
 

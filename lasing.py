@@ -215,15 +215,15 @@ class LasingReconstruction:
             d['meas_screen_centroids'] = obj.meas_screen_centroids
         return outp
 
-    def live_reconstruction(self, raw_image, screen0=0):
-        x_axis = self.images_on.x_axis - screen0
+    def live_reconstruction(self, raw_image):
+        x_axis = self.images_on.x_axis
         y_axis = self.images_on.y_axis
         tracker = self.images_on.tracker
         charge = tracker.total_charge
-        ref_profile = tracker.profile
+        ref_profile = self.images_on.profile
         raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
         image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
-        image_E = self.images_on.convert_y_single(image_xy)
+        image_E, _ = self.images_on.convert_y_single(image_xy)
 
         meas_screen = beam_profile.ScreenDistribution(image_E.x_axis, image_E.image.sum(axis=-2), total_charge=charge)
         if self.lasing_options['adjust_beam_position']:
@@ -232,6 +232,7 @@ class LasingReconstruction:
         else:
             beam_position = None
         wake_t, wake_x = self.images_on.calc_wake(beam_position=beam_position)
+        #import pdb; pdb.set_trace()
         cut_image = image_E.cut(wake_x.min(), wake_x.max())
         image_tE = cut_image.x_to_t(wake_x, wake_t)
 
@@ -244,13 +245,12 @@ class LasingReconstruction:
         slice_method = self.lasing_options['slice_method']
         espread_increase_sq = slice_dict[slice_method]['sigma_sq'] - self.mean_slice_dict['Lasing Off']['spread']['mean']
         norm_factor = self.lasing_dict['Espread']['norm_factor']
-        pEspread = power_Espread(slice_dict['slice_t'], slice_dict['slice_current'], espread_increase_sq, norm_factor=norm_factor)
+        pEspread = power_Espread(slice_dict['slice_x'], slice_dict['slice_current'], espread_increase_sq, norm_factor=norm_factor)
 
         outp = {
                 'image_xy': image_xy,
                 'image_tE': image_tE,
                 'beam_position': beam_position,
-                'screen0': screen0,
                 'slice_dict': slice_dict,
                 'power_Espread': pEspread,
                 }

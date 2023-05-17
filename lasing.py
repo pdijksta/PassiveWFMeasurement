@@ -232,7 +232,6 @@ class LasingReconstruction:
         else:
             beam_position = None
         wake_t, wake_x = self.images_on.calc_wake(beam_position=beam_position)
-        #import pdb; pdb.set_trace()
         cut_image = image_E.cut(wake_x.min(), wake_x.max())
         image_tE = cut_image.x_to_t(wake_x, wake_t)
 

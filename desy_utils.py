@@ -63,7 +63,7 @@ def prepare_image_data(image_data):
     return new_images
 
 class Xfel_data(logMsg.LogMsgBase):
-    def __init__(self, identifier, filename_or_data, charge=None, energy_eV=None, pixelsize=5.5e-6, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
+    def __init__(self, identifier, filename_or_data, charge=None, energy_eV=None, pixelsize=None, init_plate_pos=3.54e-3, init_distance=None, optics_at_streaker=default_optics, matrix=matrix_0304, gap=20e-3, profile=None, logger=None):
 
         self.identifier = identifier
         self.logger = logger
@@ -96,7 +96,7 @@ class Xfel_data(logMsg.LogMsgBase):
             pixelsizeX = pixelsizeY = pixelsize
 
         if 'location' in data:
-            location = data['location']
+            location = str(data['location'])
         else:
             location = 'postSA2'
             print('Assuming location: %s' % location)
@@ -105,7 +105,7 @@ class Xfel_data(logMsg.LogMsgBase):
         if energy_ch in data:
             if energy_eV is not None:
                 print('energy_eV arg/kwarg is deprecated for this function with this dataset')
-            self.energy_eV = data[energy_ch]
+            self.energy_eV = data[energy_ch]*1e6
         else:
             if energy_eV is not None:
                 self.energy_eV = energy_eV
@@ -113,7 +113,7 @@ class Xfel_data(logMsg.LogMsgBase):
                 raise ValueError('Need to provide energy information somehow!')
 
         if config.xfel_charge_pv in data:
-            self.charge = data[config.xfel_charge_pv]
+            self.charge = data[config.xfel_charge_pv]*1e-9
         else:
             if charge is not None:
                 self.charge = charge

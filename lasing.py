@@ -217,16 +217,15 @@ class LasingReconstruction:
 
     def live_reconstruction(self, raw_image):
 
-        print('DEBUG')
-        np.save('./live_rec.npz', raw_image)
+        tracker = self.images_on.tracker
+        if tracker.structure.dim == 'Y':
+            raw_image = np.transpose(raw_image, (1,0))
 
         x_axis = self.images_on.x_axis
         y_axis = self.images_on.y_axis
-        tracker = self.images_on.tracker
         charge = tracker.total_charge
         ref_profile = self.images_on.profile
         raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
-        raw_image = raw_image.T
         image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
         image_E, _ = self.images_on.convert_y_single(image_xy)
 

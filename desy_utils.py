@@ -49,7 +49,7 @@ default_optics = {
         'alphay': -1.864,
         }
 
-use_R = False
+use_R = True
 
 def prepare_image_data(image_data):
     new_images = np.zeros_like(image_data, dtype=float)

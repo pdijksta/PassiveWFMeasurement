@@ -216,6 +216,10 @@ class LasingReconstruction:
         return outp
 
     def live_reconstruction(self, raw_image):
+
+        print('DEBUG')
+        np.save('./live_rec.npz', raw_image)
+
         x_axis = self.images_on.x_axis
         y_axis = self.images_on.y_axis
         tracker = self.images_on.tracker

@@ -222,6 +222,7 @@ class LasingReconstruction:
         charge = tracker.total_charge
         ref_profile = self.images_on.profile
         raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
+        raw_image = raw_image.T
         image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
         image_E, _ = self.images_on.convert_y_single(image_xy)
 
@@ -242,7 +243,9 @@ class LasingReconstruction:
                 )
         slice_dict = interpolate_slice_dicts(self.images_on.ref_slice_dict, slice_dict)
         slice_method = self.lasing_options['slice_method']
-        espread_increase_sq = slice_dict[slice_method]['sigma_sq'] - self.mean_slice_dict['Lasing Off']['spread']['mean']
+        espread_on = slice_dict[slice_method]['sigma_sq']
+        espread_off = self.mean_slice_dict['Lasing Off']['spread']['mean']
+        espread_increase_sq = espread_on - espread_off
         norm_factor = self.lasing_dict['Espread']['norm_factor']
         pEspread = power_Espread(slice_dict['slice_x'], slice_dict['slice_current'], espread_increase_sq, norm_factor=norm_factor)
 
@@ -252,6 +255,8 @@ class LasingReconstruction:
                 'beam_position': beam_position,
                 'slice_dict': slice_dict,
                 'power_Espread': pEspread,
+                'espread_off': np.sqrt(espread_off),
+                'espread_on': np.sqrt(espread_on),
                 }
         return outp
 

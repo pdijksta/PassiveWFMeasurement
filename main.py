@@ -828,7 +828,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_on_dict = h5_storage.loadH5Recursive(file_on)
 
         tracker = self.get_tracker(lasing_off_dict['meta_data_begin'])
-        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, self.get_lasing_options(), pulse_energy)['result_dict']
+        lasing_options = self.get_lasing_options()
+        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, lasing_options, pulse_energy)['result_dict']
         plot_results.plot_lasing(result_dict, plot_handles=(self.all_lasing_fig, self.all_lasing_subplots))
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
@@ -842,7 +843,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                     'lasing_off': result_dict['images_off']['tE_images'],
                     },
                 'other_results': {'all_slice_dict': result_dict['all_slice_dict'], 'mean_slice_dict': result_dict['mean_slice_dict']},
-                'Input': {'pulse_energy': pulse_energy, 'file_on': file_on, 'file_off': file_off},
+                'Input': {'pulse_energy': pulse_energy, 'file_on': file_on, 'file_off': file_off, 'lasing_options': lasing_options},
                 'Calibration': self.gui_to_calib().to_dict_custom(),
                 }
 

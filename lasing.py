@@ -442,7 +442,7 @@ class LasingReconstructionImages:
                 current_cutoff = self.lasing_options['current_cutoff']
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot)
+            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
             self.slice_dicts.append(slice_dict)
 
             if do_plot:

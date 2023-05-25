@@ -351,6 +351,7 @@ def get_default_lasing_options():
             'x_linear_factor': 1,
             'rms_sigma': 5,
             't_lims': None,
+            'ref_t': None,
             'E_lims': None,
             'slice_method': 'cut',
             'plot_slice_analysis': False,

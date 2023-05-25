@@ -125,7 +125,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False):
+    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -288,6 +288,9 @@ class Image(LogMsgBase):
         diff_time = np.diff(slice_x)
         for key in ['gauss', 'rms', 'cut', 'full']:
             slice_dict[key]['chirp'] = np.concatenate([np.diff(slice_dict[key]['mean'])/diff_time, [0.]])
+            if ref_t is not None:
+                eref = np.interp(ref_t, slice_dict['slice_x'], slice_dict[key]['mean'])
+                slice_dict[key]['mean'] -= eref
 
         return slice_dict
 

@@ -172,13 +172,17 @@ class Profile:
             self._yy = yy / np.sum(yy) * old_sum
 
     def crop(self):
-        old_sum = np.sum(self._yy)
         mask = self._yy != 0
+        if np.sum(mask) < 2:
+            print('Cannot crop!')
+            return False
         xx_nonzero = self._xx[mask]
         new_x = np.linspace(xx_nonzero.min(), xx_nonzero.max(), len(self._xx))
         new_y = np.interp(new_x, self._xx, self._yy)
+        old_sum = np.sum(self._yy)
         self._xx = new_x
         self._yy = new_y / new_y.sum() * old_sum
+        return True
 
     def __len__(self):
         return len(self._xx)

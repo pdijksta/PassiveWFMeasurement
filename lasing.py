@@ -14,15 +14,17 @@ def power_Eloss(slice_current, slice_Eloss_eV):
     #power[power<0] = 0
     return power
 
-def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_current_err, slice_E_on_err, slice_E_off_err):
+def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_current_err, slice_E_on_err, slice_E_off_err, mask0):
     delta_E = slice_E_off-slice_E_on
     power = slice_current * delta_E
     #power[power<0] = 0
-    energy = np.trapz(power, slice_time)
     err_sq_1 = (delta_E * slice_current_err)**2
     err_sq_2 = (slice_current * slice_E_on_err)**2
     err_sq_3 = (slice_current * slice_E_off_err)**2
     power_err = np.sqrt(err_sq_1+err_sq_2+err_sq_3)
+    power[mask0] = 0
+    power_err[mask0] = 0
+    energy = np.trapz(power, slice_time)
     return {
             'time': slice_time,
             'power': power,
@@ -162,11 +164,13 @@ class LasingReconstruction:
 
         t_lims = self.lasing_options['t_lims']
         if t_lims is not None:
-            photon_energy_factors[slice_time < t_lims[0]] = 0.
-            photon_energy_factors[slice_time > t_lims[1]] = 0.
+            mask0 = np.logical_or(slice_time < t_lims[0], slice_time > t_lims[1])
+            photon_energy_factors[mask0] = 0.
+        else:
+            mask0 = np.ones_like(slice_time, bool)
 
         lasing_dict['time'] = slice_time
-        lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err)
+        lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err, mask0)
         lasing_dict['Espread'] = power_Espread_err(slice_time, mean_current, on_spread_mean, off_spread_mean, self.pulse_energy, err_current, on_spread_err, off_spread_err, photon_energy_factors, norm_factor=norm_factor)
         lasing_dict['norm_factor'] = norm_factor = lasing_dict['Espread']['norm_factor']
         lasing_dict['photon_energy_factors'] = photon_energy_factors
@@ -178,7 +182,7 @@ class LasingReconstruction:
 
         for ctr in range(n_images):
             current = all_slice_dict['Lasing On']['current'][ctr, mask]
-            mask2 = current < current_cutoff
+            mask2 = np.logical_or(current < current_cutoff, mask0)
             on_loss = all_slice_dict['Lasing On']['loss'][ctr,mask]
             on_spread = all_slice_dict['Lasing On']['spread'][ctr,mask]
 
@@ -560,8 +564,8 @@ def interpolate_slice_dicts(ref, alter):
     xx_alter = alter['slice_x']
     #print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
     for key, arr in alter.items():
-        if key in ('E_lims', 'y_axis_Elim'):
-            continue
+        if key in ('E_lims', 'y_axis_Elim', 'eref'):
+            new_dict[key] = arr
         elif key == 'slice_x':
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:

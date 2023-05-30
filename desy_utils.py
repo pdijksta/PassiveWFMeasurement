@@ -89,7 +89,7 @@ class Xfel_data(logMsg.LogMsgBase):
         if 'pixelsizes' in data:
             pixelsizeX, pixelsizeY = data['pixelsizes']
             if pixelsize is not None:
-                print('Using pixelsizes is deprecated for this dataset!')
+                print('Using pixelsize is deprecated for this dataset!')
         else:
             if pixelsize is None:
                 print('Need to supply pixelsize for this dataset!')

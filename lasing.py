@@ -167,7 +167,7 @@ class LasingReconstruction:
             mask0 = np.logical_or(slice_time < t_lims[0], slice_time > t_lims[1])
             photon_energy_factors[mask0] = 0.
         else:
-            mask0 = np.ones_like(slice_time, bool)
+            mask0 = np.zeros_like(slice_time, bool)
 
         lasing_dict['time'] = slice_time
         lasing_dict['Eloss'] = power_Eloss_err(slice_time, mean_current, on_loss_mean, off_loss_mean, err_current, on_loss_err, off_loss_err, mask0)

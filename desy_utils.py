@@ -301,10 +301,13 @@ bpm_names_factors = [
 
 def bpm_info_from_saved(data):
     all_orbits = {}
+    orbit_data = data['orbit_list']
+    if len(orbit_data.shape) == 2:
+        orbit_data = np.array([orbit_data])
     for bpm_name, factor in bpm_names_factors:
-        index = np.argwhere(data['orbit_list'][0,:,0] == bpm_name).squeeze()
-        orbits0y = np.array(data['orbit_list'][:,index,2], float)
-        orbits0x = np.array(data['orbit_list'][:,index,1], float)
+        index = np.argwhere(orbit_data[0,:,0] == bpm_name).squeeze()
+        orbits0y = np.array(orbit_data[:,index,2], float)
+        orbits0x = np.array(orbit_data[:,index,1], float)
         orbits = desy_bpm.bpm_correction(orbits0x, orbits0y)[1]*factor
         all_orbits[bpm_name] = orbits
     return all_orbits

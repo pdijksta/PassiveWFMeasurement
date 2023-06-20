@@ -77,7 +77,7 @@ class Xfel_data(logMsg.LogMsgBase):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
         else:
-            data = dict(np.load(filename_or_data))
+            data = np.load(filename_or_data)
         self.raw_data = data
         if use_R and 'R' in self.raw_data:
             self.matrix = self.raw_data['R']
@@ -314,7 +314,7 @@ def bpm_info_from_saved(data):
 
 class XfelDistanceScan:
 
-    def __init__(self, filenames, charge, energy_eV, pixelsize):
+    def __init__(self, filenames, init_plate_pos=3.54, charge=None, energy_eV=None, pixelsize=None):
         self.filenames = self.filenames0 = filenames
         self.charge = charge
         self.energy_eV = energy_eV
@@ -329,7 +329,8 @@ class XfelDistanceScan:
 
         for ctr, filename in enumerate(self.filenames):
             data = np.load(filename)
-            bumps[ctr] = data['bump']*1e-3
+            #import pdb; pdb.set_trace()
+            bumps[ctr] = data['bump_ver']*1e-3
             these_orbits = bpm_info_from_saved(data)
             for bpm_name in these_orbits.keys():
                 orbits = these_orbits[bpm_name]
@@ -360,8 +361,8 @@ class XfelDistanceScan:
     def get_first_images(self):
         self.first_images = []
         for ctr, filename in enumerate(self.filenames):
-            init_distance = 3.54e-3 - self.orbits_mean[ctr]
-            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=init_distance)
+            #init_distance = 3.54e-3 - self.orbits_mean[ctr]
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_plate_pos=self.init_plate_pos)
             analyzer.limit_images(1)
             analyzer.init_images()
             self.first_images.append(analyzer.rec_obj.images_xy[0])
@@ -370,8 +371,8 @@ class XfelDistanceScan:
     def get_crisp_distances(self):
         distances = []
         for ctr, filename in enumerate(self.filenames):
-            init_distance = 3.54e-3 - self.orbits_mean[ctr]
-            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=init_distance)
+            #init_distance = 3.54e-3 - self.orbits_mean[ctr]
+            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_plate_pos=self.init_plate_pos)
             analyzer.limit_images(1)
             analyzer.calibrate_screen0()
             analyzer.tracker.find_beam_position_options['position_explore'] = 200e-6
@@ -380,13 +381,13 @@ class XfelDistanceScan:
 
 class SingleSidedCalibration(logMsg.LogMsgBase):
 
-    def __init__(self, pixelsize, charge, energy_eV, beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None, init_pos=None, ref_profile=None):
+    def __init__(self,beamline, delta_gap_range, images_per_file=np.inf, logger=None, structure_calib_options=None, init_pos=None, ref_profile=None, charge=None, energy_eV=None, pixelsize=None):
         self.logger = logger
-        self.pixelsize = pixelsize
-        self.charge = charge
-        self.energy_eV = energy_eV
         self.images_per_file = images_per_file
         self.beamline = beamline
+        self.pixelsize = pixelsize
+        self.energy_eV = energy_eV
+        self.charge = charge
         self.use_bpm = 'BPMA.2455.T3'
         if init_pos is None:
             init_pos = config.init_plate_pos_dict[self.beamline]
@@ -407,7 +408,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         crisp_profiles = []
 
         for filename in filenames:
-            analyzer = Xfel_data(filename, filename, self.charge, self.energy_eV, self.pixelsize, init_distance=0, logger=self.logger, profile=self.ref_profile)
+            analyzer = Xfel_data(filename, filename, init_distance=0, logger=self.logger, profile=self.ref_profile, charge=self.charge, energy_eV=self.energy_eV, pixelsize=self.pixelsize)
             analyzer.limit_images(self.images_per_file)
             analyzer.tracker.find_beam_position_options['position_explore'] = 100e-6
             data = analyzer.raw_data
@@ -439,7 +440,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                     init_distance = self.init_pos - abs(orbit)
                     analyzer.set_distance(init_distance)
                     tracker = copy.deepcopy(analyzer.tracker)
-                    raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=self.charge)
+                    raw_screen = beam_profile.ScreenDistribution(axis, proj[n_image], total_charge=analyzer.tracker.total_charge)
 
                     orbits.append(orbit)
                     raw_screens.append(raw_screen)
@@ -447,7 +448,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                     if n_image < len(analyzer.raw_data['crisp_all']):
                         crisp_xx, crisp_yy = analyzer.raw_data['crisp_all'][n_image]
                         if np.any(crisp_yy) and not np.any(np.isnan(crisp_yy)):
-                            crisp_profile = beam_profile.BeamProfile(crisp_xx*1e-15, crisp_yy, self.energy_eV, self.charge)
+                            crisp_profile = beam_profile.BeamProfile(crisp_xx*1e-15, crisp_yy, analyzer.tracker.energy_eV, analyzer.tracker.total_charge)
                             crisp_profile.crop()
                             crisp_profile.reshape(5000)
                             crisp_profiles.append(crisp_profile)

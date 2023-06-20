@@ -32,10 +32,7 @@ def calibrate_screen0(trans_dist, profile, tracker, smoothen, half_factor=4, sp=
     half_peak_x_sim, half_int, index_sim = do_interp(forward_screen)
 
     half_peak_x, _, index_meas = do_interp(trans_dist, half_int)
-
     delta_x = -(half_peak_x - half_peak_x_sim)
-
-    #import pdb; pdb.set_trace()
 
     # For debug only
     if sp is not None:

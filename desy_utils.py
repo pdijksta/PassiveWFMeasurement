@@ -166,19 +166,20 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
 
+        if 'orbit_list' not in self.raw_data:
+            self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
+        bpm_data = bpm_info_from_saved(self.raw_data)
+
+        version = self.raw_data['version'] if 'version' in self.raw_data else None
+        if version is None or version <= 4:
+            self.mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
+        else:
+            self.mean_bpm = np.mean(bpm_data['BPMA.2461.T3'])
+
         if init_distance is not None:
             self.set_distance(init_distance)
         else:
-            if 'orbit_list' not in self.raw_data:
-                self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
-            bpm_data = bpm_info_from_saved(self.raw_data)
-
-            version = self.raw_data['version'] if 'version' in self.raw_data else None
-            if version is None or version <= 4:
-                mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
-            else:
-                mean_bpm = np.mean(bpm_data['BPMA.2461.T3'])
-            distance = init_plate_pos - mean_bpm
+            distance = init_plate_pos - self.mean_bpm
             self.set_distance(distance)
 
     def add_images(self, filename_or_data):

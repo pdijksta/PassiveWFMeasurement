@@ -172,8 +172,8 @@ class Xfel_data(logMsg.LogMsgBase):
             if 'orbit_list' not in self.raw_data:
                 self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
             bpm_data = bpm_info_from_saved(self.raw_data)
-            mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
-            distance = init_plate_pos - mean_bpm
+            self.mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
+            distance = init_plate_pos - self.mean_bpm
             self.set_distance(distance)
 
     def add_images(self, filename_or_data):
@@ -257,10 +257,10 @@ class Xfel_data(logMsg.LogMsgBase):
         self.rec_obj = lasing.LasingReconstructionImages(self.identifier, self.tracker, lasing_options, profile=self.profile)
         self.rec_obj.add_dict(self.data)
 
-    def get_images(self, lasing_options=None, ref_slice_dict=None):
+    def get_images(self, lasing_options=None, ref_slice_dict=None, slice_fit=True):
         if self.rec_obj is None:
             self.init_images(lasing_options=lasing_options)
-        self.rec_obj.process_data(ref_slice_dict=ref_slice_dict)
+        self.rec_obj.process_data(ref_slice_dict=ref_slice_dict, slice_fit=slice_fit)
         return self.rec_obj
 
     def cut_axes(self, cutX=None, cutY=None):

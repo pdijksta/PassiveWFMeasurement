@@ -490,7 +490,7 @@ class LasingReconstructionImages:
         self.slice_dicts_old = self.slice_dicts
         self.slice_dicts = new_slice_dicts
 
-    def process_data(self, ref_slice_dict=None):
+    def process_data(self, ref_slice_dict=None, slice_fit=True):
         self.convert_y()
         x_conversion = self.lasing_options['x_conversion']
         if x_conversion == 'wake':
@@ -508,17 +508,18 @@ class LasingReconstructionImages:
         else:
             raise ValueError(x_conversion)
 
-        self.slice_x()
-        self.fit_slice()
+        if slice_fit:
+            self.slice_x()
+            self.fit_slice()
 
-        if ref_slice_dict is not None:
-            self.ref_slice_dict = ref_slice_dict
-        elif self.ref_slice_dict is None:
-            self.ref_slice_dict = self.slice_dicts[0]
+            if ref_slice_dict is not None:
+                self.ref_slice_dict = ref_slice_dict
+            elif self.ref_slice_dict is None:
+                self.ref_slice_dict = self.slice_dicts[0]
 
-        if self.ref_slice_dict is None:
-            raise ValueError('No ref_slice_dict defined!')
-        self.interpolate_slice(self.ref_slice_dict)
+            if self.ref_slice_dict is None:
+                raise ValueError('No ref_slice_dict defined!')
+            self.interpolate_slice(self.ref_slice_dict)
 
     def plot_images(self, type_, title=None, plot_slice=True, figsize=(12,10), **kwargs):
         if title is None:

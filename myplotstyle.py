@@ -60,7 +60,7 @@ def saveall(basepath, hspace=None, wspace=None, trim=True, figs=None, ending='.p
         fig = plt.figure(num)
         fig.subplots_adjust(hspace=hspace, wspace=wspace, bottom=bottom, top=top, left=left, right=right)
 
-        title = fig.canvas.get_window_title()
+        title = fig.canvas.manager.get_window_title()
         if empty_suptitle:
             plt.suptitle('')
         path = os.path.expanduser(basepath)+'_%i%s' % (num, ending)

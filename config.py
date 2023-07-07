@@ -22,6 +22,12 @@ beamlines = [
         'LCLS',
         ]
 
+swissfel_beamlines = [
+        'Aramis',
+        'Athos Pre-Undulator',
+        'Athos Post-Undulator',
+        ]
+
 structure_names = {
         'Aramis': [
              'SARUN18-UDCP020',

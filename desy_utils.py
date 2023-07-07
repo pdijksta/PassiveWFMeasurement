@@ -166,13 +166,19 @@ class Xfel_data(logMsg.LogMsgBase):
         tracker.optics_at_streaker = beam_optics
         self.tracker = tracker
 
+        if 'orbit_list' not in self.raw_data:
+            self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
+        bpm_data = bpm_info_from_saved(self.raw_data)
+
+        version = self.raw_data['version'] if 'version' in self.raw_data else None
+        if version is None or version <= 4:
+            self.mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
+        else:
+            self.mean_bpm = np.mean(bpm_data['BPMA.2461.T3'])
+
         if init_distance is not None:
             self.set_distance(init_distance)
         else:
-            if 'orbit_list' not in self.raw_data:
-                self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
-            bpm_data = bpm_info_from_saved(self.raw_data)
-            self.mean_bpm = np.mean(bpm_data['BPMA.2455.T3'])
             distance = init_plate_pos - self.mean_bpm
             self.set_distance(distance)
 
@@ -294,16 +300,28 @@ _z_corr0 = config.sase2_zpos_dict['CMY.2443.T3']
 _z_bpm0 = config.sase2_zpos_dict['BPMA.2455.T3']
 _bpma_2455_factor = (_z_corr1-_z_corr0)/(_z_bpm0-_z_corr0)
 
-bpm_names_factors = [
+bpm_names_factors4 = [
         ('BPMA.2455.T3', _bpma_2455_factor),
+        ('BPMA.2467.T3', 1),
+        ]
+
+bpm_names_factors5 = [
+        ('BPMA.2461.T3', 1),
         ('BPMA.2467.T3', 1),
         ]
 
 def bpm_info_from_saved(data):
     all_orbits = {}
     orbit_data = data['orbit_list']
+    version = data['version'] if 'version' in data else None
     if len(orbit_data.shape) == 2:
         orbit_data = np.array([orbit_data])
+
+    if version is None or version <= 4:
+        bpm_names_factors = bpm_names_factors4
+    else:
+        bpm_names_factors = bpm_names_factors5
+
     for bpm_name, factor in bpm_names_factors:
         index = np.argwhere(orbit_data[0,:,0] == bpm_name).squeeze()
         orbits0y = np.array(orbit_data[:,index,2], float)
@@ -325,17 +343,27 @@ class XfelDistanceScan:
         self.bumps = bumps = np.zeros(len(filenames))
         self.orbits_mean = bumps.copy()
         self.orbits_rms = bumps.copy()
-        self.all_orbits = all_orbits = {bpm_name: [] for bpm_name, _ in bpm_names_factors}
 
         for ctr, filename in enumerate(self.filenames):
             data = np.load(filename)
+
+            if ctr == 0:
+                version = data['version'] if 'version' in data else None
+                if version is None or version <= 4:
+                    bpm_names_factors = bpm_names_factors4
+                    use_bpm = 'BPMA.2455.T3'
+                else:
+                    bpm_names_factors = bpm_names_factors5
+                    use_bpm = 'BPMA.2461.T3'
+                self.all_orbits = all_orbits = {bpm_name: [] for bpm_name, _ in bpm_names_factors}
+
             #import pdb; pdb.set_trace()
             bumps[ctr] = data['bump_ver']*1e-3
             these_orbits = bpm_info_from_saved(data)
             for bpm_name in these_orbits.keys():
                 orbits = these_orbits[bpm_name]
                 all_orbits[bpm_name].append(orbits)
-                if bpm_name == 'BPMA.2455.T3':
+                if bpm_name == use_bpm:
                     self.orbits_mean[ctr] = np.mean(orbits)
                     self.orbits_rms[ctr] = np.std(orbits)
 
@@ -388,7 +416,6 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         self.pixelsize = pixelsize
         self.energy_eV = energy_eV
         self.charge = charge
-        self.use_bpm = 'BPMA.2455.T3'
         if init_pos is None:
             init_pos = config.init_plate_pos_dict[self.beamline]
         self.init_pos = init_pos
@@ -407,11 +434,18 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
         raw_screens = []
         crisp_profiles = []
 
-        for filename in filenames:
+        for ctr, filename in enumerate(filenames):
             analyzer = Xfel_data(filename, filename, init_distance=0, logger=self.logger, profile=self.ref_profile, charge=self.charge, energy_eV=self.energy_eV, pixelsize=self.pixelsize)
             analyzer.limit_images(self.images_per_file)
             analyzer.tracker.find_beam_position_options['position_explore'] = 100e-6
             data = analyzer.raw_data
+
+            if ctr == 0:
+                version = data['version'] if 'version' in data else None
+                if version is None or version <= 4:
+                    self.use_bpm = 'BPMA.2455.T3'
+                else:
+                    self.use_bpm = 'BPMA.2461.T3'
 
             if self.images_per_file == np.inf:
                 images_per_file = len(data['orbit_list'])
@@ -419,7 +453,7 @@ class SingleSidedCalibration(logMsg.LogMsgBase):
                 images_per_file = self.images_per_file
 
             all_orbits = bpm_info_from_saved(data)
-            analyzer.set_distance(self.init_pos-abs(all_orbits['BPMA.2455.T3'].mean()))
+            analyzer.set_distance(self.init_pos-abs(all_orbits[self.use_bpm].mean()))
             analyzer.calibrate_screen0()
 
             dim = analyzer.tracker.structure.dim

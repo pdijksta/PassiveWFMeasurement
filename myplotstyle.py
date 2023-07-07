@@ -16,7 +16,7 @@ def set_fontsizes(fontsize):
 
 def figure(title='', figsize=(12, 10), **kwargs):
     fig = plt.figure(figsize=figsize, **kwargs)
-    fig.canvas.set_window_title(title)
+    fig.canvas.manager.set_window_title(title)
     fig.patch.set_facecolor('w')
     plt.suptitle(title, fontsize=16)
     #fig.subplots_adjust(left=0.07, right=0.80, wspace=0.5)

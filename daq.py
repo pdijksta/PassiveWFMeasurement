@@ -228,7 +228,11 @@ def get_meta_data(screen, dry_run, beamline):
     for streaker, suffix1, suffix2 in itertools.product(all_structures, [':GAP', ':CENTER'], ['', '.RBV']):
         pv = streaker+suffix1+suffix2
         meta_dict[pv] = caget(pv)
-    meta_dict.update({x: caget(x) for x in config.beamline_chargepv.values()})
+    for beamline in config.swissfel_beamlines:
+        pv = config.beamline_chargepv[beamline]
+        meta_dict[pv] = caget(pv)
+        pv = config.gas_monitor_pvs[beamline]
+        meta_dict[pv] = caget(pv)
 
     energy_pv = screen+':ENERGY-OP'
     if dry_run:
@@ -239,8 +243,6 @@ def get_meta_data(screen, dry_run, beamline):
     k1l_dict = get_quad_strengths(beamline)
     meta_dict.update(k1l_dict)
     meta_dict['time'] = str(datetime.datetime.now())
-    for gas_monitor_energy_pv in config.gas_monitor_pvs.values():
-        meta_dict[gas_monitor_energy_pv] = caget(gas_monitor_energy_pv)
     return meta_dict
 
 def set_optics(quads, k1ls, dry_run):

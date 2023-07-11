@@ -119,7 +119,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 'Athos Post-Undulator': (self.AthosPostUndTable, optics.athos_post_undulator_optics, self.OpticsLabelAthosPost, optics.athos_post_undulator_quads, 'X'),
                 'Athos Pre-Undulator': (self.AthosPreUndTable, optics.athos_pre_undulator_optics, self.OpticsLabelAthosPre, optics.athos_post_undulator_quads, 'XY'),
                 }
-        for beamline in config.beamlines:
+        for beamline in config.swissfel_beamlines:
             if beamline not in self.beamline_optics_tables:
                 continue
             table = self.beamline_optics_tables[beamline][0]
@@ -154,7 +154,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             header = table.horizontalHeader()
             header.setSectionResizeMode(0, PyQt5.QtWidgets.QHeaderView.Stretch)
 
-        self.BeamlineSelect.addItems(config.beamlines)
+        self.BeamlineSelect.addItems(config.swissfel_beamlines)
         self.beamline_select()
 
         # Default strings in gui fields

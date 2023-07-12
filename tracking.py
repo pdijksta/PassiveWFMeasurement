@@ -725,6 +725,7 @@ class Tracker(LogMsgBase):
         index = get_index_min(output='index')
         beam_position = beam_position_list[index]
         delta_position = beam_position - position0
+        distance = self.structure_gap/2 - abs(beam_position)
 
         output = {
                 'sim_screens': sim_screens,
@@ -738,6 +739,7 @@ class Tracker(LogMsgBase):
                 'beam_offset0': position0,
                 'rms_arr': np.array(rms_list),
                 'mean_arr': np.array(mean_list),
+                'distance': distance,
                 }
         self.logMsg('Beam position found. Delta: %i um. Target: %.2f mm. Result: %.2f mm. %i iterations' % (round(delta_position*1e6), target_meas*1e3, target_list[index]*1e3, n_iter-3))
         return output

@@ -248,13 +248,12 @@ class Xfel_data(logMsg.LogMsgBase):
         delta_position = find_beam_position_dict['delta_position']
         if round(abs(delta_position*1e6)) == round(abs(tracker.find_beam_position_options['position_explore']*1e6)):
             raise ValueError('Beam position could not be found. Delta position: %0.f um' % (delta_position*1e6))
-        new_beam_position = find_beam_position_dict['beam_position']
-        distance = tracker.structure_gap/2. - abs(new_beam_position)
+        distance = find_beam_position_dict['distance']
         self.meta_data[self.beamline+':CENTER'] = -(tracker.structure_gap/2 - distance)*1e3
         self.tracker.meta_data = self.meta_data
         self.logMsg('Distance calibrated to %.0f um. Change by %.0f um' % (distance*1e6, delta_position*1e6))
         tracker.find_beam_position_options['position_explore'] = exp0
-        return distance
+        return find_beam_position_dict
 
     def init_images(self, lasing_options=None):
         if lasing_options is None:
@@ -404,7 +403,7 @@ class XfelDistanceScan:
             analyzer.limit_images(1)
             analyzer.calibrate_screen0()
             analyzer.tracker.find_beam_position_options['position_explore'] = 200e-6
-            distances.append(analyzer.calibrate_distance())
+            distances.append(analyzer.calibrate_distance()['distance'])
         return np.array(distances)
 
 class SingleSidedCalibration(logMsg.LogMsgBase):

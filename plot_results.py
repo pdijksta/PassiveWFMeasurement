@@ -555,7 +555,7 @@ def plot_simple_daq(data_dict, dim):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=False):
 
     linewidth = 0.8
     dark_blue  = "#185c8c"
@@ -582,14 +582,14 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         image_xy = result_dict[key]['raw_images'][index_median]
         image_tE = result_dict[key]['tE_images'][index_median]
         if sp_image_xy is not None:
-            image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False)
+            image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False, sqrt=sqrt)
 
         E_lims = result_dict['lasing_options']['E_lims']
         if E_lims is not None:
             hlines = [e/1e6 for e in E_lims]
         else:
             hlines = None
-        gf_dict = image_tE.plot_img_and_proj(sp_image_tE, plot_gauss=False, hlines=hlines)
+        gf_dict = image_tE.plot_img_and_proj(sp_image_tE, plot_gauss=False, hlines=hlines, sqrt=sqrt)
         outp[key] = {}
         outp[key]['gf_dict'] = gf_dict
 

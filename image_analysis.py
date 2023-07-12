@@ -304,15 +304,22 @@ class Image(LogMsgBase):
         return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
 
     def x_to_t_linear(self, factor, mean_to_zero=True, current_cutoff=None):
+        new_x_axis = self.x_axis*factor
         proj = self.image.sum(axis=0)
+        image = self.image
+        if factor < 0:
+            new_x_axis = new_x_axis[::-1]
+            proj = proj[::-1]
+            image = self.image[:,::-1]
+
         if mean_to_zero:
-            profile = beam_profile.BeamProfile(self.x_axis*factor, proj, 1, self.charge)
+            profile = beam_profile.BeamProfile(new_x_axis, proj, 1, self.charge)
             if current_cutoff:
                 profile._yy[np.abs(profile.get_current()) < current_cutoff] = 0
             refx = profile.mean()
         else:
             refx = 0
-        return self.child(self.image, self.x_axis*factor-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
+        return self.child(image, new_x_axis-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
         diff = np.diff(wake_time)

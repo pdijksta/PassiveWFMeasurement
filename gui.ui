@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab_5">
      <attribute name="title">
@@ -1857,7 +1857,7 @@ Und</string>
        </font>
       </property>
       <property name="text">
-       <string>Select streaked images file</string>
+       <string>Select bunch length meas file</string>
       </property>
      </widget>
      <widget class="QPushButton" name="ClearResolution">
@@ -3850,7 +3850,7 @@ Und</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>958</width>
+     <width>962</width>
      <height>20</height>
     </rect>
    </property>

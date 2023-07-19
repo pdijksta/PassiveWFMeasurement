@@ -49,7 +49,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox">
+        <widget class="QComboBox" name="config_type">
          <item>
           <property name="text">
            <string>TDS</string>
@@ -74,7 +74,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox_3"/>
+        <widget class="QComboBox" name="config_tds_device"/>
        </item>
       </layout>
      </item>
@@ -88,7 +88,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox">
+        <widget class="QSpinBox" name="config_number_images">
          <property name="minimum">
           <number>1</number>
          </property>
@@ -112,21 +112,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox_2"/>
+        <widget class="QComboBox" name="config_beam_monitor"/>
        </item>
       </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_8">
        <item>
-        <widget class="QCheckBox" name="checkBox_3">
+        <widget class="QCheckBox" name="config_elog">
          <property name="text">
           <string>Generate ELOG</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_2">
+        <widget class="QCheckBox" name="config_dry_run">
          <property name="text">
           <string>Dry run</string>
          </property>
@@ -144,7 +144,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPlainTextEdit" name="plainTextEdit"/>
+        <widget class="QLineEdit" name="config_savedir"/>
        </item>
       </layout>
      </item>
@@ -182,7 +182,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="doubleSpinBox">
+        <widget class="QDoubleSpinBox" name="calibration_value">
          <property name="minimum">
           <double>-1000.000000000000000</double>
          </property>
@@ -200,14 +200,14 @@
       </layout>
      </item>
      <item>
-      <widget class="QLabel" name="label_7">
+      <widget class="QLabel" name="calibration_info">
        <property name="text">
-        <string>Origin: default value / user input / phase calibration at (timestamp)</string>
+        <string>Origin: default value at startup</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="perform_calibration">
        <property name="text">
         <string>Perform calibration (to be implemented)</string>
        </property>
@@ -260,7 +260,7 @@
         </widget>
        </item>
        <item row="2" column="3">
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="main_immediate_analysis">
          <property name="text">
           <string>Immediate analysis on new data acquisition</string>
          </property>
@@ -287,7 +287,7 @@
         </widget>
        </item>
        <item row="1" column="3">
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="main_filename_on">
          <property name="text">
           <string>FILENAME LASING ON</string>
          </property>
@@ -301,7 +301,7 @@
         </widget>
        </item>
        <item row="0" column="3">
-        <widget class="QLineEdit" name="lineEdit_2">
+        <widget class="QLineEdit" name="main_filename_off">
          <property name="text">
           <string>FILENAME LASING OFF</string>
          </property>
@@ -327,7 +327,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox_2"/>
+          <widget class="QDoubleSpinBox" name="main_deltaK"/>
          </item>
         </layout>
        </item>
@@ -371,16 +371,22 @@
        <item row="2" column="2">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox_6">
+          <widget class="QDoubleSpinBox" name="EnergyLimit1">
            <property name="minimum">
             <double>-200.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>200.000000000000000</double>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox_5">
+          <widget class="QDoubleSpinBox" name="EnergyLimit2">
            <property name="minimum">
             <double>-200.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>200.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -399,14 +405,20 @@
        <item row="1" column="2">
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox_4">
+          <widget class="QDoubleSpinBox" name="TimeLimit1">
            <property name="minimum">
             <double>-200.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>200.000000000000000</double>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox_3">
+          <widget class="QDoubleSpinBox" name="TimeLimit2">
+           <property name="minimum">
+            <double>-200.000000000000000</double>
+           </property>
            <property name="maximum">
             <double>200.000000000000000</double>
            </property>
@@ -420,7 +432,7 @@
        <item row="0" column="2">
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QComboBox" name="comboBox_4">
+          <widget class="QComboBox" name="settings_pulse_energy_input">
            <item>
             <property name="text">
              <string>From Gas detector</string>
@@ -434,15 +446,12 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="LasingEnergyInput">
-           <property name="enabled">
-            <bool>false</bool>
+          <widget class="QDoubleSpinBox" name="pulse_energy">
+           <property name="maximum">
+            <double>10000.000000000000000</double>
            </property>
-           <property name="text">
-            <string>100</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
+           <property name="value">
+            <double>100.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -466,14 +475,21 @@
         </widget>
        </item>
        <item row="3" column="2">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_7">
+        <widget class="QDoubleSpinBox" name="CurrentCutoff">
          <property name="minimum">
-          <double>-200.000000000000000</double>
+          <double>0.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>1.000000000000000</double>
          </property>
         </widget>
        </item>
        <item row="4" column="2">
-        <widget class="QSpinBox" name="spinBox_2"/>
+        <widget class="QSpinBox" name="pixel_per_slice">
+         <property name="value">
+          <number>2</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

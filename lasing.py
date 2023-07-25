@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 from . import h5_storage
+from . import lattice
 from . import beam_profile
 from . import myplotstyle as ms
 from . import image_analysis
@@ -449,10 +450,16 @@ class LasingReconstructionImagesBase:
 class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
     def __init__(self, filename, lasing_options, ref_y=None, ref_slice_dict=None):
         self.data = h5_storage.loadH5Recursive(filename)
+        beamline = self.data['meta_data']['beamline']
+        structure_name = self.data['meta_data']['structure_name']
+        screen_name = self.data['meta_data']['screen_name']
+        streaking_direction = self.data['meta_data']['streaking_direction']
 
         energy_eV = self.data['energy_eV']
         total_charge = self.data['total_charge']
-        dispersion = self.data['dispersion']
+        lat = lattice.get_beamline_lattice(beamline)
+        matrix = lat.get_matrix(structure_name.replace('-', '.'), screen_name.replace('-', '.'))
+        dispersion = {'X': matrix[2,6], 'Y': matrix[0,6]}[streaking_direction]
         LasingReconstructionImagesBase.__init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
 
 

@@ -17,6 +17,7 @@ from PassiveWFMeasurement import h5_storage
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import config
 from PassiveWFMeasurement import config_tds
+from PassiveWFMeasurement import workers
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'TDSmeasurement')

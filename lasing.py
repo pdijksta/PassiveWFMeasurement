@@ -301,21 +301,18 @@ class LasingReconstructionImages:
         self.add_dict(data_dict)
 
     def add_dict(self, data_dict, max_index=None):
-        meta_data = data_dict['meta_data_begin']
-        self.tracker.meta_data = meta_data
         images = data_dict['pyscan_result']['image'].astype(np.float64)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
-        self.add_images(meta_data, images, x_axis, y_axis, max_index)
+        self.add_images(images, x_axis, y_axis, max_index)
 
-    def add_images(self, meta_data, images, x_axis, y_axis, max_index=None):
+    def add_images(self, images, x_axis, y_axis, max_index=None):
 
         if self.tracker.structure.dim == 'Y':
             print('Rotating images because streaking direction is vertical.')
             x_axis, y_axis = y_axis, x_axis
             images = np.transpose(images, (0, 2, 1))
 
-        self.meta_data = meta_data
         subtract_quantile = self.lasing_options['subtract_quantile']
         max_quantile = self.lasing_options['max_quantile']
         self.gap = self.tracker.structure_gap

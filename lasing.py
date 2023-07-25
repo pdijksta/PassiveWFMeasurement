@@ -269,10 +269,13 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImagesBase:
-    def __init__(self, energy_eV, dispersion, total_charge):
+    def __init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options):
         self.dispersion = dispersion
         self.total_charge = total_charge
         self.energy_eV = energy_eV
+        self.ref_y = ref_y
+        self.ref_slice_dict = ref_slice_dict
+        self.lasing_options = lasing_options
 
     @property
     def ref_slice_dict(self):
@@ -416,7 +419,7 @@ class LasingReconstructionImagesBase:
             image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
         return figs, subplots
 
-    def add_images(self, images, x_axis, y_axis, rotate, max_index=None):
+    def add_images(self, images, x_axis, y_axis, rotate, refx, refy, max_index=None):
         if rotate:
             x_axis, y_axis = y_axis, x_axis
             images = np.transpose(images, (0, 2, 1))
@@ -424,8 +427,9 @@ class LasingReconstructionImagesBase:
         subtract_quantile = self.lasing_options['subtract_quantile']
         max_quantile = self.lasing_options['max_quantile']
         self.x_axis0 = x_axis
-        self.x_axis = x_axis - self.tracker.calib.screen_center
-        self.y_axis = y_axis
+        self.x_axis = x_axis - refx
+        self.y_axis0 = y_axis
+        self.y_axis = y_axis - refy
         self.raw_images = images
         self.images_xy = []
         self.meas_screens = []
@@ -442,23 +446,28 @@ class LasingReconstructionImagesBase:
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
         self.meas_screen_centroids = np.array([abs(x.mean()) for x in self.meas_screens])
 
+class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
+    def __init__(self, filename, lasing_options, ref_y=None, ref_slice_dict=None):
+        self.data = h5_storage.loadH5Recursive(filename)
+
+        energy_eV = self.data['energy_eV']
+        total_charge = self.data['total_charge']
+        dispersion = self.data['dispersion']
+        LasingReconstructionImagesBase.__init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
+
 
 class LasingReconstructionImages(LasingReconstructionImagesBase):
     def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
         self.identifier = identifier
         self.tracker = tracker
         self.profile = profile
-        self.lasing_options = lasing_options
         self.gap = self.tracker.structure_gap
-
-        self.ref_slice_dict = ref_slice_dict
-        self.ref_y = ref_y
 
         self.do_recon_plot = False
         self.beam_positions = None
         self.index_median = None
         self.delta_distances = None
-        LasingReconstructionImagesBase.__init__(self, tracker.energy_eV, tracker.disp, tracker.total_charge)
+        LasingReconstructionImagesBase.__init__(self, tracker.energy_eV, tracker.disp, tracker.total_charge, ref_y, ref_slice_dict, lasing_options)
 
     def add_file(self, filename):
         data_dict = h5_storage.loadH5Recursive(filename)
@@ -469,7 +478,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.tracker.structure.dim == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, self.tracker.calib.screen_center, 0, max_index)
 
     def get_current_profiles(self):
         self.profiles = []

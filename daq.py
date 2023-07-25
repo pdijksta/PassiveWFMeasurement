@@ -1,3 +1,4 @@
+import base64
 import itertools
 import time
 import numpy as np
@@ -89,10 +90,17 @@ def get_images(screen, n_images, beamline, dry_run=None):
     writables = [pyscan.function_value(dummy_func, 'dummy')]
     settings = pyscan.scan_settings(settling_time=0.01, measurement_interval=0.2, n_measurements=n_images)
 
-    pipeline_client = PipelineClient("http://sf-daqsync-01:8889/")
-    cam_instance_name = str(daq_screen) + "_sp1"
+    pipeline_client = PipelineClient('http://sf-daqsync-01:8889/')
+    cam_instance_name = str(daq_screen) + '_sp1'
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
     stream_host, stream_port = get_host_port_from_stream_address(stream_address)
+
+    bg = pipeline_client.get_latest_background(daq_screen)
+    image = pipeline_client.get_background_image_bytes(bg)
+    dtype = image['dtype']
+    shape = image['shape']
+    bytes = base64.b64decode(image['bytes'].encode())
+    background = np.array(bytes, dtype=dtype).reshape(shape)
 
     # Configure bsread
     pyscan.config.bs_default_host = stream_host
@@ -124,6 +132,7 @@ def get_images(screen, n_images, beamline, dry_run=None):
             'pyscan_result': result_dict,
             'meta_data_begin': meta_dict_1,
             'meta_data_end': meta_dict_2,
+            'background': background,
             }
 
     print('End get_images')

@@ -208,6 +208,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="perform_calibration">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Perform calibration (to be implemented)</string>
        </property>
@@ -225,7 +228,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -256,7 +259,7 @@
          <item>
           <widget class="QLabel" name="label_10">
            <property name="text">
-            <string>ΔK (random)</string>
+            <string>max. ΔK</string>
            </property>
           </widget>
          </item>
@@ -266,7 +269,7 @@
         </layout>
        </item>
        <item row="2" column="2">
-        <widget class="QPushButton" name="pushButton_4">
+        <widget class="QPushButton" name="DoAnalysis">
          <property name="styleSheet">
           <string notr="true"/>
          </property>
@@ -619,7 +622,7 @@
       <height>431</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="gridLayout"/>
+    <layout class="QGridLayout" name="plotspace"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

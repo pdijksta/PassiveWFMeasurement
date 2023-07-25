@@ -268,21 +268,11 @@ class LasingReconstruction:
         return outp
 
 
-class LasingReconstructionImages:
-    def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
-        self.identifier = identifier
-        self.tracker = tracker
-        self.charge = tracker.total_charge
-        self.profile = profile
-        self.lasing_options = lasing_options
-
-        self.ref_slice_dict = ref_slice_dict
-        self.ref_y = ref_y
-
-        self.do_recon_plot = False
-        self.beam_positions = None
-        self.index_median = None
-        self.delta_distances = None
+class LasingReconstructionImagesBase:
+    def __init__(self, energy_eV, dispersion, total_charge):
+        self.dispersion = dispersion
+        self.total_charge = total_charge
+        self.energy_eV = energy_eV
 
     @property
     def ref_slice_dict(self):
@@ -296,26 +286,143 @@ class LasingReconstructionImages:
         else:
             self.n_slices = len(ref['slice_x'])
 
-    def add_file(self, filename):
-        data_dict = h5_storage.loadH5Recursive(filename)
-        self.add_dict(data_dict)
+    def convert_y(self):
+        self.ref_y_list = []
+        self.images_E = []
+        ref_y0 = self.ref_y
+        for ctr, img in enumerate(self.images_xy):
+            image_E, ref_y = img.y_to_eV(self.dispersion, self.energy_eV, ref_y=ref_y0)
+            if ctr == 0:
+                ref_y0 = ref_y
+            self.images_E.append(image_E)
+            self.ref_y_list.append(ref_y)
 
-    def add_dict(self, data_dict, max_index=None):
-        images = data_dict['pyscan_result']['image'].astype(np.float64)
-        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
-        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
-        self.add_images(images, x_axis, y_axis, max_index)
+    def convert_y_single(self, image):
+        return image.y_to_eV(self.dispersion, self.energy_eV, ref_y=self.ref_y)
 
-    def add_images(self, images, x_axis, y_axis, max_index=None):
+    def convert_x_linear(self, factor):
+        self.images_tE = []
+        self.profiles = []
+        for ctr, img in enumerate(self.images_E):
+            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
+            self.images_tE.append(new_img)
+            new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.energy_eV, self.total_charge)
+            self.profiles.append(new_profile)
 
-        if self.tracker.structure.dim == 'Y':
-            print('Rotating images because streaking direction is vertical.')
+    def generate_all_slice_dict(self, slice_method):
+        all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)
+        all_sigma = all_mean.copy()
+        all_x = all_mean.copy()
+        all_current = all_mean.copy()
+        all_chirp = all_mean.copy()
+
+        for ctr, slice_dict in enumerate(self.slice_dicts):
+            all_mean[ctr] = slice_dict[slice_method]['mean']
+            all_sigma[ctr] = slice_dict[slice_method]['sigma_sq']
+            all_chirp[ctr] = slice_dict[slice_method]['chirp']
+            all_x[ctr] = slice_dict['slice_x']
+            all_current[ctr] = slice_dict['slice_current']
+
+        outp = {
+                'loss': all_mean,
+                'spread': all_sigma,
+                't': all_x,
+                'current': all_current,
+                'chirp': all_chirp,
+                }
+        return outp
+
+    def slice_x(self):
+        slice_factor = self.lasing_options['slice_factor']
+        if slice_factor == 1:
+            self.images_sliced = self.images_tE
+        else:
+            self.images_sliced = []
+            for n_image, image in enumerate(self.images_tE):
+                n_slices = len(image.x_axis)//slice_factor
+                image_sliced = image.slice_x(n_slices)
+                self.images_sliced.append(image_sliced)
+
+    def fit_slice(self):
+        do_plot = self.lasing_options['plot_slice_analysis']
+        save_path = self.lasing_options['plot_slice_analysis_save_path']
+        self.slice_dicts = []
+        old_fignums = ms.plt.get_fignums()
+        if old_fignums:
+            old_fignum = ms.plt.gcf().number
+        else:
+            old_fignum = None
+        for n_image, image in enumerate(self.images_sliced):
+            if self.lasing_options['x_conversion'] == 'linear':
+                current_cutoff = self.lasing_options['current_cutoff']
+            else:
+                current_cutoff = None
+            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
+            self.slice_dicts.append(slice_dict)
+
+            if do_plot:
+                new_fignums = sorted(set(ms.plt.get_fignums()) - set(old_fignums))
+                for fignum in new_fignums:
+                    save_path2 = os.path.expanduser(save_path)+'_%s_image_%i_%i.png' % (self.identifier.replace(' ','_'), n_image, fignum)
+                    ms.plt.figure(fignum).subplots_adjust(hspace=0.5, wspace=0.3)
+                    ms.plt.figure(fignum).savefig(save_path2)
+                    ms.plt.close(fignum)
+                    print('Saved %s' % save_path2)
+                if old_fignum is not None:
+                    ms.plt.figure(old_fignum)
+
+    def interpolate_slice(self, ref):
+        new_slice_dicts = []
+        for slice_dict in self.slice_dicts:
+            new_slice_dicts.append(interpolate_slice_dicts(ref, slice_dict))
+        self.slice_dicts_old = self.slice_dicts
+        self.slice_dicts = new_slice_dicts
+
+    def plot_images(self, type_, title=None, plot_slice=True, figsize=(12,10), **kwargs):
+        if title is None:
+            title = self.identifier
+        if type_ == 'raw':
+            images = self.images_xy
+        elif type_ == 'cut':
+            images = self.cut_images
+        elif type_ == 'tE':
+            images = self.images_tE
+        elif type_ == 'xE':
+            images = self.images_E
+        elif type_ == 'slice':
+            images = self.images_sliced
+        else:
+            raise ValueError('%s is not a valid key.' % type_)
+
+        sp_ctr = np.inf
+        ny, nx = 3, 3
+        subplot = ms.subplot_factory(ny, nx, grid=False)
+
+        figs = []
+        subplots = []
+        for n_image, image in enumerate(images):
+            if sp_ctr > ny*nx:
+                fig = ms.figure('%s Images %s' % (title, type_), figsize=figsize)
+                figs.append(fig)
+                this_subplots = []
+                subplots.append(this_subplots)
+                sp_ctr = 1
+            sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel=image.xlabel, ylabel=image.ylabel)
+            sp_ctr += 1
+            this_subplots.append(sp)
+            slice_dict = None
+            if plot_slice and type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
+                slice_dict = self.slice_dicts[n_image]
+            image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
+        return figs, subplots
+
+    def add_images(self, images, x_axis, y_axis, rotate, max_index=None):
+        if rotate:
             x_axis, y_axis = y_axis, x_axis
             images = np.transpose(images, (0, 2, 1))
 
         subtract_quantile = self.lasing_options['subtract_quantile']
         max_quantile = self.lasing_options['max_quantile']
-        self.gap = self.tracker.structure_gap
         self.x_axis0 = x_axis
         self.x_axis = x_axis - self.tracker.calib.screen_center
         self.y_axis = y_axis
@@ -327,13 +434,42 @@ class LasingReconstructionImages:
             if max_index is not None and n_image >= max_index:
                 break
             img = prepare_raw_image(img, subtract_quantile, max_quantile)
-            image = image_analysis.Image(img, self.x_axis, y_axis, self.charge)
+            image = image_analysis.Image(img, self.x_axis, y_axis, self.total_charge)
             self.images_xy.append(image)
-            screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.charge)
+            screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.total_charge)
             self.meas_screens.append(screen)
             rms_arr.append(screen.rms())
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
         self.meas_screen_centroids = np.array([abs(x.mean()) for x in self.meas_screens])
+
+
+class LasingReconstructionImages(LasingReconstructionImagesBase):
+    def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
+        self.identifier = identifier
+        self.tracker = tracker
+        self.profile = profile
+        self.lasing_options = lasing_options
+        self.gap = self.tracker.structure_gap
+
+        self.ref_slice_dict = ref_slice_dict
+        self.ref_y = ref_y
+
+        self.do_recon_plot = False
+        self.beam_positions = None
+        self.index_median = None
+        self.delta_distances = None
+        LasingReconstructionImagesBase.__init__(self, tracker.energy_eV, tracker.disp, tracker.total_charge)
+
+    def add_file(self, filename):
+        data_dict = h5_storage.loadH5Recursive(filename)
+        self.add_dict(data_dict)
+
+    def add_dict(self, data_dict, max_index=None):
+        images = data_dict['pyscan_result']['image'].astype(np.float64)
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
+        rotate = self.tracker.structure.dim == 'Y'
+        self.add_images(images, x_axis, y_axis, rotate, max_index)
 
     def get_current_profiles(self):
         self.profiles = []
@@ -394,99 +530,6 @@ class LasingReconstructionImages:
             self.images_tE.append(img_tE)
             self.cut_images.append(img_cut)
 
-    def convert_x_linear(self, factor):
-        self.images_tE = []
-        self.profiles = []
-        for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
-            self.images_tE.append(new_img)
-            new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.tracker.energy_eV, self.tracker.total_charge)
-            self.profiles.append(new_profile)
-
-    def convert_y(self):
-        self.ref_y_list = []
-        self.dispersion = self.tracker.disp
-        self.images_E = []
-        ref_y0 = self.ref_y
-        for ctr, img in enumerate(self.images_xy):
-            image_E, ref_y = img.y_to_eV(self.dispersion, self.tracker.energy_eV, ref_y=ref_y0)
-            if ctr == 0:
-                ref_y0 = ref_y
-            self.images_E.append(image_E)
-            self.ref_y_list.append(ref_y)
-
-    def convert_y_single(self, image):
-        return image.y_to_eV(self.dispersion, self.tracker.energy_eV, ref_y=self.ref_y)
-
-    def slice_x(self):
-        slice_factor = self.lasing_options['slice_factor']
-        if slice_factor == 1:
-            self.images_sliced = self.images_tE
-        else:
-            self.images_sliced = []
-            for n_image, image in enumerate(self.images_tE):
-                n_slices = len(image.x_axis)//slice_factor
-                image_sliced = image.slice_x(n_slices)
-                self.images_sliced.append(image_sliced)
-
-    def fit_slice(self):
-        do_plot = self.lasing_options['plot_slice_analysis']
-        save_path = self.lasing_options['plot_slice_analysis_save_path']
-        self.slice_dicts = []
-        old_fignums = ms.plt.get_fignums()
-        if old_fignums:
-            old_fignum = ms.plt.gcf().number
-        else:
-            old_fignum = None
-        for n_image, image in enumerate(self.images_sliced):
-            if self.lasing_options['x_conversion'] == 'linear':
-                current_cutoff = self.lasing_options['current_cutoff']
-            else:
-                current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
-            self.slice_dicts.append(slice_dict)
-
-            if do_plot:
-                new_fignums = sorted(set(ms.plt.get_fignums()) - set(old_fignums))
-                for fignum in new_fignums:
-                    save_path2 = os.path.expanduser(save_path)+'_%s_image_%i_%i.png' % (self.identifier.replace(' ','_'), n_image, fignum)
-                    ms.plt.figure(fignum).subplots_adjust(hspace=0.5, wspace=0.3)
-                    ms.plt.figure(fignum).savefig(save_path2)
-                    ms.plt.close(fignum)
-                    print('Saved %s' % save_path2)
-                if old_fignum is not None:
-                    ms.plt.figure(old_fignum)
-
-    def generate_all_slice_dict(self, slice_method):
-        all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)
-        all_sigma = all_mean.copy()
-        all_x = all_mean.copy()
-        all_current = all_mean.copy()
-        all_chirp = all_mean.copy()
-
-        for ctr, slice_dict in enumerate(self.slice_dicts):
-            all_mean[ctr] = slice_dict[slice_method]['mean']
-            all_sigma[ctr] = slice_dict[slice_method]['sigma_sq']
-            all_chirp[ctr] = slice_dict[slice_method]['chirp']
-            all_x[ctr] = slice_dict['slice_x']
-            all_current[ctr] = slice_dict['slice_current']
-
-        outp = {
-                'loss': all_mean,
-                'spread': all_sigma,
-                't': all_x,
-                'current': all_current,
-                'chirp': all_chirp,
-                }
-        return outp
-
-    def interpolate_slice(self, ref):
-        new_slice_dicts = []
-        for slice_dict in self.slice_dicts:
-            new_slice_dicts.append(interpolate_slice_dicts(ref, slice_dict))
-        self.slice_dicts_old = self.slice_dicts
-        self.slice_dicts = new_slice_dicts
-
     def process_data(self, ref_slice_dict=None, slice_fit=True):
         self.convert_y()
         x_conversion = self.lasing_options['x_conversion']
@@ -518,49 +561,11 @@ class LasingReconstructionImages:
                 raise ValueError('No ref_slice_dict defined!')
             self.interpolate_slice(self.ref_slice_dict)
 
-    def plot_images(self, type_, title=None, plot_slice=True, figsize=(12,10), **kwargs):
-        if title is None:
-            title = self.identifier
-        if type_ == 'raw':
-            images = self.images_xy
-        elif type_ == 'cut':
-            images = self.cut_images
-        elif type_ == 'tE':
-            images = self.images_tE
-        elif type_ == 'xE':
-            images = self.images_E
-        elif type_ == 'slice':
-            images = self.images_sliced
-        else:
-            raise ValueError('%s is not a valid key.' % type_)
-
-        sp_ctr = np.inf
-        ny, nx = 3, 3
-        subplot = ms.subplot_factory(ny, nx, grid=False)
-
-        figs = []
-        subplots = []
-        for n_image, image in enumerate(images):
-            if sp_ctr > ny*nx:
-                fig = ms.figure('%s Images %s' % (title, type_), figsize=figsize)
-                figs.append(fig)
-                this_subplots = []
-                subplots.append(this_subplots)
-                sp_ctr = 1
-            sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel=image.xlabel, ylabel=image.ylabel)
-            sp_ctr += 1
-            this_subplots.append(sp)
-            slice_dict = None
-            if plot_slice and type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
-                slice_dict = self.slice_dicts[n_image]
-            image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
-        return figs, subplots
 
 def interpolate_slice_dicts(ref, alter):
     new_dict = {}
     xx_ref = ref['slice_x']
     xx_alter = alter['slice_x']
-    #print("interpolate_slice_dicts called", xx_ref.min(), xx_ref.max())
     for key, arr in alter.items():
         if key in ('E_lims', 'y_axis_Elim', 'eref'):
             new_dict[key] = arr

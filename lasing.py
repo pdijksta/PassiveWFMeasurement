@@ -459,7 +459,7 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
         total_charge = self.data['total_charge']
         lat = lattice.get_beamline_lattice(beamline)
         matrix = lat.get_matrix(structure_name.replace('-', '.'), screen_name.replace('-', '.'))
-        dispersion = {'X': matrix[2,6], 'Y': matrix[0,6]}[streaking_direction]
+        dispersion = {'X': matrix[2,5], 'Y': matrix[0,5]}[streaking_direction]
         LasingReconstructionImagesBase.__init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
 
 

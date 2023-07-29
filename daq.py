@@ -237,10 +237,10 @@ def get_meta_data(screen, dry_run, beamline):
     for streaker, suffix1, suffix2 in itertools.product(all_structures, [':GAP', ':CENTER'], ['', '.RBV']):
         pv = streaker+suffix1+suffix2
         meta_dict[pv] = caget(pv)
-    for beamline in config.swissfel_beamlines:
-        pv = config.beamline_chargepv[beamline]
+    for bl in config.swissfel_beamlines:
+        pv = config.beamline_chargepv[bl]
         meta_dict[pv] = caget(pv)
-        pv = config.gas_monitor_pvs[beamline]
+        pv = config.gas_monitor_pvs[bl]
         meta_dict[pv] = caget(pv)
 
     energy_pv = screen+':ENERGY-OP'

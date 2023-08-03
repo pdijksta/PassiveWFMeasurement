@@ -652,8 +652,10 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             ('Eloss', '$\Delta E$', sp_lasing_loss),
             ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
         xx_plot = lasing_dict[key]['time']*1e15
-        yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
-        yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
+        #yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
+        #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
+        yy_plot = lasing_dict[key]['power']/1e9
+        yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots)
         sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
     #for sp in sp_lasing_loss, sp_lasing_spread:
     #    ylim = sp.get_ylim()

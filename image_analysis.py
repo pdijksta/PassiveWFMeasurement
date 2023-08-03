@@ -418,7 +418,7 @@ class Image(LogMsgBase):
 
         return output
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False, plot_slice_lims=False):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -474,8 +474,18 @@ class Image(LogMsgBase):
                 yy = yy + slice_dict['eref']*y_factor
             yy_err = np.sqrt(slice_dict[slice_method]['sigma_sq'][mask])*y_factor
             sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=1)
+
+            if plot_slice_lims and slice_method in ('cut', 'rms'):
+                lim1 = slice_dict[slice_method]['lim1'][mask]*y_factor
+                lim2 = slice_dict[slice_method]['lim2'][mask]*y_factor
+                if 'eref' in slice_dict:
+                    lim1 = lim1 + slice_dict['eref']*y_factor
+                    lim2 = lim2 + slice_dict['eref']*y_factor
+                sp.plot(xx, lim1, color='yellow')
+                sp.plot(xx, lim2, color='yellow')
             sp.set_xlim(*old_lim[0])
             sp.set_ylim(*old_lim[1])
+
 
         gf_y = gf_x = None
         if plot_proj or plot_proj_x:

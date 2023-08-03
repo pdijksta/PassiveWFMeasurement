@@ -133,7 +133,7 @@ class LasingReconstruction:
 
         mean_slice_dict = self.mean_slice_dict = {}
         for title in 'Lasing Off', 'Lasing On':
-            mean_slice_dict[title] = all_slice_to_mean_slice_dict(self.all_slice_dict[title])
+            mean_slice_dict[title] = all_slice_to_mean_slice_dict(self.all_slice_dict[title], cut_extremes=self.lasing_options['cut_extremes'])
 
         self.analysis_complete = False
 
@@ -612,12 +612,17 @@ def subtract_long_wake(all_slice_dict, tracker, profile):
             'long_wake_dict': long_wake,
             }
 
-def all_slice_to_mean_slice_dict(all_slice_dict):
+def all_slice_to_mean_slice_dict(all_slice_dict, cut_extremes=None):
     mean_slice_dict = {}
     for key, arr in all_slice_dict.items():
+        if cut_extremes is not None:
+            argsort = np.argsort(arr, axis=0)
+            arr2 = np.take_along_axis(arr, argsort[cut_extremes:-cut_extremes], axis=0)
+        else:
+            arr2 = arr
         mean_slice_dict[key] = {
-                'mean': np.nanmean(arr, axis=0),
-                'std': np.nanstd(arr, axis=0),
+                'mean': np.nanmean(arr2, axis=0),
+                'std': np.nanstd(arr2, axis=0),
                 }
     return mean_slice_dict
 

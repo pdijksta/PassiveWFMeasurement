@@ -566,13 +566,19 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     mean_current = result_dict['mean_current']
     lasing_dict = result_dict['lasing_dict']
     n_shots = len(lasing_dict['all_Espread'])
-    outp = {}
+    cut_extremes = result_dict['lasing_options']['cut_extremes']
+    if cut_extremes is None:
+        n_shots2 = n_shots
+    else:
+        n_shots2 = n_shots - cut_extremes*2
 
     mask = abs(mean_current) > current_cutoff
 
     if plot_handles is None:
         plot_handles = lasing_figure(figsize=figsize, sharex=sharex)
     _, (sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, sp_slice_sigma, sp_current, sp_lasing_loss, sp_lasing_spread, sp_orbit) = plot_handles
+
+    outp = {'fig': plot_handles[0], 'subplots': plot_handles[1]}
 
     for sp_image_tE, sp_image_xy, key in [
             (sp_image_on2, sp_image_on, 'images_on'),
@@ -613,9 +619,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 sp.plot(x, y, color=fill_color, alpha=0.35)
 
         mean_mean = mean_slice_dict['loss']['mean'][mask]
-        mean_std = mean_slice_dict['loss']['std'][mask] / np.sqrt(n_shots)
+        mean_std = mean_slice_dict['loss']['std'][mask] / np.sqrt(n_shots2)
         sigma_mean = np.sqrt(mean_slice_dict['spread']['mean'][mask])
-        sigma_std = mean_slice_dict['spread']['std'][mask] / (2*sigma_mean)  / np.sqrt(n_shots)
+        sigma_std = mean_slice_dict['spread']['std'][mask] / (2*sigma_mean)  / np.sqrt(n_shots2)
 
         for sp, mean, err in [
                 (sp_slice_mean, mean_mean, mean_std),
@@ -625,16 +631,19 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
-        sp_current.errorbar(mean_slice_dict['t']['mean']*1e15, current_mean/1e3, yerr=current_std/1e3, label=label, color=fill_color)
+        mask2 = current_mean > current_cutoff
+        sp_current.errorbar(mean_slice_dict['t']['mean'][mask2]*1e15, current_mean[mask2]/1e3, yerr=current_std[mask2]/1e3, label=label, color=fill_color)
 
         current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
 
-    current_profile = result_dict['images_off']['current_profile']
+    current_profile = copy.deepcopy(result_dict['images_off']['current_profile'])
     if result_dict['linear_conversion']:
-        current_center_plot = 0
+        current_profile = None
     else:
         current_center_plot = np.mean(current_center)
     if current_profile is not None:
+        current_profile.cutoff(0.1)
+        current_profile.crop()
         current_profile.plot_standard(sp_current, center_float=current_center_plot, label='Reference', color='black')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
     sp_current.legend()
@@ -655,7 +664,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         #yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
         yy_plot = lasing_dict[key]['power']/1e9
-        yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots)
+        yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots2)
         sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
     #for sp in sp_lasing_loss, sp_lasing_spread:
     #    ylim = sp.get_ylim()

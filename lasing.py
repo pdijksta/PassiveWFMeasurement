@@ -50,9 +50,9 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     exp = espread_current_exponent
     slice_Espread_sqr_increase = slice_Espread_on_sq - slice_Espread_off_sq
     power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
-    power0[power0 < 0] = 0
-    #mask = power0 > 0
-    integral = np.trapz(power0, slice_t)
+    power1 = power0.copy()
+    power1[power0 < 0] = 0
+    integral = np.trapz(power1, slice_t)
 
     if norm_factor is None:
         norm_factor = E_total/integral
@@ -118,9 +118,59 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
+def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, min_factor=None, max_factor=None):
+    if type(file_or_dict_off) is dict:
+        lasing_off_dict = file_or_dict_off
+    else:
+        lasing_off_dict = h5_storage.loadH5Recursive(file_or_dict_off)
+    if type(file_or_dict_on) is dict:
+        lasing_on_dict = file_or_dict_on
+    else:
+        lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
+    las_rec_images = {}
+
+    for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+        if main_ctr == 0:
+            ref_y = None
+            ref_slice_dict = None
+            enforce_median_rms = True
+            enforce_rms = None
+        else:
+            ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
+            ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+            enforce_median_rms = False
+            enforce_rms = las_rec_images['Lasing Off'].median_rms
+
+        rec_obj = LasingReconstructionImagesLinear(title, data_dict, lasing_options, ref_y=ref_y, ref_slice_dict=ref_slice_dict)
+        rec_obj.add_dict(data_dict)
+        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
+        rec_obj.convert_y()
+        rec_obj.convert_x_linear(enforce_median_rms=enforce_median_rms, enforce_rms=enforce_rms, min_factor=min_factor, max_factor=max_factor)
+
+        rec_obj.slice_x()
+        rec_obj.fit_slice()
+
+        if ref_slice_dict is not None:
+            rec_obj.ref_slice_dict = ref_slice_dict
+        elif ref_slice_dict is None:
+            rec_obj.ref_slice_dict = rec_obj.slice_dicts[0]
+        rec_obj.interpolate_slice(rec_obj.ref_slice_dict)
+        las_rec_images[title] = rec_obj
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
+    las_rec.lasing_analysis(norm_factor=norm_factor)
+    result_dict = las_rec.get_result_dict()
+    outp = {
+            'las_rec': las_rec,
+            'result_dict': result_dict,
+            'las_rec_images': las_rec_images,
+            }
+    return outp
+
+
 class LasingReconstruction:
     def __init__(self, images_off, images_on, lasing_options, pulse_energy=None):
-        assert images_off.profile == images_on.profile
+        if lasing_options['x_conversion'] == 'wake':
+            assert images_off.profile == images_on.profile
         self.images_off = images_off
         self.images_on = images_on
         self.lasing_options = lasing_options
@@ -215,9 +265,18 @@ class LasingReconstruction:
             d['raw_images'] = obj.images_xy
             d['tE_images'] = obj.images_tE
             d['current_profile'] = obj.profile
-            d['beam_positions'] = obj.beam_positions
-            d['delta_distances'] = obj.delta_distances
-            d['meas_screen_centroids'] = obj.meas_screen_centroids
+            if hasattr(obj, 'beam_positions'):
+                d['beam_positions'] = obj.beam_positions
+                d['delta_distances'] = obj.delta_distances
+                d['meas_screen_centroids'] = obj.meas_screen_centroids
+            else:
+                d['beam_positions'] = None
+                d['delta_distances'] = None
+                d['meas_screen_centroids'] = None
+            if hasattr(obj, 'linear_factors'):
+                d['linear_factors'] = obj.linear_factors
+            else:
+                d['linear_factors'] = None
         return outp
 
     def live_reconstruction(self, raw_image):
@@ -270,13 +329,21 @@ class LasingReconstruction:
 
 
 class LasingReconstructionImagesBase:
-    def __init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options):
+    def __init__(self, identifier, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options):
+        self.identifier = identifier
         self.dispersion = dispersion
         self.total_charge = total_charge
         self.energy_eV = energy_eV
         self.ref_y = ref_y
         self.ref_slice_dict = ref_slice_dict
         self.lasing_options = lasing_options
+
+    def add_dict(self, data_dict, max_index=None):
+        images = data_dict['pyscan_result']['image'].astype(np.float64)
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
+        rotate = self.data['meta_data']['streaking_direction'] == 'Y'
+        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
 
     @property
     def ref_slice_dict(self):
@@ -426,7 +493,9 @@ class LasingReconstructionImagesBase:
             images = np.transpose(images, (0, 2, 1))
 
         subtract_quantile = self.lasing_options['subtract_quantile']
+        subtract_absolute = self.lasing_options['subtract_absolute']
         max_quantile = self.lasing_options['max_quantile']
+        xcutoff, ycutoff = self.lasing_options['void_cutoff']
         self.x_axis0 = x_axis
         self.x_axis = x_axis - refx
         self.y_axis0 = y_axis
@@ -438,8 +507,11 @@ class LasingReconstructionImagesBase:
         for n_image, img in enumerate(images):
             if max_index is not None and n_image >= max_index:
                 break
+            if subtract_absolute:
+                img = img - subtract_absolute
             img = prepare_raw_image(img, subtract_quantile, max_quantile)
-            image = image_analysis.Image(img, self.x_axis, y_axis, self.total_charge)
+            image = image_analysis.Image(img, self.x_axis, y_axis, self.total_charge, self.energy_eV)
+            image = image.cut_voids(xcutoff, ycutoff)
             self.images_xy.append(image)
             screen = beam_profile.ScreenDistribution(image.x_axis, image.image.sum(axis=-2), total_charge=self.total_charge)
             self.meas_screens.append(screen)
@@ -448,8 +520,11 @@ class LasingReconstructionImagesBase:
         self.meas_screen_centroids = np.array([abs(x.mean()) for x in self.meas_screens])
 
 class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
-    def __init__(self, filename, lasing_options, ref_y=None, ref_slice_dict=None):
-        self.data = h5_storage.loadH5Recursive(filename)
+    def __init__(self, identifier, filename_or_data, lasing_options, ref_y=None, ref_slice_dict=None):
+        if type(filename_or_data) is dict:
+            self.data = filename_or_data
+        else:
+            self.data = h5_storage.loadH5Recursive(filename_or_data)
         beamline = self.data['meta_data']['beamline']
         structure_name = self.data['meta_data']['structure_name']
         screen_name = self.data['meta_data']['screen_name']
@@ -457,15 +532,53 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
 
         energy_eV = self.data['energy_eV']
         total_charge = self.data['total_charge']
-        lat = lattice.get_beamline_lattice(beamline)
+        lat = lattice.get_beamline_lattice(beamline, self.data['meta_data_begin'])
         matrix = lat.get_matrix(structure_name.replace('-', '.'), screen_name.replace('-', '.'))
         dispersion = {'X': matrix[2,5], 'Y': matrix[0,5]}[streaking_direction]
-        LasingReconstructionImagesBase.__init__(self, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
+        LasingReconstructionImagesBase.__init__(self, identifier, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
+
+    def convert_x_linear(self, enforce_median_rms=None, enforce_rms=None, min_factor=None, max_factor=None):
+        factor = self.lasing_options['x_linear_factor']
+        linear_profile_cutoff = self.lasing_options['linear_profile_cutoff']
+        if enforce_rms and enforce_median_rms:
+            raise ValueError('Cannot enforce both rms and median rms!')
+
+        def convert(factors):
+            self.images_tE = []
+            self.profiles = []
+            linear_factors = []
+            for img, factor2 in zip(self.images_E, factors):
+                if min_factor and abs(factor2) < min_factor:
+                    continue
+                if max_factor and abs(factor2) > max_factor:
+                    continue
+                new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
+                new_profile = new_img.get_profile()
+                new_profile.aggressive_cutoff(linear_profile_cutoff)
+                new_profile.crop()
+                self.images_tE.append(new_img)
+                self.profiles.append(new_profile)
+                linear_factors.append(factor2)
+            self.linear_factors = np.array(linear_factors)
+
+        convert(np.array([factor]*len(self.images_E)))
+        rms_vals = np.array([profile.rms() for profile in self.profiles])
+        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
+        self.profile = self.profiles[index_median]
+        self.median_rms = rms_vals[index_median]
+
+        if enforce_median_rms:
+            factors = factor*self.median_rms/rms_vals
+            convert(factors)
+
+        if enforce_rms is not None:
+            rms_vals = np.array([profile.rms() for profile in self.profiles])
+            factors = factor*enforce_rms/rms_vals
+            convert(factors)
 
 
 class LasingReconstructionImages(LasingReconstructionImagesBase):
     def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
-        self.identifier = identifier
         self.tracker = tracker
         self.profile = profile
         self.gap = self.tracker.structure_gap
@@ -474,7 +587,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
         self.beam_positions = None
         self.index_median = None
         self.delta_distances = None
-        LasingReconstructionImagesBase.__init__(self, tracker.energy_eV, tracker.disp, tracker.total_charge, ref_y, ref_slice_dict, lasing_options)
+        LasingReconstructionImagesBase.__init__(self, identifier, tracker.energy_eV, tracker.disp, tracker.total_charge, ref_y, ref_slice_dict, lasing_options)
 
     def add_file(self, filename):
         data_dict = h5_storage.loadH5Recursive(filename)
@@ -485,7 +598,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.tracker.structure.dim == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, self.tracker.calib.screen_center, 0, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
 
     def get_current_profiles(self):
         self.profiles = []
@@ -631,7 +744,6 @@ def prepare_raw_image(img, subtract_quantile, max_quantile):
         img = img - np.quantile(img, subtract_quantile)
     if max_quantile is not None:
         img = img.clip(0, np.quantile(img, max_quantile))
-    else:
-        img = img.clip(0, None)
+    img = img.clip(0, None)
     return img
 

@@ -251,7 +251,7 @@ class Profile:
 
 class ScreenDistribution(Profile):
     def __init__(self, x, intensity, real_x=None, subtract_min=True, total_charge=1, meta_data=None):
-        super().__init__()
+        Profile.__init__(self)
         self._xx = x
         assert np.all(np.diff(self._xx)>=0)
         self._yy = intensity
@@ -314,7 +314,7 @@ class ScreenDistribution(Profile):
 
 class AnyProfile(Profile):
     def __init__(self, xx, yy):
-        super().__init__()
+        Profile.__init__(self)
         self._xx = xx
         self._yy = yy
 
@@ -344,7 +344,7 @@ def getScreenDistributionFromPoints(x_points, screen_bins, smoothen=0, total_cha
 
 class BeamProfile(Profile):
     def __init__(self, time, charge_dist, energy_eV, total_charge):
-        super().__init__()
+        Profile.__init__(self)
         if np.any(np.isnan(time)):
             raise ValueError('nans in time')
         if np.any(np.isnan(charge_dist)):
@@ -398,7 +398,7 @@ class BeamProfile(Profile):
 
     def scale_yy(self, scale_factor):
         self.total_charge *= scale_factor
-        super().scale_yy(scale_factor)
+        self._yy = self._yy * scale_factor
 
     def shift(self, center):
         if center == 'Max':

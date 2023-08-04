@@ -350,6 +350,7 @@ def get_default_structure_calibrator_options():
 def get_default_lasing_options():
     outp = {
             'subtract_quantile': 0.1,
+            'subtract_absolute': None,
             'max_quantile': None,
             'slice_factor': 3,
             'current_cutoff': 0.5e3,
@@ -365,6 +366,8 @@ def get_default_lasing_options():
             'adjust_beam_position': True,
             'self_consistent_profile': False,
             'cut_extremes': None,
+            'linear_profile_cutoff': 0.02,
+            'void_cutoff': [1e-3, 1e-3]
             }.copy()
     return outp
 

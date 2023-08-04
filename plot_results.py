@@ -671,16 +671,32 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     #    sp.set_ylim([max(-10, ylim[0]), ylim[1]])
 
 
-    for label, key, color in [
-            ('Lasing Off', 'images_off', 'tab:blue'),
-            ('Lasing On', 'images_on', 'tab:red'),
-            ]:
-        delta_distance = result_dict[key]['delta_distances']
-        mean_x = result_dict[key]['meas_screen_centroids']
-        if delta_distance is not None:
-            sp_orbit.plot(mean_x*1e3, delta_distance*1e6, label=label, color=color, ls='None', marker='.')
+    sp_orbit_legend = False
+    if result_dict['lasing_options']['x_conversion'] == 'wake':
+        for label, key, color in [
+                ('Lasing Off', 'images_off', 'tab:blue'),
+                ('Lasing On', 'images_on', 'tab:red'),
+                ]:
+            delta_distance = result_dict[key]['delta_distances']
+            mean_x = result_dict[key]['meas_screen_centroids']
+            if delta_distance is not None:
+                sp_orbit.plot(mean_x*1e3, delta_distance*1e6, label=label, color=color, ls='None', marker='.')
+                sp_orbit_legend = True
+    elif result_dict['lasing_options']['x_conversion'] == 'linear':
+        for label, key, color in [
+                ('Lasing Off', 'images_off', 'tab:blue'),
+                ('Lasing On', 'images_on', 'tab:red'),
+                ]:
+            sp_orbit.set_title('Linear calibration')
+            sp_orbit.set_xlabel('Image index')
+            sp_orbit.set_ylabel('Calibration ($\mu$m/fs)')
+            if 'linear_factors' in result_dict[key]:
+                factors = (1/result_dict[key]['linear_factors'])
 
-    if delta_distance is not None:
+                sp_orbit.plot(factors/1e9, label=label, color=color, ls='None', marker='.')
+                sp_orbit_legend = True
+
+    if sp_orbit_legend:
         sp_orbit.legend()
     return outp
 

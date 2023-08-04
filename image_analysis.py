@@ -9,7 +9,7 @@ from .logMsg import LogMsgBase
 
 
 class Image(LogMsgBase):
-    def __init__(self, image, x_axis, y_axis, charge=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None):
+    def __init__(self, image, x_axis, y_axis, charge=1, energy_eV=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None):
         self.logger = logger
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
@@ -38,6 +38,7 @@ class Image(LogMsgBase):
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.charge = charge
+        self.energy_eV = energy_eV
 
     def to_dict_custom(self):
         outp = {
@@ -56,7 +57,12 @@ class Image(LogMsgBase):
         y_unit = self.y_unit if y_unit is None else y_unit
         xlabel = self.xlabel if xlabel is None else xlabel
         ylabel = self.ylabel if ylabel is None else ylabel
-        return Image(new_i, new_x, new_y, self.charge, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
+        return Image(new_i, new_x, new_y, self.charge, self.energy_eV, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
+
+    def noisecut(self, noiselevel):
+        new_image = self.image.copy()
+        new_image[new_image < noiselevel] = 0
+        return self.child(new_image, self.x_axis, self.y_axis)
 
     def mean(self, dimension):
         axis, proj = self._get_axis_and_proj(dimension)
@@ -70,6 +76,15 @@ class Image(LogMsgBase):
             axis = self.y_axis
             proj = self.image.sum(axis=1)
         return beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge, **kwargs)
+
+    def get_profile(self, dimension='X'):
+        if dimension == 'X':
+            axis = self.x_axis
+            proj = self.image.sum(axis=0)
+        elif dimension == 'Y':
+            axis = self.y_axis
+            proj = self.image.sum(axis=1)
+        return beam_profile.BeamProfile(axis, proj, self.energy_eV, self.charge)
 
     def rms(self, dimension):
         axis, proj = self._get_axis_and_proj(dimension)
@@ -98,6 +113,21 @@ class Image(LogMsgBase):
         new_image = self.image[y_mask,:]
         new_y_axis = y_axis[y_mask]
         return self.child(new_image, self.x_axis, new_y_axis)
+
+    def cut_voids(self, xcutoff, ycutoff):
+        new_image = self
+        for dim, cutoff, funcname in [
+                ('X', xcutoff, 'cut'),
+                ('Y', ycutoff, 'cutY'),
+                ]:
+            if cutoff is None:
+                continue
+            prof = new_image.get_screen_dist(dim, subtract_min=True)
+            prof.aggressive_cutoff(cutoff)
+            prof.crop()
+            func = getattr(new_image, funcname)
+            new_image = func(prof.x[0], prof.x[-1])
+        return new_image
 
     def reshape_x(self, new_length):
         """

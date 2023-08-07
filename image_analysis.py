@@ -49,6 +49,8 @@ class Image(LogMsgBase):
                 'y_unit': self.y_unit,
                 'xlabel': self.xlabel,
                 'ylabel': self.ylabel,
+                'charge': self.charge,
+                'energy_eV': self.energy_eV,
                 }
         return outp
 

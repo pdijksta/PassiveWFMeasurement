@@ -428,7 +428,13 @@ class LasingReconstructionImagesBase:
                 current_cutoff = self.lasing_options['current_cutoff']
             else:
                 current_cutoff = None
-            slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
+            slice_method = self.lasing_options['slice_method']
+            if slice_method in ('gauss', 'rms', 'cut'):
+                slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
+            elif slice_method in ('full', 'cutoff'):
+                slice_dict = image.fit_slice_simple(slice_cutoff=self.lasing_options['slice_cutoff'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], ref_t=self.lasing_options['ref_t'])
+            else:
+                raise ValueError(slice_method)
             self.slice_dicts.append(slice_dict)
 
             if do_plot:
@@ -696,7 +702,7 @@ def interpolate_slice_dicts(ref, alter):
     xx_ref = ref['slice_x']
     xx_alter = alter['slice_x']
     for key, arr in alter.items():
-        if key in ('E_lims', 'y_axis_Elim', 'eref'):
+        if key in ('E_lims', 'y_axis_Elim'):
             new_dict[key] = arr
         elif key == 'slice_x':
             new_dict[key] = xx_ref

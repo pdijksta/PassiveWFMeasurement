@@ -142,7 +142,7 @@ class Profile:
         yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
         self._yy = yy / np.sum(yy) * old_sum
 
-    def aggressive_cutoff(self, cutoff_factor):
+    def aggressive_cutoff(self, cutoff_factor, center='Max'):
         """
         Cutoff based on max value of the y array.
         Also sets to 0 all values before and after the first 0 value (from the perspective of the maximum).
@@ -154,7 +154,10 @@ class Profile:
         abs_yy = np.abs(yy)
         yy[abs_yy<abs_yy.max()*cutoff_factor] = 0
 
-        index_max = np.argmax(abs_yy)
+        if center == 'Max':
+            index_max = np.argmax(abs_yy)
+        elif center == 'Mean':
+            index_max = np.argmin((self._yy - _mean(self._xx, yy))**2)
         index_arr = np.arange(len(yy))
         is0 = (yy == 0)
         zero_pos = np.logical_and(index_arr > index_max, is0)

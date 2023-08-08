@@ -591,7 +591,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False, sqrt=sqrt)
 
         E_lims = result_dict['lasing_options']['E_lims']
-        if E_lims is not None and E_lims != 'None':
+        if E_lims is not None and not (type(E_lims) is str and E_lims == 'None'):
             hlines = [e/1e6 for e in E_lims]
         else:
             hlines = None

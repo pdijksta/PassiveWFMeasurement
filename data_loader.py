@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 from . import gaussfit
 from . import h5_storage
@@ -109,6 +110,7 @@ class DataLoaderSinglePosition:
         img = image_analysis.Image(self.images[index].astype(np.float64), self.x_axis_m, self.y_axis_m, **kwargs)
         return img
 
+
 class PSICalibrationData(DataLoaderMultiPosition):
     def __init__(self, raw_data):
         positions = raw_data['streaker_offsets']
@@ -120,6 +122,7 @@ class PSICalibrationData(DataLoaderMultiPosition):
         position_key = raw_data['streaker'] + ':CENTER'
         assert position_key in meta_data
         self.add_data(positions, images, x_axis_m, y_axis_m, meta_data, screen_name, position_key)
+
 
 class PSISinglePositionData(DataLoaderSinglePosition):
     def __init__(self, file_or_dict, screen_name):
@@ -134,4 +137,16 @@ class PSISinglePositionData(DataLoaderSinglePosition):
         meta_data = raw_data['meta_data_begin']
 
         DataLoaderSinglePosition.__init__(self, images, x_axis_m, y_axis_m, meta_data, screen_name)
+
+
+def load_lasing_result(h5_file):
+    result_dict = h5_storage.loadH5Recursive(h5_file)
+    for key1, key2 in itertools.product(
+            ['images_on', 'images_off'],
+            ['raw_images', 'tE_images'],
+            ):
+        d_old = result_dict[key1][key2]
+        list_new = [image_analysis.Image(**d_old['list_entry_%i' % x]) for x in range(len(d_old))]
+        result_dict[key1][key2] = list_new
+    return result_dict
 

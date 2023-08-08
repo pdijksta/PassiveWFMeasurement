@@ -9,7 +9,7 @@ from .logMsg import LogMsgBase
 
 
 class Image(LogMsgBase):
-    def __init__(self, image, x_axis, y_axis, charge=1, energy_eV=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None):
+    def __init__(self, image, x_axis, y_axis, charge=1, energy_eV=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None, slice_dict=None):
         self.logger = logger
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
@@ -39,6 +39,7 @@ class Image(LogMsgBase):
         self.ylabel = ylabel
         self.charge = charge
         self.energy_eV = energy_eV
+        self.slice_dict = slice_dict
 
     def to_dict_custom(self):
         outp = {
@@ -51,6 +52,7 @@ class Image(LogMsgBase):
                 'ylabel': self.ylabel,
                 'charge': self.charge,
                 'energy_eV': self.energy_eV,
+                'slice_dict': self.slice_dict,
                 }
         return outp
 
@@ -157,6 +159,99 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
+    def fit_slice_simple(self, slice_cutoff=0.02, current_cutoff=None, E_lims=None, ref_t=None):
+        y_axis = self.y_axis
+        n_slices = len(self.x_axis)
+        slice_full_mean = []
+        slice_full_rms = []
+        slice_cutoff_mean = []
+        slice_cutoff_rms = []
+        slice_cutoff_lim1 = []
+        slice_cutoff_lim2 = []
+
+        proj = np.sum(self.image, axis=-2)
+        proj = proj / np.sum(proj) * abs(self.charge)
+        current = proj / (self.x_axis[1] - self.x_axis[0])
+        current -= current.min()
+        slice_x = self.x_axis
+        current = current / current.sum() * abs(self.charge) / (self.x_axis[1] - self.x_axis[0])
+
+        if E_lims is not None:
+            projY = np.sum(self.image, axis=-1)
+            meanY = np.sum(y_axis*projY)/np.sum(projY)
+            mask_Elim = np.logical_and(y_axis >= meanY+E_lims[0], y_axis <= meanY+E_lims[1])
+        else:
+            mask_Elim = np.ones_like(y_axis, dtype=bool)
+        y_axis = y_axis[mask_Elim]
+
+        def addzero():
+            slice_full_mean.append(0)
+            slice_full_rms.append(0)
+            slice_cutoff_mean.append(0)
+            slice_cutoff_rms.append(0)
+            slice_cutoff_lim1.append(0)
+            slice_cutoff_lim2.append(0)
+
+        for n_slice in range(n_slices):
+
+            if current_cutoff is not None and current[n_slice] < current_cutoff:
+                addzero()
+                continue
+
+            intensity = self.image[mask_Elim,n_slice]
+            intensity = intensity - intensity.min()
+
+            if np.sum(intensity) == 0:
+                addzero()
+                continue
+
+            mean_full, rms_full = calc_rms(y_axis, intensity)
+            prof = beam_profile.AnyProfile(y_axis, intensity)
+            prof.aggressive_cutoff(0.02)
+            prof.crop()
+
+            if len(prof) < 3:
+                slice_cutoff_mean.append(0)
+                slice_cutoff_rms.append(0)
+                slice_cutoff_lim1.append(0)
+                slice_cutoff_lim2.append(0)
+            else:
+                slice_cutoff_mean.append(prof.mean())
+                slice_cutoff_rms.append(prof.rms())
+                slice_cutoff_lim1.append(prof.xx[0])
+                slice_cutoff_lim2.append(prof.xx[-1])
+
+            slice_full_mean.append(mean_full)
+            slice_full_rms.append(rms_full**2)
+
+        slice_dict = {
+                'slice_x': slice_x,
+                'slice_intensity': proj,
+                'slice_current': current,
+                'y_axis_Elim': y_axis,
+                'E_lims': E_lims,
+                'full': {
+                    'mean': np.array(slice_full_mean),
+                    'sigma_sq': np.array(slice_full_rms),
+                    },
+                'cutoff': {
+                    'mean': np.array(slice_cutoff_mean),
+                    'sigma_sq': np.array(slice_cutoff_rms)**2,
+                    'lim1': np.array(slice_cutoff_lim1),
+                    'lim2': np.array(slice_cutoff_lim2),
+                    },
+                }
+        diff_time = np.diff(slice_x)
+        for key in ['full', 'cutoff']:
+            slice_dict[key]['chirp'] = np.concatenate([np.diff(slice_dict[key]['mean'])/diff_time, [0.]])
+            if ref_t is not None:
+                eref = np.interp(ref_t, slice_dict['slice_x'], slice_dict[key]['mean'])
+                slice_dict[key]['mean'] -= eref
+                slice_dict[key]['eref'] = eref
+
+        self.slice_dict = slice_dict
+        return slice_dict
+
     def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
@@ -222,7 +317,6 @@ class Image(LogMsgBase):
 
             intensity = self.image[mask_Elim,n_slice]
             intensity = intensity - intensity.min()
-            intensity_ratio = np.sum(self.image[:,n_slice])/image_sum * n_slices
 
             if np.sum(intensity) == 0:
                 addzero()
@@ -274,6 +368,7 @@ class Image(LogMsgBase):
                 if sp_ctr >= nx*ny:
                     ms.figure('Plot slice analysis')
                     sp_ctr = 1
+                intensity_ratio = np.sum(self.image[:,n_slice])/image_sum * n_slices
                 sp = subplot(sp_ctr, title='Slice %i int. %.1f' % (n_slice, intensity_ratio), xlabel='y', ylabel='intensity', scix=True, sciy=True)
                 sp_ctr += 1
 
@@ -323,8 +418,9 @@ class Image(LogMsgBase):
             if ref_t is not None:
                 eref = np.interp(ref_t, slice_dict['slice_x'], slice_dict[key]['mean'])
                 slice_dict[key]['mean'] -= eref
-                slice_dict['eref'] = eref
+                slice_dict[key]['eref'] = eref
 
+        self.slice_dict = slice_dict
         return slice_dict
 
     def y_to_eV(self, dispersion, energy_eV, ref_y=None):
@@ -503,7 +599,7 @@ class Image(LogMsgBase):
             xx = slice_dict['slice_x'][mask]*x_factor
             yy = slice_dict[slice_method]['mean'][mask]*y_factor
             if 'eref' in slice_dict:
-                yy = yy + slice_dict['eref']*y_factor
+                yy = yy + slice_dict[slice_method]['eref']*y_factor
             yy_err = np.sqrt(slice_dict[slice_method]['sigma_sq'][mask])*y_factor
             sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=1)
 
@@ -511,8 +607,8 @@ class Image(LogMsgBase):
                 lim1 = slice_dict[slice_method]['lim1'][mask]*y_factor
                 lim2 = slice_dict[slice_method]['lim2'][mask]*y_factor
                 if 'eref' in slice_dict:
-                    lim1 = lim1 + slice_dict['eref']*y_factor
-                    lim2 = lim2 + slice_dict['eref']*y_factor
+                    lim1 = lim1 + slice_dict[slice_method]['eref']*y_factor
+                    lim2 = lim2 + slice_dict[slice_method]['eref']*y_factor
                 sp.plot(xx, lim1, color='yellow')
                 sp.plot(xx, lim2, color='yellow')
             sp.set_xlim(*old_lim[0])

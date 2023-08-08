@@ -157,7 +157,7 @@ class Profile:
         if center == 'Max':
             index_max = np.argmax(abs_yy)
         elif center == 'Mean':
-            index_max = np.argmin((self._yy - _mean(self._xx, yy))**2)
+            index_max = np.argmin((self._xx - _mean(self._xx, yy))**2)
         index_arr = np.arange(len(yy))
         is0 = (yy == 0)
         zero_pos = np.logical_and(index_arr > index_max, is0)

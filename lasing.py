@@ -141,11 +141,18 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
             enforce_median_rms = False
             enforce_rms = las_rec_images['Lasing Off'].median_rms
 
+
         rec_obj = LasingReconstructionImagesLinear(title, data_dict, lasing_options, ref_y=ref_y, ref_slice_dict=ref_slice_dict)
         rec_obj.add_dict(data_dict)
         #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         rec_obj.convert_y()
         rec_obj.convert_x_linear(enforce_median_rms=enforce_median_rms, enforce_rms=enforce_rms, min_factor=min_factor, max_factor=max_factor)
+
+        #all_rms = [x.rms() for x in rec_obj.profiles]
+        #all_mean = [x.mean() for x in rec_obj.profiles]
+        #if enforce_rms is None:
+        #    enforce_rms = 0
+        #print(title, '%.1f %.1f %.1f %.3f %.3f' % (enforce_rms*1e15, np.mean(all_rms)*1e15, np.std(all_rms)*1e15, np.mean(all_mean)*1e15, np.std(all_mean)*1e15))
 
         rec_obj.slice_x()
         rec_obj.fit_slice()
@@ -545,7 +552,7 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
 
     def convert_x_linear(self, enforce_median_rms=None, enforce_rms=None, min_factor=None, max_factor=None):
         factor = self.lasing_options['x_linear_factor']
-        linear_profile_cutoff = self.lasing_options['linear_profile_cutoff']
+        current_cutoff = self.lasing_options['current_cutoff']
         if enforce_rms and enforce_median_rms:
             raise ValueError('Cannot enforce both rms and median rms!')
 
@@ -558,9 +565,10 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
                     continue
                 if max_factor and abs(factor2) > max_factor:
                     continue
-                new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
+                new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=current_cutoff)
                 new_profile = new_img.get_profile()
-                new_profile.aggressive_cutoff(linear_profile_cutoff)
+                current = np.abs(new_profile.get_current())
+                new_profile.aggressive_cutoff(current_cutoff/current.max())
                 new_profile.crop()
                 self.images_tE.append(new_img)
                 self.profiles.append(new_profile)
@@ -578,9 +586,11 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
             convert(factors)
 
         if enforce_rms is not None:
-            rms_vals = np.array([profile.rms() for profile in self.profiles])
             factors = factor*enforce_rms/rms_vals
             convert(factors)
+        rms_vals = np.array([profile.rms() for profile in self.profiles])
+        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
+        self.median_rms = rms_vals[index_median]
 
 
 class LasingReconstructionImages(LasingReconstructionImagesBase):
@@ -707,12 +717,12 @@ def interpolate_slice_dicts(ref, alter):
         elif key == 'slice_x':
             new_dict[key] = xx_ref
         elif type(arr) is np.ndarray:
-            new_dict[key] = np.interp(xx_ref, xx_alter, arr, left=0, right=0)
+            new_dict[key] = np.interp(xx_ref, xx_alter, arr)
         elif type(arr) is dict:
             new_dict[key] = {}
             for key2, arr2 in arr.items():
                 if type(arr2) is np.ndarray:
-                    new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2, left=0, right=0)
+                    new_dict[key][key2] = np.interp(xx_ref, xx_alter, arr2)
     return new_dict
 
 def subtract_long_wake(all_slice_dict, tracker, profile):

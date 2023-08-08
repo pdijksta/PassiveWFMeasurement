@@ -366,7 +366,6 @@ def get_default_lasing_options():
             'adjust_beam_position': True,
             'self_consistent_profile': False,
             'cut_extremes': None,
-            'linear_profile_cutoff': 0.02,
             'void_cutoff': [1e-3, 1e-3],
             'slice_cutoff': 0.02,
             }.copy()

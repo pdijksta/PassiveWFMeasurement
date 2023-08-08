@@ -443,7 +443,12 @@ class Image(LogMsgBase):
         if mean_to_zero:
             profile = beam_profile.BeamProfile(new_x_axis, proj, 1, self.charge)
             if current_cutoff:
-                profile._yy[np.abs(profile.get_current()) < current_cutoff] = 0
+                cutoff = current_cutoff/(np.abs(profile.get_current()).max())
+                profile.aggressive_cutoff(cutoff)
+                profile.crop()
+                if not np.any(profile._yy):
+                    print('Warning! Current cutoff too radical!')
+                    profile = beam_profile.BeamProfile(new_x_axis, proj, 1, self.charge)
             refx = profile.mean()
         else:
             refx = 0

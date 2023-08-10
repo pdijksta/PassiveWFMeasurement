@@ -137,6 +137,7 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
             enforce_rms = None
         else:
             ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
+            #import pdb; pdb.set_trace()
             ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
             enforce_median_rms = False
             enforce_rms = las_rec_images['Lasing Off'].median_rms
@@ -367,11 +368,15 @@ class LasingReconstructionImagesBase:
     def convert_y(self):
         self.ref_y_list = []
         self.images_E = []
-        ref_y0 = self.ref_y
+        ref_y = self.ref_y
+        if ref_y is None:
+            mean_y_list = []
+            for image in self.images_xy:
+                profy = image.get_screen_dist('Y')
+                mean_y_list.append(profy.gaussfit.mean)
+            ref_y = np.mean(mean_y_list)
         for ctr, img in enumerate(self.images_xy):
-            image_E, ref_y = img.y_to_eV(self.dispersion, self.energy_eV, ref_y=ref_y0)
-            if ctr == 0:
-                ref_y0 = ref_y
+            image_E, ref_y = img.y_to_eV(self.dispersion, self.energy_eV, ref_y=ref_y)
             self.images_E.append(image_E)
             self.ref_y_list.append(ref_y)
 

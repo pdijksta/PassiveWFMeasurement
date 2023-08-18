@@ -97,7 +97,11 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     @property
     def save_dir(self):
-        return self.config_savedir.text()
+        txt = self.config_savedir.text()
+        if txt == self.default_savedir_text:
+            date = datetime.now()
+            txt = date.strftime('/sf/data/measurements/%Y/%m/%d/')
+        return txt
 
     @property
     def dry_run(self):
@@ -194,14 +198,15 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def elog_and_H5_auto(self, text, figs, title, basename, data_dict, dry_run):
         if dry_run:
             basename.replace('.h5', '_dry_run.h5')
-        filename = os.path.join(self.save_dir, basename)
+        save_dir = self.save_dir
+        filename = os.path.join(save_dir, basename)
         h5_storage.saveH5Recursive(filename, data_dict)
         self.logMsg('Saved %s' % filename)
 
         attachments = []
         for num, fig in enumerate(figs):
             fig_title = filename.replace('.h5', '_%i.png' % num)
-            fig_filename = os.path.join(self.save_dir, fig_title)
+            fig_filename = os.path.join(save_dir, fig_title)
             fig.savefig(fig_filename, bbox_inches='tight', pad_inches=0)
             self.logMsg('Saved %s' % fig_filename)
             attachments.append(fig_filename)
@@ -284,8 +289,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 'Calibration': self.gui_to_calib().to_dict_custom(),
                 }
 
-        self.elog_button_save_name = '%s_FEL_power_profile_reconstruction.h5' % self.structure_name
-
         elog_text = 'FEL power profile reconstructed'
         elog_text += '\nbeamline:  %s' % self.beamline
         elog_text += '\nstructure:  %s' % self.config_tds_device.currentText()
@@ -299,6 +302,14 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         #print(tracking.forward_ctr, tracking.backward_ctr, tracking.rec_ctr)
 
     def analysis_to_elog(self):
+
+        basename = date.strftime('%Y_%m_%d-%H_%M_%S_') +'lps_analysis_%s.h5' % self.beam_monitor
+        filename = os.path.join(self.save_dir, basename)
+        h5_storage.saveH5Recursive(
+        dict_att = {'Author': 'Application: LPS analysis', 'Application': 'LPS analysis', 'Category': 'Measurement', 'Title': 'LPS analysis'}
+        self.logbook.post(self.elog_text, attributes=dict_att, attachments=attachments)
+        self.logMsg('Elog entry generated')
+
         print('Not yet implemented')
 
     def get_lasing_options(self):

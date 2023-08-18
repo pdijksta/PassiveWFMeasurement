@@ -29,9 +29,9 @@ try:
     always_dryrun = False
     logMsg.logMsg('Daq available', logger=logger)
 except ImportError:
-    always_dryrun = True
     daq = None
-    logMsg.logMsg('Daq unavailable. Always dry_run True', logger=logger)
+    always_dryrun = True
+    logMsg.logMsg('Daq unavailable. Always dry_run', logger=logger)
 
 try:
     import elog
@@ -179,11 +179,13 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         outp['settings']['pulse_energy_input'] = self.settings_pulse_energy_input.currentText()
         outp['settings']['pulse_energy'] = self.pulse_energy.value() * 1e-6
         outp['settings']['time_limit_check'] = self.TimeLimitCheck.isChecked()
-        outp['settings']['time_limit1'] = self.TimeLimit1.value()*1e-15
-        outp['settings']['time_limit2'] = self.TimeLimit2.value()*1e-15
+        if outp['settings']['time_limit_check']:
+            outp['settings']['time_limit1'] = self.TimeLimit1.value()*1e-15
+            outp['settings']['time_limit2'] = self.TimeLimit2.value()*1e-15
         outp['settings']['energy_limit_check'] = self.EnergyLimitCheck.isChecked()
-        outp['settings']['energy_limit1'] = self.EnergyLimit1.value()*1e6
-        outp['settings']['energy_limit2'] = self.EnergyLimit2.value()*1e6
+        if outp['settings']['energy_limit_check']:
+            outp['settings']['energy_limit1'] = self.EnergyLimit1.value()*1e6
+            outp['settings']['energy_limit2'] = self.EnergyLimit2.value()*1e6
         outp['settings']['current_cutoff'] = self.CurrentCutoff.value()*1e3
         outp['settings']['pixel_per_slice'] = self.pixel_per_slice.value()
 
@@ -298,6 +300,22 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
 
     def analysis_to_elog(self):
         print('Not yet implemented')
+
+    def get_lasing_options(self):
+        lasing_options = config.get_default_lasing_options()
+        gui_status = self.get_gui_state()
+        lasing_options['subtract_quantile'] = 0.5
+        lasing_options['slice_factor'] = gui_status['settings']['pixel_per_slice']
+        lasing_options['current_cutoff'] = gui_status['settings']['current_cutoff']
+        lasing_options['x_conversion'] = 'linear'
+        lasing_options['x_linear_factor'] = 1/gui_status['calibration']['value']
+        if gui_status['settings']['time_limit_check']:
+            lasing_options['t_lims'] = [gui_status['settings']['time_limit1'], gui_status['settings']['time_limit2']]
+        if gui_status['settings']['energy_limit_check']:
+            lasing_options['E_lims'] = [gui_status['settings']['energy_limit1'], gui_status['settings']['energy_limit2']]
+        lasing_options['void_cutoff'] = [1.5e-3, 1.5e-3],
+        lasing_options['slice_method'] = 'full'
+        return lasing_options
 
 
 if __name__ == '__main__':

@@ -66,23 +66,32 @@ def screen_data_to_median(pyscan_result, dim, output='data'):
     else:
         return get_median(projx, 'mean', 'index')
 
-class DataLoaderMultiPosition:
-    def add_data(self, positions, images, x_axis_m, y_axis_m, meta_data, screen_name, position_key):
-        self.single_position_data = []
-        self.positions = positions
-        for ctr, position in enumerate(self.positions):
-            new_meta_data = meta_data.copy()
-            new_meta_data[position_key] = position*1e3
-            sp = DataLoaderSinglePosition(images[ctr], x_axis_m, y_axis_m, new_meta_data, screen_name)
-            self.single_position_data.append(sp)
+def load_lasing_result(h5_file):
+    result_dict = h5_storage.loadH5Recursive(h5_file)
+    for key1, key2 in itertools.product(
+            ['images_on', 'images_off'],
+            ['raw_images', 'tE_images'],
+            ):
+        d_old = result_dict[key1][key2]
+        list_new = [image_analysis.Image(**d_old['list_entry_%i' % x]) for x in range(len(d_old))]
+        result_dict[key1][key2] = list_new
+    return result_dict
+
+def file_or_dict_to_dict(file_or_dict):
+    if type(file_or_dict) is dict:
+        return file_or_dict
+    else:
+        return h5_storage.loadH5Recursive(file_or_dict)
 
 class DataLoaderSinglePosition:
     def __init__(self, images, x_axis_m, y_axis_m, meta_data, screen_name):
-        self.images = images
-        self.x_axis_m = x_axis_m
-        self.y_axis_m = y_axis_m
+        self.images = images.astype(np.float64)
+        self.x_axis_m = x_axis_m.astype(np.float64)
+        self.y_axis_m = y_axis_m.astype(np.float64)
         self.projx = np.sum(self.images, axis=1, dtype=np.float64)
         self.projy = np.sum(self.images, axis=2, dtype=np.float64)
+        self.meta_data = meta_data
+        self.screen_name = screen_name
 
     def noise_cut(self, subtract_quantile, max_quantile):
         old_images = self.images
@@ -111,6 +120,17 @@ class DataLoaderSinglePosition:
         return img
 
 
+class DataLoaderMultiPosition:
+    def add_data(self, positions, images, x_axis_m, y_axis_m, meta_data, screen_name, position_key):
+        self.single_position_data = []
+        self.positions = positions
+        for ctr, position in enumerate(self.positions):
+            new_meta_data = meta_data.copy()
+            new_meta_data[position_key] = position*1e3
+            sp = DataLoaderSinglePosition(images[ctr], x_axis_m, y_axis_m, new_meta_data, screen_name)
+            self.single_position_data.append(sp)
+
+
 class PSICalibrationData(DataLoaderMultiPosition):
     def __init__(self, raw_data):
         positions = raw_data['streaker_offsets']
@@ -126,11 +146,7 @@ class PSICalibrationData(DataLoaderMultiPosition):
 
 class PSISinglePositionData(DataLoaderSinglePosition):
     def __init__(self, file_or_dict, screen_name):
-        if type(file_or_dict) is dict:
-            raw_data = file_or_dict
-        else:
-            raw_data = h5_storage.loadH5Recursive(file_or_dict)
-
+        raw_data = file_or_dict_to_dict(file_or_dict)
         x_axis_m = raw_data['pyscan_result']['x_axis_m']
         y_axis_m = raw_data['pyscan_result']['y_axis_m']
         images = raw_data['pyscan_result']['image']
@@ -139,14 +155,6 @@ class PSISinglePositionData(DataLoaderSinglePosition):
         DataLoaderSinglePosition.__init__(self, images, x_axis_m, y_axis_m, meta_data, screen_name)
 
 
-def load_lasing_result(h5_file):
-    result_dict = h5_storage.loadH5Recursive(h5_file)
-    for key1, key2 in itertools.product(
-            ['images_on', 'images_off'],
-            ['raw_images', 'tE_images'],
-            ):
-        d_old = result_dict[key1][key2]
-        list_new = [image_analysis.Image(**d_old['list_entry_%i' % x]) for x in range(len(d_old))]
-        result_dict[key1][key2] = list_new
-    return result_dict
+class PSILinearData(DataLoaderSinglePosition):
+    pass
 

@@ -17,7 +17,7 @@ from PassiveWFMeasurement import h5_storage
 from PassiveWFMeasurement import plot_results
 from PassiveWFMeasurement import config
 from PassiveWFMeasurement import config_tds
-from PassiveWFMeasurement import workers
+#from PassiveWFMeasurement import workers
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'TDSmeasurement')
@@ -45,7 +45,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         PyQt5.QtWidgets.QMainWindow.__init__(self)
         PyQt5.uic.loadUi('gui_tds.ui', self)
         self.logger = logger
-        self.beamline = 'Athos post-undulator'
 
         # Fill GUI widgets with default / init values
         if always_dryrun:
@@ -57,9 +56,11 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             self.config_elog.setChecked(False)
             self.config_elog.setEnabled(False)
         self.main_deltaK.setValue(config_tds.default_deltaK)
+        self.config_beamline.addItems(config_tds.beamlines)
         self.tabWidget.setCurrentIndex(0)
         self.activate_tds_select()
         self.activate_pulse_energy()
+        self.select_device()
         self.default_savedir_text = 'Folder of the day on /sf/data/measurements'
         if os.path.isdir('/sf/data/measurements/'):
             self.config_savedir.setText(self.default_savedir_text)
@@ -69,12 +70,16 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         # Connect buttons
         self.perform_calibration.clicked.connect(self.calibrate)
         self.config_type.currentTextChanged.connect(self.activate_tds_select)
+        self.config_beamline.currentTextChanged.connect(self.select_device)
+        self.config_beamline.currentTextChanged.connect(self.select_beam_monitor)
+        self.config_type.currentTextChanged.connect(self.select_device)
         self.settings_pulse_energy_input.currentTextChanged.connect(self.activate_pulse_energy)
         self.ObtainLasingOnData.clicked.connect(self.obtainLasingOn)
         self.ObtainLasingOffData.clicked.connect(self.obtainLasingOff)
         self.SelectLasingOff.clicked.connect(self.select_file(self.main_filename_off))
         self.SelectLasingOn.clicked.connect(self.select_file(self.main_filename_on))
         self.DoAnalysis.clicked.connect(self.do_analysis)
+        self.AnalysisToElog.clicked.connect(self.analysis_to_elog)
 
     def select_file(self, widget):
         def f():
@@ -98,8 +103,21 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
     def dry_run(self):
         return self.config_dry_run.isChecked()
 
+    @property
+    def beamline(self):
+        return self.config_beamline.currentText()
+
     def calibrate(self):
         raise NotImplementedError
+
+    def select_device(self):
+        self.config_tds_device.clear()
+        if self.config_type.currentText() == 'TDS':
+            self.config_tds_device.addItems(config_tds.devices[self.beamline])
+
+    def select_beam_monitor(self):
+        self.config_beam_monitor.clear()
+        self.config_beam_monitor.addItems(config_tds.beam_monitors[self.beamline])
 
     def activate_tds_select(self):
         self.config_tds_device.setEnabled(self.config_type.currentText() == 'TDS')
@@ -142,6 +160,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
                 'settings': {},
                 }
 
+        outp['config']['beamline'] = self.config_beamline.currentText()
         outp['config']['type'] = self.config_type.currentText()
         outp['config']['tds_device'] = self.config_tds_device.currentText()
         outp['config']['n_images'] = self.config_number_images.value()
@@ -245,7 +264,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         lasing_on_dict = h5_storage.loadH5Recursive(file_on)
 
         lasing_options = self.get_lasing_options()
-        result_dict = lasing.obtain_lasing(tracker, lasing_off_dict, lasing_on_dict, lasing_options, pulse_energy)['result_dict']
+        result_dict = lasing.linear_obtain_lasing(lasing_off_dict, lasing_on_dict, lasing_options, pulse_energy)['result_dict']
         plot_results.plot_lasing(result_dict, plot_handles=(self.all_lasing_fig, self.all_lasing_subplots))
         self.all_lasing_canvas.draw()
         self.tabWidget.setCurrentIndex(self.all_lasing_tab_index)
@@ -266,15 +285,19 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         self.elog_button_save_name = '%s_FEL_power_profile_reconstruction.h5' % self.structure_name
 
         elog_text = 'FEL power profile reconstructed'
-        elog_text += '\nstructure:  %s' % tracker.structure_name
+        elog_text += '\nbeamline:  %s' % self.beamline
+        elog_text += '\nstructure:  %s' % self.config_tds_device.currentText()
         elog_text += '\nraw data lasing ON:  %s' % file_on
         elog_text += '\nraw data lasing OFF:  %s' % file_off
-        self.setElogAutoText(elog_text)
 
+        self.elog_text = elog_text
+        self.AnalysisToElog.setEnabled(True)
         self.logMsg('Lasing reconstruction end')
         #print(time.time())
         #print(tracking.forward_ctr, tracking.backward_ctr, tracking.rec_ctr)
 
+    def analysis_to_elog(self):
+        print('Not yet implemented')
 
 
 if __name__ == '__main__':

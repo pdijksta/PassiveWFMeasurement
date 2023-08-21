@@ -430,6 +430,7 @@ class StructureCalibrator(LogMsgBase):
             forward_dicts.append(forward_dict)
             sim_screen = forward_dict['screen']
             sim_screens.append(sim_screen)
+            #print(gap*1e3, 'mm', (gap/2-abs(beam_positions[-1]))*1e6, 'um')
 
         self.blmeas_profile = blmeas_profile
         self.sim_screen_dict[(gap, structure_position0)] = sim_screens

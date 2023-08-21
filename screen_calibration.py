@@ -8,6 +8,15 @@ def calibrate_screen0(trans_dist, profile, tracker, smoothen, half_factor=4, sp=
     try:
         tracker.find_beam_position_options['method'] = 'beamsize'
         find_beam_position_dict = tracker.find_beam_position(tracker.beam_position, trans_dist, profile)
+    #except:
+    #    import matplotlib.pyplot as plt
+    #    plt.figure()
+    #    plt.suptitle('Trans dist')
+    #    plt.plot(trans_dist._xx, trans_dist._yy)
+    #    plt.figure()
+    #    plt.suptitle('Current profile')
+    #    plt.plot(profile._xx, profile._yy)
+    #    import pdb; pdb.set_trace()
     finally:
         tracker.find_beam_position_options['method'] = method0
 

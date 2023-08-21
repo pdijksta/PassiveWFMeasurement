@@ -167,7 +167,6 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
     fit_dict_centroid = fit_dicts['centroid']
     raw_struct_positions = fit_dict_centroid['raw_struct_positions']
     fit_dict_rms = fit_dicts['beamsize']
-    forward_propagate_blmeas = (blmeas_profile is not None)
     centroids = fit_dict_centroid['centroids']
     centroids_std = fit_dict_centroid['centroids_std']
     rms = fit_dict_centroid['rms']
@@ -185,10 +184,9 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
             centroid_sim[n_proj] = sim_screen.mean()
             rms_sim[n_proj] = sim_screen.rms()
 
-    if forward_propagate_blmeas:
-        blmeas_profile.plot_standard(sp_current, color='black', ls='--')
-
-    matplotlib_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    if blmeas_profile is not None:
+        blmeas_profile.plot_standard(sp_current, color='black', ls='--', label='rms: %.1f fs; fwhm: %.1f fs' % (blmeas_profile.rms()*1e15, blmeas_profile.fwhm()*1e15))
+        sp_current.legend()
 
     for fit_dict, sp1, sp2, yy, yy_err, yy_sim in [
             (fit_dict_centroid, sp_center, sp_center2, centroids, centroids_std, centroid_sim),
@@ -211,7 +209,7 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
         sp1.errorbar(raw_struct_positions[mask_pos]*1e3, yy[mask_pos]*1e3, yerr=yy_err[mask_pos]*1e3, label='Data', ls='None', marker='o')
         sp1.errorbar(raw_struct_positions[mask_neg]*1e3, yy[mask_neg]*1e3, yerr=yy_err[mask_neg]*1e3, ls='None', marker='o')
         sp1.errorbar(raw_struct_positions[mask0]*1e3, yy[mask0]*1e3, yerr=yy_err[mask0]*1e3, ls='None', marker='o', color='black')
-        sp1.plot(xx_fit*1e3, reconstruction*1e3, label='Fit', color=matplotlib_colors[2])
+        sp1.plot(xx_fit*1e3, reconstruction*1e3, label='Fit')
         if sim_screens is not None:
             sp1.plot(raw_struct_positions*1e3, yy_sim*1e3, label='Simulated', marker='.', ls='None')
         title = sp1.get_title()

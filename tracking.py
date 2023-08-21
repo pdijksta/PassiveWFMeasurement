@@ -146,6 +146,8 @@ class Tracker(LogMsgBase):
         return outp
 
     def gen_beam(self, beamProfile, other_dim=False, delta=False):
+        if self.forward_options['method'] == 'ocelot':
+            other_dim = delta = True
         dim = self.structure.dim.lower()
         dims = []
         if other_dim:

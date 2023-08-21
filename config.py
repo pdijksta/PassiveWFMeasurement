@@ -380,6 +380,16 @@ def get_default_find_beam_position_options():
             }.copy()
     return outp
 
+def get_default_data_loader_options():
+    outp = {
+            'subtract_quantile': 0.1,
+            'subtract_absolute': None,
+            'void_cutoff': [1e-3, 1e-3],
+            'cutX': None,
+            'cutY': None,
+            }.copy()
+    return outp
+
 xfel_charge_pv = 'XFEL.DIAG/CHARGE.ML/TORA.25.I1/CHARGE.ALL'
 
 xfel_energy_pv= {

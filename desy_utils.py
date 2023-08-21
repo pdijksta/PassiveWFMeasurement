@@ -168,6 +168,7 @@ class Xfel_data(logMsg.LogMsgBase):
 
         if 'orbit_list' not in self.raw_data:
             self.raw_data['orbit_list'] = np.array([self.raw_data['orbit']] * self.raw_data['images'].shape[0])
+            print('Warning! orbit_list not in data file')
         bpm_data = bpm_info_from_saved(self.raw_data)
 
         version = self.raw_data['version'] if 'version' in self.raw_data else None
@@ -176,9 +177,13 @@ class Xfel_data(logMsg.LogMsgBase):
         else:
             self.mean_bpm = np.mean(bpm_data['BPMA.2461.T3'])
 
+
         if init_distance is not None:
             self.set_distance(init_distance)
         else:
+            if np.isnan(self.mean_bpm):
+                print('Warning! mean_bpm is NaN! Replacing it such that d=400 um!')
+                self.mean_bpm = init_plate_pos - 400e-6
             distance = init_plate_pos - self.mean_bpm
             self.set_distance(distance)
 

@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 from . import gaussfit
+from . import lattice
 from . import beam_profile
 from . import h5_storage
 from . import config
@@ -84,16 +85,66 @@ def file_or_dict_to_dict(file_or_dict):
     else:
         return h5_storage.loadH5Recursive(file_or_dict)
 
-class DataLoaderSinglePosition:
-    def __init__(self, images, x_axis_m, y_axis_m, meta_data, screen_name, data_loader_options):
-        self.data_loader_options = data_loader_options
-        images = images.astype(np.float64).copy()
-        x_axis_m = x_axis_m.astype(np.float64).copy()
-        y_axis_m = y_axis_m.astype(np.float64).copy()
+def beamline_from_structure(structure):
+    for beamline, structures in config.structure_names.items():
+        if structure in structures:
+            return beamline
+    else:
+        raise ValueError('Structure not found!')
 
-        cutX = data_loader_options['cutX']
-        cutY = data_loader_options['cutY']
-        void_cutoff = data_loader_options['void_cutoff']
+def eval_psi_meta_data(meta_data, structure):
+    beamline = beamline_from_structure(structure)
+    lat = lattice.get_beamline_lattice(beamline, meta_data)
+    energy_eV = meta_data[config.beamline_energypv[beamline]]*1e6
+    charge = meta_data[config.beamline_chargepv[beamline]]*1e-12
+    structure_position = meta_data[structure+':CENTER']*1e-3
+    structure_gap = meta_data[structure+':GAP']*1e-3
+    return {
+            'beamline': beamline,
+            'lat': lat,
+            'energy_eV': energy_eV,
+            'charge': charge,
+            'structure_position': structure_position,
+            'structure_gap': structure_gap,
+            'structure': structure,
+            }
+
+def dlsp_to_meta_dict(dlsp):
+    structure = dlsp.structure
+    beamline = beamline_from_structure(structure)
+    lat = dlsp.lat
+    energy_eV = dlsp.energy_eV
+    charge = dlsp.charge
+    structure_position = dlsp.structure_position
+    structure_gap = dlsp.structure_gap
+    return {
+            'beamline': beamline,
+            'lat': lat,
+            'energy_eV': energy_eV,
+            'charge': charge,
+            'structure_position': structure_position,
+            'structure_gap': structure_gap,
+            'structure': structure,
+            }
+
+
+class DataLoaderBase:
+    def __init__(self):
+        self.images = []
+        self.sd_dict = {'X': {'sd': [], 'mean': [], 'rms': []}, 'Y': {'sd': [], 'mean': [], 'rms': []}}
+
+    def prepare_data(self):
+        x_axis_m = self.x_axis_m
+        y_axis_m = self.y_axis_m
+        images = self.image_data
+        cutX = self.data_loader_options['cutX']
+        cutY = self.data_loader_options['cutY']
+        subtract_quantile = self.data_loader_options['subtract_quantile']
+        subtract_absolute = self.data_loader_options['subtract_absolute']
+        void_cutoff = self.data_loader_options['void_cutoff']
+
+        if subtract_quantile and subtract_absolute:
+            raise ValueError('Cannot specify both absolute and quantile subtractions!')
 
         def _cutX(lim1, lim2):
             mask = np.logical_and(x_axis_m >= lim1, x_axis_m <= lim2)
@@ -111,6 +162,13 @@ class DataLoaderSinglePosition:
             x_axis_m, images = _cutX(*cutX)
         if cutY is not None:
             y_axis_m, images = _cutY(*cutY)
+
+        if subtract_absolute:
+            np.clip(images-subtract_absolute, 0, None, out=images)
+        if subtract_quantile:
+            for image in images:
+                np.clip(image - np.quantile(image, subtract_quantile), 0, None, out=image)
+
         if void_cutoff is not None:
             image_sum = images.sum(axis=0)
             profX = beam_profile.AnyProfile(x_axis_m, np.sum(image_sum, axis=0))
@@ -124,27 +182,47 @@ class DataLoaderSinglePosition:
 
         self.projx = np.sum(images, axis=1, dtype=np.float64)
         self.projy = np.sum(images, axis=2, dtype=np.float64)
-        self.meta_data = meta_data
-        self.screen_name = screen_name
 
-        self.images = images
+        self.image_data = images
         self.x_axis_m = x_axis_m
         self.y_axis_m = y_axis_m
 
-    #def noise_cut(self, subtract_quantile, max_quantile):
-    #    old_images = self.images
-    #    new_images = np.zeros_like(old_images)
-    #    for ctr in range(len(new_images)):
-    #        if subtract_quantile is not None:
-    #            new_image = old_images[ctr] - np.quantile(old_images[ctr], subtract_quantile)
-    #        else:
-    #            new_image = old_images[ctr]
-    #        if max_quantile is None:
-    #            max_ = None
-    #        else:
-    #            max_ = np.quantile(new_image, max_quantile)
-    #        new_images[ctr] = np.clip(new_image, 0, max_)
-    #    self.images = new_images
+    def shift_axis(self, dimension, value):
+        if dimension == 'X':
+            self.x_axis_m = self.x_axis_m - value
+        if dimension == 'Y':
+            self.y_axis_m = self.y_axis_m - value
+
+    def init_images(self, **kwargs):
+        self.images = []
+        for img, charge, energy_eV in zip(self.image_data, self.charge, self.energy_eV):
+            self.images.append(image_analysis.Image(img, self.x_axis_m, self.y_axis_m, charge, energy_eV, **kwargs))
+
+    def init_screen_distributions(self, dimension):
+        for img in self.images:
+            sd = img.get_screen_dist(dimension)
+            self.sd_dict[dimension]['sd'].append(sd)
+            self.sd_dict[dimension]['mean'].append(sd.mean())
+            self.sd_dict[dimension]['rms'].appnd(sd.rms())
+        self.sd_dict[dimension]['mean'] = np.array(self.sd_dict[dimension]['mean'])
+        self.sd_dict[dimension]['rms'] = np.array(self.sd_dict[dimension]['rms'])
+
+class DataLoaderSinglePosition(DataLoaderBase):
+    def __init__(self, structure, structure_gap, structure_position, images, x_axis_m, y_axis_m, lat, charge, energy_eV, screen_name, data_loader_options):
+        DataLoaderBase.__init__(self)
+        self.data_loader_options = data_loader_options
+        self.structure = structure
+        self.structure_gap = structure_gap
+        self.structure_position = structure_position
+        self.lat = lat
+        self.charge = charge if hasattr(charge, '__len__') else [charge]*len(images)
+        self.energy_eV = energy_eV if hasattr(energy_eV, '__len__') else [energy_eV]*len(images)
+
+        self.image_data = images.astype(np.float64).copy()
+        self.x_axis_m = x_axis_m.astype(np.float64).copy()
+        self.y_axis_m = y_axis_m.astype(np.float64).copy()
+        self.screen_name = screen_name
+        self.prepare_data()
 
     def get_median_index(self, dimension):
         if dimension in ('X', 'x'):
@@ -154,19 +232,43 @@ class DataLoaderSinglePosition:
 
     def get_median_image(self, dimension, **kwargs):
         index = self.get_median_index(dimension)
-        img = image_analysis.Image(self.images[index].astype(np.float64), self.x_axis_m, self.y_axis_m, **kwargs)
+        img = image_analysis.Image(self.image_data[index], self.x_axis_m, self.y_axis_m, self.charge[index], self.energy_eV[index], **kwargs)
         return img
 
 
 class DataLoaderMultiPosition:
-    def init(self, positions, images, x_axis_m, y_axis_m, meta_data, screen_name, position_key, data_loader_options):
+    def init(self, structure, structure_gap, positions, images, x_axis_m, y_axis_m, lat, charge, energy_eV, screen_name, data_loader_options, streaking_direction):
+        self.structure = structure
+        self.screen_name = screen_name
         self.single_position_data = []
         self.positions = positions
+        self.streaking_direction = streaking_direction
+        self.data_loader_options = data_loader_options
         for ctr, position in enumerate(self.positions):
-            new_meta_data = meta_data.copy()
-            new_meta_data[position_key] = position*1e3
-            sp = DataLoaderSinglePosition(images[ctr], x_axis_m, y_axis_m, new_meta_data, screen_name, data_loader_options)
+            sp = DataLoaderSinglePosition(structure, structure_gap, position, images[ctr], x_axis_m, y_axis_m, lat, charge, energy_eV, screen_name, data_loader_options)
             self.single_position_data.append(sp)
+            sp.init_images()
+            sp.init_screen_distributions(self.streaking_direction)
+
+    def adjust_screen0(self):
+        zero_positions = self.data_loader_options['zero_positions']
+        multi_zero_position = self.data_loader_options['multi_zero_position']
+        if multi_zero_position is not None and zero_positions is None:
+            index_zero = list(self.positions).index(multi_zero_position)
+            sp = self.single_position_data[index_zero]
+            sp.init_images()
+            means = []
+            for img in sp.images:
+                sds = [img.get_screen_dist(self.streaking_direction) for img in sp.images]
+                for sd in sds:
+                    sd.cutoff(5e-2)
+                    means.append(sd.mean())
+            delta = np.median(means)
+        for ctr, position in enumerate(self.positions):
+            if zero_positions is not None:
+                self.single_position_data[ctr].shift_axis(self.streaking_direction, zero_positions[ctr])
+            elif multi_zero_position is not None:
+                self.single_position_data[ctr].shift_axis(self.streaking_direction, delta)
 
     def boolean_filter(self, filter):
         assert len(filter) == len(self.positions)
@@ -174,6 +276,9 @@ class DataLoaderMultiPosition:
         outp = DataLoaderMultiPosition()
         outp.positions = np.take(self.positions, indices)
         outp.single_position_data = list(np.take(self.single_position_data, indices))
+        outp.structure = self.structure
+        outp.screen_name = self.screen_name
+        outp.streaking_direction = self.streaking_direction
         return outp
 
 
@@ -185,20 +290,25 @@ class PSICalibrationData(DataLoaderMultiPosition):
         images = raw_data['pyscan_result']['image']
         meta_data = raw_data['meta_data_begin']
         screen_name = raw_data['screen']
-        position_key = raw_data['structure'] + ':CENTER'
-        assert position_key in meta_data
-        self.init(positions, images, x_axis_m, y_axis_m, meta_data, screen_name, position_key, data_loader_options)
+        structure = raw_data['structure']
+        structure_gap = meta_data[structure + ':GAP']*1e-3
+        streaking_direction = config.structure_dimensions[raw_data['structure']]
+        meta_dict = eval_psi_meta_data(meta_data, structure)
+        self.init(structure, structure_gap, positions, images, x_axis_m, y_axis_m, meta_dict['lat'], meta_dict['charge'], meta_dict['energy_eV'], screen_name, data_loader_options, streaking_direction)
+        self.adjust_screen0()
 
 
 class PSISinglePositionData(DataLoaderSinglePosition):
-    def __init__(self, file_or_dict, screen_name, data_loader_options):
+    def __init__(self, file_or_dict, screen_name, data_loader_options, structure=None):
         raw_data = file_or_dict_to_dict(file_or_dict)
         x_axis_m = raw_data['pyscan_result']['x_axis_m']
         y_axis_m = raw_data['pyscan_result']['y_axis_m']
         images = raw_data['pyscan_result']['image']
-        meta_data = raw_data['meta_data_begin']
+        if structure is None:
+            structure = raw_data['structure']
+        meta_dict = eval_psi_meta_data(raw_data['meta_data_begin'], structure)
 
-        DataLoaderSinglePosition.__init__(self, images, x_axis_m, y_axis_m, meta_data, screen_name, data_loader_options)
+        DataLoaderSinglePosition.__init__(self, structure, meta_dict['structure_gap'], meta_dict['structure_position'], images, x_axis_m, y_axis_m, meta_dict['lat'], meta_dict['charge'], meta_dict['energy_eV'], screen_name, data_loader_options)
 
 
 class PSILinearData(DataLoaderSinglePosition):

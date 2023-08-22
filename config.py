@@ -387,6 +387,8 @@ def get_default_data_loader_options():
             'void_cutoff': [1e-3, 1e-3],
             'cutX': None,
             'cutY': None,
+            'multi_zero_position': 0,
+            'zero_positions': None,
             }.copy()
     return outp
 

@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 
 from . import data_loader
+from . import tracking
 from . import beam_profile
 from . import config
 from . import h5_storage
@@ -25,13 +26,15 @@ class StructureCalibration:
 
     def gap_and_beam_position_from_meta(self, meta_data):
         gap0 = meta_data[self.structure_name+':GAP']*1e-3
-        gap = gap0 + self.delta_gap
         structure_position = meta_data[self.structure_name+':CENTER']*1e-3
+        return self.gap_and_beam_position_from_gap0(gap0, structure_position)
+
+    def gap_and_beam_position_from_gap0(self, gap0, structure_position):
+        gap = gap0 + self.delta_gap
         beam_position = -(structure_position - self.structure_position0)
         distance = gap/2. - abs(beam_position)
         if distance < 0:
             raise ValueError('Distance between beam and plate is negative: %.3e' % distance)
-
         return {
                 'gap0': gap0,
                 'gap': gap,
@@ -631,4 +634,17 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
     if output_beam:
         outp['beam'] = beam
     return outp
+
+class CentroidCalibrator(LogMsgBase):
+    def __init__(self, multi_position_data, calib0, centroid_calibrator_options, logger=None):
+        self.logger = logger
+        self.centroid_calibrator_options = centroid_calibrator_options
+        self.data = multi_position_data
+        structure = self.data.structure
+        beamline = data_loader.beamline_from_structure(structure)
+        meta_dict = data_loader.dlsp_to_meta_dict(self.data.single_position_data[0])
+        self.tracker = tracking.get_default_tracker(beamline, structure, meta_dict, calib0, self.data.screen_name, meta_data_type=1)
+
+
+
 

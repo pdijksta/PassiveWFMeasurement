@@ -26,7 +26,7 @@ class Tracker(LogMsgBase):
         force_charge: Override EPICS charge PV
         logger: from logMsg.py
     """
-    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None, gen_lat=True, matrix=None):
+    def __init__(self, beamline, screen_name, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, force_charge=None, matching_point=None, logger=None, gen_lat=True, matrix=None, meta_data_type=0):
 
         self.gen_lat = gen_lat
         if not self.gen_lat:
@@ -57,14 +57,21 @@ class Tracker(LogMsgBase):
 
         self.structure = wf_model.get_structure(structure_name, self.logger)
         self.update_calib(calib)
-        self.meta_data = meta_data
-        if self.meta_data is not None:
-            self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
+        self.meta_data_type = meta_data_type
+        if self.meta_data_type == 0:
+            self.meta_data = meta_data
+            if self.meta_data is not None:
+                self.logMsg('Tracker initialized with gap %i um, structure_position0 %i um' % (round(self.structure_gap*1e6), round(calib.structure_position0*1e6)))
+        elif self.meta_data_type == 1:
+            self.lat = meta_data['lat']
+            self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
+            self.energy_eV = meta_data['energy_eV']
+            calib_dict = self.calib.gap_and_beam_position_from_gap0(meta_data['structure_gap'], meta_data['structure_position'])
+            self.structure_gap0 = calib_dict['gap0']
 
     def update_calib(self, calib):
         assert self.structure_name == calib.structure_name
         self.calib = calib
-        self.structure_position0 = calib.structure_position0
         self.screen_center = calib.screen_center
         self.delta_gap = calib.delta_gap
         if self._meta_data is not None:
@@ -108,7 +115,6 @@ class Tracker(LogMsgBase):
         else:
             raise KeyError(meta_data.keys())
         calib_dict = self.calib.gap_and_beam_position_from_meta(meta_data)
-        self.structure_position0 = calib_dict['structure_position0']
         self.structure_gap0 = calib_dict['gap0']
         self.meta_charge = meta_data[config.beamline_chargepv[self.beamline]]*1e-12
 

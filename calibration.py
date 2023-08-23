@@ -33,6 +33,7 @@ class StructureCalibration:
         gap = gap0 + self.delta_gap
         beam_position = -(structure_position - self.structure_position0)
         distance = gap/2. - abs(beam_position)
+        plate_positions = [-gap/2. + self.structure_position0, gap/2. + self.structure_position0]
         if distance < 0:
             raise ValueError('Distance between beam and plate is negative: %.3e' % distance)
         return {
@@ -42,6 +43,7 @@ class StructureCalibration:
                 'structure_position0': self.structure_position0,
                 'beam_position': beam_position,
                 'distance': distance,
+                'plate_positions': plate_positions,
                 }
 
     def to_dict_custom(self):
@@ -55,6 +57,10 @@ class StructureCalibration:
     @staticmethod
     def from_dict(dict_):
         return StructureCalibration(**dict_)
+
+    def copy(self):
+        return self.from_dict(self.to_dict_custom())
+
 
 class MeasScreens:
     def __init__(self, raw_images, plot_list_x, y_axis_list, meas_screens, beam_positions, raw_positions, streaking_factors):
@@ -636,15 +642,50 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
     return outp
 
 class CentroidCalibrator(LogMsgBase):
-    def __init__(self, multi_position_data, calib0, centroid_calibrator_options, logger=None):
+    def __init__(self, multi_position_data, calib, centroid_calibrator_options, logger=None):
         self.logger = logger
         self.centroid_calibrator_options = centroid_calibrator_options
         self.data = multi_position_data
         structure = self.data.structure
         beamline = data_loader.beamline_from_structure(structure)
         meta_dict = data_loader.dlsp_to_meta_dict(self.data.single_position_data[0])
-        self.tracker = tracking.get_default_tracker(beamline, structure, meta_dict, calib0, self.data.screen_name, meta_data_type=1)
+        self.tracker = tracking.get_default_tracker(beamline, structure, meta_dict, calib, self.data.screen_name, meta_data_type=1)
+        self.current_calib = calib
+
+    def forward_propagate_all(self, beamProfile):
+        forward_dicts = []
+        centroids = np.zeros(len(self.data.positions))
+        beam_sizes = centroids.copy()
+        for ctr, position in enumerate(self.data.positions):
+            beam = self.tracker.gen_beam(beamProfile)
+            _d = self.current_calib.gap_and_beam_position_from_gap0(self.data.structure_gap, position)
+            gap = _d['gap']
+            beam_position = _d['beam_position']
+            forward_dict = self.tracker.forward_propagate_forced(gap, beam_position, beam)
+            forward_dicts.append(forward_dict)
+            centroids[ctr] = forward_dict['screen'].mean()
+            beam_sizes[ctr] = forward_dict['screen'].rms()
+        return {
+                'forward_dicts': forward_dicts,
+                'mean': centroids,
+                'rms': beam_sizes,
+                'calib': self.current_calib,
+                }
+
+    def reconstruct_closest(self, **kwargs):
+        positions = self.data.positions
+        gap0 = self.data.structure_gap
+        pos_dicts =[self.current_calib.gap_and_beam_position_from_gap0(gap0, pos) for pos in positions]
+        index_min = np.argmin([x['distance'] for x in pos_dicts]).squeeze()
+        singlepos = self.data.single_position_data[index_min]
+        median_image = singlepos.get_median_image(self.data.streaking_direction)
+        meas_screen = median_image.get_screen_dist(self.data.streaking_direction)
+        _d = pos_dicts[index_min]
+        return self.tracker.reconstruct_profile_Gauss_forced(_d['gap'], _d['beam_position'], meas_screen, **kwargs)
 
 
+
+    #def current_rec_closest(self, calib):
+    #    distances = [calib.gap_and_beam_position_from_gap0(self.data.structure_gap,
 
 

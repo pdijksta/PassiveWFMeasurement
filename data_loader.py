@@ -120,8 +120,8 @@ def dlsp_to_meta_dict(dlsp):
     return {
             'beamline': beamline,
             'lat': lat,
-            'energy_eV': energy_eV,
-            'charge': charge,
+            'energy_eV': np.median(energy_eV),
+            'charge': np.median(charge),
             'structure_position': structure_position,
             'structure_gap': structure_gap,
             'structure': structure,
@@ -131,7 +131,7 @@ def dlsp_to_meta_dict(dlsp):
 class DataLoaderBase:
     def __init__(self):
         self.images = []
-        self.sd_dict = {'X': {'sd': [], 'mean': [], 'rms': []}, 'Y': {'sd': [], 'mean': [], 'rms': []}}
+        self.sd_dict = {}
 
     def prepare_data(self):
         x_axis_m = self.x_axis_m
@@ -199,11 +199,12 @@ class DataLoaderBase:
             self.images.append(image_analysis.Image(img, self.x_axis_m, self.y_axis_m, charge, energy_eV, **kwargs))
 
     def init_screen_distributions(self, dimension):
+        self.sd_dict[dimension] = {'sd': [], 'mean': [], 'rms': []}
         for img in self.images:
             sd = img.get_screen_dist(dimension)
             self.sd_dict[dimension]['sd'].append(sd)
             self.sd_dict[dimension]['mean'].append(sd.mean())
-            self.sd_dict[dimension]['rms'].appnd(sd.rms())
+            self.sd_dict[dimension]['rms'].append(sd.rms())
         self.sd_dict[dimension]['mean'] = np.array(self.sd_dict[dimension]['mean'])
         self.sd_dict[dimension]['rms'] = np.array(self.sd_dict[dimension]['rms'])
 
@@ -244,10 +245,19 @@ class DataLoaderMultiPosition:
         self.positions = positions
         self.streaking_direction = streaking_direction
         self.data_loader_options = data_loader_options
+        self.charge = charge
+        self.energy_eV = energy_eV
+        self.structure_gap = structure_gap
         for ctr, position in enumerate(self.positions):
             sp = DataLoaderSinglePosition(structure, structure_gap, position, images[ctr], x_axis_m, y_axis_m, lat, charge, energy_eV, screen_name, data_loader_options)
             self.single_position_data.append(sp)
+
+    def init_images(self):
+        for sp in self.single_position_data:
             sp.init_images()
+
+    def init_sds(self):
+        for sp in self.single_position_data:
             sp.init_screen_distributions(self.streaking_direction)
 
     def adjust_screen0(self):
@@ -256,19 +266,18 @@ class DataLoaderMultiPosition:
         if multi_zero_position is not None and zero_positions is None:
             index_zero = list(self.positions).index(multi_zero_position)
             sp = self.single_position_data[index_zero]
-            sp.init_images()
             means = []
-            for img in sp.images:
-                sds = [img.get_screen_dist(self.streaking_direction) for img in sp.images]
-                for sd in sds:
-                    sd.cutoff(5e-2)
-                    means.append(sd.mean())
+            sp.init_images()
+            sp.init_screen_distributions(self.streaking_direction)
+            sds = sp.sd_dict[self.streaking_direction]['sd']
+            for sd in sds:
+                means.append(sd.mean())
             delta = np.median(means)
-        for ctr, position in enumerate(self.positions):
+        for ctr, sp in enumerate(self.single_position_data):
             if zero_positions is not None:
-                self.single_position_data[ctr].shift_axis(self.streaking_direction, zero_positions[ctr])
+                sp.shift_axis(self.streaking_direction, zero_positions[ctr])
             elif multi_zero_position is not None:
-                self.single_position_data[ctr].shift_axis(self.streaking_direction, delta)
+                sp.shift_axis(self.streaking_direction, delta)
 
     def boolean_filter(self, filter):
         assert len(filter) == len(self.positions)
@@ -279,6 +288,9 @@ class DataLoaderMultiPosition:
         outp.structure = self.structure
         outp.screen_name = self.screen_name
         outp.streaking_direction = self.streaking_direction
+        outp.structure_gap = self.structure_gap
+        outp.charge = self.charge
+        outp.energy_eV = self.energy_eV
         return outp
 
 

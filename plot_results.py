@@ -496,9 +496,9 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
                 break
 
     color = sp_moments.plot(opt_func_sigmas*1e15, np.abs(centroid_arr)*1e3, marker='.', label='Reconstructed centroid')[0].get_color()
-    sp_moments.axhline(np.abs(meas_screen_raw.mean())*1e3, label='Measured centroid', color=color, ls='--')
+    sp_moments.axhline(abs(gauss_dict['centroid_meas'])*1e3, label='Measured centroid', color=color, ls='--')
     color = sp_moments.plot(opt_func_sigmas*1e15, rms_arr*1e3, marker='.', label='Reconstructed rms')[0].get_color()
-    sp_moments.axhline(meas_screen_raw.rms()*1e3, label='Measured rms', color=color, ls='--')
+    sp_moments.axhline(gauss_dict['rms_meas']*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
     sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)

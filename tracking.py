@@ -66,6 +66,7 @@ class Tracker(LogMsgBase):
             self.lat = meta_data['lat']
             self.matrix = self.lat.get_matrix(self.structure_name.replace('-', '.'), self.screen_name.replace('-', '.'))
             self.energy_eV = meta_data['energy_eV']
+            self.meta_charge = meta_data['charge']
             calib_dict = self.calib.gap_and_beam_position_from_gap0(meta_data['structure_gap'], meta_data['structure_position'])
             self.structure_gap0 = calib_dict['gap0']
 
@@ -559,8 +560,13 @@ class Tracker(LogMsgBase):
         else:
             raise ValueError
 
+        beam0 = None
+
         def gaussian_baf(sig_t0):
-            sig_t = np.round(sig_t0/prec)*prec
+            if prec:
+                sig_t = np.round(sig_t0/prec)*prec
+            else:
+                sig_t = sig_t0
             #print('sig_t %.2f, %.2f' % (sig_t*1e15, sig_t0*1e15))
             if sig_t in sig_t_list:
                 return 0
@@ -570,7 +576,12 @@ class Tracker(LogMsgBase):
             back_dict1 = self.backward_propagate(meas_screen, bp_back0)
             bp_back1 = back_dict1['profile']
 
-            beam = self.gen_beam(bp_back1)
+            nonlocal beam0
+            if beam0 is None:
+                beam0 = beam = self.gen_beam(bp_back1)
+            else:
+                beam = beam0.child()
+                beam = beam.new_beamProfile(bp_back1)
             screen = self.forward_propagate(beam, plot_details=False)['screen']
 
             index = bisect.bisect(sig_t_list, sig_t)
@@ -600,21 +611,32 @@ class Tracker(LogMsgBase):
         def get_index_min(output='index'):
             sig_t_arr = np.array(sig_t_list)
             if method == 'centroid':
-                centroid_sim = np.array([x.mean() for x in opt_func_screens])
-                index_min = np.argmin(np.abs(centroid_sim - centroid_meas))
-                sort = np.argsort(centroid_sim)
-                t_min = np.interp(centroid_meas, centroid_sim[sort], sig_t_arr[sort])
+                vals = np.array([x.mean() for x in opt_func_screens])
+                opt = centroid_meas
             elif method == 'rms' or method == 'beamsize':
-                rms_sim = np.array([x.rms() for x in opt_func_screens])
-                index_min = np.argmin(np.abs(rms_sim - rms_meas))
-                sort = np.argsort(rms_sim)
-                t_min = np.interp(rms_meas, rms_sim[sort], sig_t_arr[sort])
+                vals = np.array([x.rms() for x in opt_func_screens])
+                opt = rms_meas
             else:
                 raise ValueError('Method %s unknown' % method)
+            index_min = np.argmin(np.abs(vals - opt))
 
             if output == 'index':
                 return index_min.squeeze()
             elif output == 't_sig':
+                m1 = np.abs(vals)<np.abs(opt)
+                if not np.any(m1):
+                    t_min = np.min(sig_t_arr)
+                else:
+                    m2 = np.abs(vals)>np.abs(opt)
+                    if not np.any(m2):
+                        t_min = np.max(sig_t_arr)
+                    else:
+                        x1 = np.max(sig_t_arr[m1])
+                        x2 = np.min(sig_t_arr[m2])
+                        y1 = vals[x1==sig_t_arr].squeeze()
+                        y2 = vals[x2==sig_t_arr].squeeze()
+                        alpha = (opt-y1)/(y2-y1)
+                        t_min = x1+alpha*(x2-x1)
                 return t_min
 
         #sig_t_arr = np.exp(np.linspace(np.log(np.min(sig_t_range)), np.log(np.max(sig_t_range)), 2))
@@ -626,10 +648,13 @@ class Tracker(LogMsgBase):
             gaussian_baf(sig_t_min)
         index_min = get_index_min()
 
+        warning = False
         if index_min == 0:
             self.logMsg('Warning! index at left border!', 'W')
+            warning = True
         if index_min == len(sig_t_list)-1:
             self.logMsg('Warning! index at right border!', 'W')
+            warning = True
 
         best_screen = opt_func_screens[index_min]
         best_profile = opt_func_profiles[index_min]
@@ -641,16 +666,19 @@ class Tracker(LogMsgBase):
         self.logMsg('iterations %i, duration %i fs, charge %i pC, gap %.2f mm, beam pos %.2f mm, distance %.2f um time %.3f' % (n_iter-2, int(best_profile.rms()*1e15), int(self.total_charge*1e12), self.structure_gap*1e3, self.beam_position*1e3, distance*1e6, time_needed))
 
         output = {
-               'gauss_sigma': best_sig_t,
-               'reconstructed_screen': best_screen,
-               'reconstructed_profile': best_profile,
-               'best_gauss': best_gauss,
-               'meas_screen': meas_screen,
-               'meas_screen_raw': meas_screen_raw,
-               'gap': self.structure_gap,
-               'structure': self.structure_name,
-               'beam_position': self.beam_position,
-               'best_index': index_min,
+                'gauss_sigma': best_sig_t,
+                'reconstructed_screen': best_screen,
+                'reconstructed_profile': best_profile,
+                'best_gauss': best_gauss,
+                'meas_screen': meas_screen,
+                'meas_screen_raw': meas_screen_raw,
+                'gap': self.structure_gap,
+                'structure': self.structure_name,
+                'beam_position': self.beam_position,
+                'best_index': index_min,
+                'warning': warning,
+                'centroid_meas': centroid_meas,
+                'rms_meas': rms_meas,
                }
 
         if output_details:

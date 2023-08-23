@@ -66,7 +66,7 @@ def gen_beam4D(nemitx, nemity, betax, alphax, betay, alphay, energy_eV, n_partic
 
 def particles_to_profile(time_coordinates, time_grid, total_charge, energy_eV):
     dt = time_grid[1] - time_grid[0]
-    bins = np.concatenate(time_grid, [time_grid[-1]+dt]) - dt/2.
+    bins = np.concatenate([time_grid, [time_grid[-1]+dt]]) - dt/2.
     hist, _ = np.histogram(time_coordinates, bins=bins)
     return beam_profile.BeamProfile(time_grid, hist, energy_eV, total_charge)
 
@@ -105,7 +105,7 @@ class Beam:
         return Beam(new_arr, self.dim_index, self.beamProfile, self.total_charge, self.energy_eV)
 
     def to_profile(self, time_grid):
-        return particles_to_profile(self['t'], time_grid, self.total_charge)
+        return particles_to_profile(self['t'], time_grid, self.total_charge, self.energy_eV)
 
     def to_screen_dist(self, screen_bins, screen_smoothen, dim):
         return beam_profile.getScreenDistributionFromPoints(self[dim], screen_bins, screen_smoothen, total_charge=self.total_charge)
@@ -135,6 +135,13 @@ class Beam:
             matrix[t_index, t_index] = 1
         arr = matrix @ self.arr
         return self.child(arr)
+
+    def new_beamProfile(self, beamProfile):
+        outp = self.child()
+        outp.beamProfile = beamProfile
+        tt = gen_beamT(outp.arr.shape[1], beamProfile)
+        outp.arr[outp.dim_index['t']] = tt
+        return outp
 
     def update_beamProfile(self):
         self.beamProfile = particles_to_profile(self['t'], self.beamProfile.time, self.total_charge, self.beamProfile.energy_eV)

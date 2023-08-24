@@ -670,6 +670,7 @@ class CentroidCalibrator(LogMsgBase):
                 'mean': centroids,
                 'rms': beam_sizes,
                 'calib': self.current_calib,
+                'profile': beamProfile,
                 }
 
     def reconstruct_closest(self, **kwargs):

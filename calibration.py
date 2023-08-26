@@ -653,10 +653,13 @@ class CentroidCalibrator(LogMsgBase):
         self.current_calib = calib
 
     def forward_propagate_all(self, beamProfile):
+        return self.forward_propagate_any(beamProfile, self.data.positions)
+
+    def forward_propagate_any(self, beamProfile, positions):
         forward_dicts = []
-        centroids = np.zeros(len(self.data.positions))
+        centroids = np.zeros(len(positions))
         beam_sizes = centroids.copy()
-        for ctr, position in enumerate(self.data.positions):
+        for ctr, position in enumerate(positions):
             beam = self.tracker.gen_beam(beamProfile)
             _d = self.current_calib.gap_and_beam_position_from_gap0(self.data.structure_gap, position)
             gap = _d['gap']
@@ -671,6 +674,7 @@ class CentroidCalibrator(LogMsgBase):
                 'rms': beam_sizes,
                 'calib': self.current_calib,
                 'profile': beamProfile,
+                'positions': positions,
                 }
 
     def reconstruct_closest(self, **kwargs):
@@ -683,10 +687,4 @@ class CentroidCalibrator(LogMsgBase):
         meas_screen = median_image.get_screen_dist(self.data.streaking_direction)
         _d = pos_dicts[index_min]
         return self.tracker.reconstruct_profile_Gauss_forced(_d['gap'], _d['beam_position'], meas_screen, **kwargs)
-
-
-
-    #def current_rec_closest(self, calib):
-    #    distances = [calib.gap_and_beam_position_from_gap0(self.data.structure_gap,
-
 

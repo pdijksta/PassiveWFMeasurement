@@ -352,10 +352,10 @@ class LasingReconstructionImagesBase:
 
     def add_dict(self, data_dict, max_index=None, screen_centerX=0, screen_centerY=0):
         images = data_dict['pyscan_result']['image'].astype(np.float64)
-        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64) - screen_centerX
-        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64) - screen_centerY
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.data['meta_data']['streaking_direction'] == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, screen_centerX, screen_centerY, max_index)
 
     @property
     def ref_slice_dict(self):
@@ -620,10 +620,10 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
 
     def add_dict(self, data_dict, max_index=None, screen_centerX=0, screen_centerY=0):
         images = data_dict['pyscan_result']['image'].astype(np.float64)
-        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64) - screen_centerX
-        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64) - screen_centerY
+        x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
+        y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.tracker.structure.dim == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, screen_centerX, screen_centerY, max_index)
 
     def get_current_profiles(self):
         self.profiles = []

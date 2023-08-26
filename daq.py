@@ -95,12 +95,17 @@ def get_images(screen, n_images, beamline, dry_run=None):
     stream_address = pipeline_client.get_instance_stream(cam_instance_name)
     stream_host, stream_port = get_host_port_from_stream_address(stream_address)
 
-    bg = pipeline_client.get_latest_background(daq_screen)
-    image = pipeline_client.get_background_image_bytes(bg)
-    dtype = image['dtype']
-    shape = image['shape']
-    bytes = base64.b64decode(image['bytes'].encode())
-    background = np.array(bytes, dtype=dtype).reshape(shape)
+    try:
+        bg = pipeline_client.get_latest_background(daq_screen)
+        image = pipeline_client.get_background_image_bytes(bg)
+        dtype = image['dtype']
+        shape = image['shape']
+        bytes = base64.b64decode(image['bytes'].encode())
+        background = np.array(bytes, dtype=dtype).reshape(shape)
+    except Exception as e:
+        print(e)
+        print('Error taking background')
+        background = 0
 
     # Configure bsread
     pyscan.config.bs_default_host = stream_host

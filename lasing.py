@@ -91,7 +91,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         tracker1 = tracker2 = tracker
     trackers = [tracker1, tracker2]
 
-    for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+    for main_ctr, (data_dict, title, _tracker) in enumerate([(lasing_off_dict, 'Lasing Off', tracker1), (lasing_on_dict, 'Lasing On', tracker2)]):
         if main_ctr == 0:
             ref_y = None
         else:
@@ -103,11 +103,11 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             profile = None
             ref_slice_dict = None
 
-        rec_obj = LasingReconstructionImages(title, trackers[main_ctr], lasing_options, profile=profile, ref_y=ref_y)
+        rec_obj = LasingReconstructionImages(title, _tracker, lasing_options, profile=profile, ref_y=ref_y)
         if trackers[main_ctr].structure.dim == 'X':
-            screen_centerX, screen_centerY = tracker.calib.screen_center, 0
+            screen_centerX, screen_centerY = _tracker.calib.screen_center, 0
         elif trackers[main_ctr].structure.dim == 'Y':
-            screen_centerX, screen_centerY = 0, tracker.calib.screen_center
+            screen_centerX, screen_centerY = 0, trackers[main_ctr].calib.screen_center
         rec_obj.add_dict(data_dict, screen_centerX=screen_centerX, screen_centerY=screen_centerY)
         rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         las_rec_images[title] = rec_obj

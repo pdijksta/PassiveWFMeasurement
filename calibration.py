@@ -480,7 +480,7 @@ class StructureCalibrator(LogMsgBase):
         delta_structure0_range = self.structure_calib_options['delta_structure0_range']
         delta_gap_scan_range = np.linspace(delta_gap_range.min() - delta_structure0_range.min()*2, delta_gap_range.max() + delta_structure0_range.max()*2, self.structure_calib_options['delta_gap_scan_n'])
         gap0 = self.tracker.structure_gap
-        structure_position0 = self.tracker.structure_position0
+        structure_position0 = self.tracker.calib.structure_position0
         old_calibration = self.tracker.calib
 
         distance_rms_arr = np.zeros([n_positions, len(delta_gap_scan_range), 2])

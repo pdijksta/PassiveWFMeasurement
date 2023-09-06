@@ -174,10 +174,11 @@ class Profile:
         else:
             self._yy = yy / np.sum(yy) * old_sum
 
-    def crop(self):
+    def crop(self, quiet=False):
         mask = self._yy != 0
         if np.sum(mask) < 2:
-            print('Cannot crop!')
+            if not quiet:
+                print('Cannot crop!')
             return False
         xx_nonzero = self._xx[mask]
         new_x = np.linspace(xx_nonzero.min(), xx_nonzero.max(), len(self._xx))

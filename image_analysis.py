@@ -208,9 +208,9 @@ class Image(LogMsgBase):
             mean_full, rms_full = calc_rms(y_axis, intensity)
             prof = beam_profile.AnyProfile(y_axis, intensity)
             prof.aggressive_cutoff(0.02)
-            prof.crop()
+            status = prof.crop(quiet=True)
 
-            if len(prof) < 3:
+            if (not status) or (len(prof) < 3):
                 slice_cutoff_mean.append(0)
                 slice_cutoff_rms.append(0)
                 slice_cutoff_lim1.append(0)

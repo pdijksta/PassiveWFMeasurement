@@ -360,7 +360,7 @@ def get_default_lasing_options():
             't_lims': None,
             'ref_t': None,
             'E_lims': None,
-            'slice_method': 'cut',
+            'slice_method': 'full',
             'plot_slice_analysis': False,
             'plot_slice_analysis_save_path': None,
             'adjust_beam_position': True,

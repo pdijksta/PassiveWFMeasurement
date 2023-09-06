@@ -627,6 +627,8 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
     structure_position0 = tracker.calib.structure_position0
     new_structure_center0 = structure_position0 + delta_position
     new_calib = StructureCalibration(tracker.structure_name, screen_center, delta_gap, new_structure_center0)
+
+    gauss_dict = tracker.reconstruct_profile_Gauss_forced(tracker.structure_gap, tracker.beam_position+delta_position, meas_screen_raw)
     outp = {
             'calib': new_calib,
             'old_calib': tracker.calib,
@@ -636,6 +638,7 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
             'find_beam_position_result': result_dict,
             'backward_dict': back_dict,
             'forward_dict': forward_dict,
+            'gauss_dict': gauss_dict,
             }
     if output_beam:
         outp['beam'] = beam

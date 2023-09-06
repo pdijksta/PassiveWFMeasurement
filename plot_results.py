@@ -740,6 +740,12 @@ def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
     back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean', color='red')
     recon_forward_screen = tdc_dict['forward_dict']['screen']
     recon_forward_screen.plot_standard(sp_screen, label='Back and forth', color='red', show_mean=True)
+
+    rec_profile = tdc_dict['gauss_dict']['reconstructed_profile']
+    rec_profile.plot_standard(sp_profile, label='Reconstructed', center='Mean', color='green')
+    rec_screen = tdc_dict['gauss_dict']['reconstructed_screen']
+    rec_screen.plot_standard(sp_screen, label='Reconstructed', show_mean=True, color='green')
+
     sp_profile.legend()
     sp_screen.legend()
     return plot_handles

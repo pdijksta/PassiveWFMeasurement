@@ -329,6 +329,7 @@ def get_default_beam_spec():
             'nemity': 755e-9,
             'n_mesh': 500,
             'cutoff_sigma': 5,
+            'energy_chirp': 0,
             }.copy()
     return outp
 

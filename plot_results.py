@@ -625,7 +625,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 (sp_slice_mean, mean_mean, mean_std),
                 (sp_slice_sigma, sigma_mean, sigma_std),
                 ]:
-            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=err/1e6, color=fill_color2, zorder=100, lw=linewidth)
+            #sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=err/1e6, color=fill_color2, zorder=100, lw=linewidth)
+            sp.plot(xx_plot[0]*1e15, mean/1e6, color=fill_color2, zorder=100, lw=linewidth)
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
@@ -662,8 +663,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         #yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
         yy_plot = lasing_dict[key]['power']/1e9
-        yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots2)
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
+        #yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots2)
+        #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
+        sp.plot(xx_plot, yy_plot, color=dark_green, zorder=100, lw=linewidth)
     #for sp in sp_lasing_loss, sp_lasing_spread:
     #    ylim = sp.get_ylim()
     #    sp.set_ylim([max(-10, ylim[0]), ylim[1]])

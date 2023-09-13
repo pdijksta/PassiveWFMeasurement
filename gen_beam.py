@@ -260,7 +260,10 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         arr[n_dim] = gen_beamT(n_particles, beamProfile)
         n_dim += 1
     if 'delta' in dimensions:
-        arr[n_dim] = 0
+        if specifications['energy_chirp']:
+            arr[n_dim] = arr[dim_index['t']]*specifications['energy_chirp']/energy_eV
+        else:
+            arr[n_dim] = 0
         dim_index['delta'] = n_dim
         n_dim += 1
 

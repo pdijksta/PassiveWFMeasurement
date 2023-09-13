@@ -769,6 +769,8 @@ class Tracker(LogMsgBase):
                 'sim_screen': sim_screens[index],
                 'beam_position': beam_position,
                 'beam_positions': np.array(beam_position_list),
+                'centroid_meas': centroid_meas,
+                'rms_meas': rms_meas,
                 'delta_position': delta_position,
                 'gap': self.structure_gap,
                 'structure_name': self.structure_name,

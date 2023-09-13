@@ -278,10 +278,12 @@ class LasingReconstruction:
             d['tE_images'] = obj.images_tE
             d['current_profile'] = obj.profile
             if hasattr(obj, 'beam_positions'):
+                d['distances'] = obj.tracker.structure_gap/2 - np.abs(obj.beam_positions)
                 d['beam_positions'] = obj.beam_positions
                 d['delta_distances'] = obj.delta_distances
                 d['meas_screen_centroids'] = obj.meas_screen_centroids
             else:
+                d['distances'] = None
                 d['beam_positions'] = None
                 d['delta_distances'] = None
                 d['meas_screen_centroids'] = None

@@ -128,6 +128,7 @@ class Beam:
             for dim_col, index_col in self.dim_index.items():
                 value = matrix6D[lat_dim_index[dim_row], lat_dim_index[dim_col]]
                 matrix[index_row,index_col] = value
+        # We need to ignore time because we want to keep the time frame of reference at the streaker, not at the screen.
         if 't' in self.dim_index and self.ignore_time:
             t_index = self.dim_index['t']
             matrix[t_index,:] = 0

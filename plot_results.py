@@ -443,7 +443,7 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
             (sp_current, 'f) Current profile', 't (fs)', 'I (kA)'),
             (sp_lasing_loss, 'g) Power from $\Delta E$', 't (fs)', '$P_\Delta$ (GW)'),
             (sp_lasing_spread, 'h) Power from $\sigma_E$', 't (fs)', '$P_\sigma$ (GW)'),
-            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
+            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', 'd ($\mu$m)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -675,10 +675,10 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 ('Lasing Off', 'images_off', 'tab:blue'),
                 ('Lasing On', 'images_on', 'tab:red'),
                 ]:
-            delta_distance = result_dict[key]['delta_distances']
+            distances = result_dict[key]['distances']
             mean_x = result_dict[key]['meas_screen_centroids']
-            if delta_distance is not None:
-                sp_orbit.plot(mean_x*1e3, delta_distance*1e6, label=label, color=color, ls='None', marker='.')
+            if distances is not None:
+                sp_orbit.plot(mean_x*1e3, distances*1e6, label=label, color=color, ls='None', marker='.')
                 sp_orbit_legend = True
     elif result_dict['lasing_options']['x_conversion'] == 'linear':
         for label, key, color in [

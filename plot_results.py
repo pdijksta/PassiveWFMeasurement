@@ -690,7 +690,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             sp_orbit.set_title('Linear calibration')
             sp_orbit.set_xlabel('Image index')
             sp_orbit.set_ylabel('Calibration ($\mu$m/fs)')
-            if 'linear_factors' in result_dict[key]:
+            if 'linear_factors' in result_dict[key] and result_dict[key]['linear_factors'] is not None:
                 factors = (1/result_dict[key]['linear_factors'])
 
                 sp_orbit.plot(factors/1e9, label=label, color=color, ls='None', marker='.')

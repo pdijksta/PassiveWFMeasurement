@@ -107,7 +107,7 @@ class Profile:
 
         abs_yy = np.abs(self._yy)
         half = abs_yy.max()/2.
-        mask_fwhm = abs_yy > half
+        mask_fwhm = abs_yy >= half
         indices_fwhm = np.argwhere(mask_fwhm)
         index_min, index_max = indices_fwhm.min(), indices_fwhm.max()
         lims = []

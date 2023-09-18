@@ -270,6 +270,7 @@ class LasingReconstruction:
                 'mean_slice_dict': self.mean_slice_dict,
                 'mean_current': self.mean_current,
                 'linear_conversion': int(self.lasing_options['x_conversion'] == 'linear'),
+                'dispersion': np.array([self.images_off.dispersion, self.images_on.dispersion]),
                 'lasing_options': self.lasing_options,
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
@@ -303,7 +304,7 @@ class LasingReconstruction:
         y_axis = self.images_on.y_axis
         charge = tracker.total_charge
         ref_profile = self.images_on.profile
-        raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
+        raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'], self.lasing_options['max_absolute'])
         image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
         image_E, _ = self.images_on.convert_y_single(image_xy)
 
@@ -518,6 +519,7 @@ class LasingReconstructionImagesBase:
 
         subtract_quantile = self.lasing_options['subtract_quantile']
         subtract_absolute = self.lasing_options['subtract_absolute']
+        max_absolute = self.lasing_options['max_absolute']
         max_quantile = self.lasing_options['max_quantile']
         xcutoff, ycutoff = self.lasing_options['void_cutoff']
         self.x_axis0 = x_axis
@@ -533,7 +535,7 @@ class LasingReconstructionImagesBase:
                 break
             if subtract_absolute:
                 img = img - subtract_absolute
-            img = prepare_raw_image(img, subtract_quantile, max_quantile)
+            img = prepare_raw_image(img, subtract_quantile, max_quantile, max_absolute)
             image = image_analysis.Image(img, self.x_axis, y_axis, self.total_charge, self.energy_eV)
             image = image.cut_voids(xcutoff, ycutoff)
             self.images_xy.append(image)
@@ -766,11 +768,13 @@ def all_slice_to_mean_slice_dict(all_slice_dict, cut_extremes=None):
                 }
     return mean_slice_dict
 
-def prepare_raw_image(img, subtract_quantile, max_quantile):
+def prepare_raw_image(img, subtract_quantile, max_quantile, max_absolute):
     if subtract_quantile is not None:
         img = img - np.quantile(img, subtract_quantile)
     if max_quantile is not None:
         img = img.clip(0, np.quantile(img, max_quantile))
+    if max_absolute is not None:
+        img = img.clip(0, max_absolute)
     img = img.clip(0, None)
     return img
 

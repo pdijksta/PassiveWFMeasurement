@@ -353,6 +353,7 @@ def get_default_lasing_options():
             'subtract_quantile': 0.1,
             'subtract_absolute': None,
             'max_quantile': None,
+            'max_absolute': None,
             'slice_factor': 3,
             'current_cutoff': 0.5e3,
             'x_conversion': 'wake',

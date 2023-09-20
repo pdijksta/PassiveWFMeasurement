@@ -37,6 +37,8 @@ class dummy_plot:
     set_xlim = dummy
     set_yticklabels = dummy
     set_yticks = dummy
+    set_xticklabels = dummy
+    set_xticks = dummy
     imshow = dummy
     fill_between = dummy
     get_ylim = get_xlim

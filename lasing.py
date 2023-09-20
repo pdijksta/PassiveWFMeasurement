@@ -146,7 +146,6 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
             enforce_median_rms = False
             enforce_rms = las_rec_images['Lasing Off'].median_rms
 
-
         rec_obj = LasingReconstructionImagesLinear(title, data_dict, lasing_options, ref_y=ref_y, ref_slice_dict=ref_slice_dict)
         rec_obj.add_dict(data_dict)
         #rec_obj.process_data(ref_slice_dict=ref_slice_dict)

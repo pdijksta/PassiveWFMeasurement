@@ -137,21 +137,23 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
         if main_ctr == 0:
             ref_y = None
             ref_slice_dict = None
-            enforce_median_rms = True
+            enforce_median_rms = lasing_options['adjust_linear_factor']
             enforce_rms = None
         else:
             ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
-            #import pdb; pdb.set_trace()
             ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
             enforce_median_rms = False
-            enforce_rms = las_rec_images['Lasing Off'].median_rms
+            if lasing_options['adjust_linear_factor']:
+                enforce_rms = las_rec_images['Lasing Off'].median_rms
+            else:
+                enforce_rms = None
 
         rec_obj = LasingReconstructionImagesLinear(title, data_dict, lasing_options, ref_y=ref_y, ref_slice_dict=ref_slice_dict)
         rec_obj.add_dict(data_dict)
-        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         rec_obj.convert_y()
         rec_obj.convert_x_linear(enforce_median_rms=enforce_median_rms, enforce_rms=enforce_rms, min_factor=min_factor, max_factor=max_factor)
 
+        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         #all_rms = [x.rms() for x in rec_obj.profiles]
         #all_mean = [x.mean() for x in rec_obj.profiles]
         #if enforce_rms is None:
@@ -580,7 +582,7 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
                 new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=current_cutoff)
                 new_profile = new_img.get_profile()
                 current = np.abs(new_profile.get_current())
-                new_profile.aggressive_cutoff(current_cutoff/current.max())
+                new_profile.cutoff(current_cutoff/current.max())
                 new_profile.crop()
                 self.images_tE.append(new_img)
                 self.profiles.append(new_profile)

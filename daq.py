@@ -13,12 +13,15 @@ from epics import caget, caput
 from . import config
 
 def get_readables(beamline):
-    return [
+    outp = [
             'bs://image',
             'bs://x_axis',
             'bs://y_axis',
             config.beamline_chargepv[beamline],
             ]
+    if beamline in config.beamline_bpm_pvs:
+        outp.extend(config.beamline_bpm_pvs[beamline])
+    return outp
 
 def pyscan_result_to_dict(readables, result, scrap_bs=False):
     """

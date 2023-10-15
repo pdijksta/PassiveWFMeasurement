@@ -91,7 +91,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
         tracker1 = tracker2 = tracker
     trackers = [tracker1, tracker2]
 
-    for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+    for main_ctr, (data_dict, title, _tracker) in enumerate([(lasing_off_dict, 'Lasing Off', tracker1), (lasing_on_dict, 'Lasing On', tracker2)]):
         if main_ctr == 0:
             ref_y = None
         else:
@@ -103,8 +103,12 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             profile = None
             ref_slice_dict = None
 
-        rec_obj = LasingReconstructionImages(title, trackers[main_ctr], lasing_options, profile=profile, ref_y=ref_y)
-        rec_obj.add_dict(data_dict)
+        rec_obj = LasingReconstructionImages(title, _tracker, lasing_options, profile=profile, ref_y=ref_y)
+        if trackers[main_ctr].structure.dim == 'X':
+            screen_centerX, screen_centerY = _tracker.calib.screen_center, 0
+        elif trackers[main_ctr].structure.dim == 'Y':
+            screen_centerX, screen_centerY = 0, trackers[main_ctr].calib.screen_center
+        rec_obj.add_dict(data_dict, screen_centerX=screen_centerX, screen_centerY=screen_centerY)
         rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         las_rec_images[title] = rec_obj
 
@@ -133,22 +137,23 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
         if main_ctr == 0:
             ref_y = None
             ref_slice_dict = None
-            enforce_median_rms = True
+            enforce_median_rms = lasing_options['adjust_linear_factor']
             enforce_rms = None
         else:
             ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
-            #import pdb; pdb.set_trace()
             ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
             enforce_median_rms = False
-            enforce_rms = las_rec_images['Lasing Off'].median_rms
-
+            if lasing_options['adjust_linear_factor']:
+                enforce_rms = las_rec_images['Lasing Off'].median_rms
+            else:
+                enforce_rms = None
 
         rec_obj = LasingReconstructionImagesLinear(title, data_dict, lasing_options, ref_y=ref_y, ref_slice_dict=ref_slice_dict)
         rec_obj.add_dict(data_dict)
-        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         rec_obj.convert_y()
         rec_obj.convert_x_linear(enforce_median_rms=enforce_median_rms, enforce_rms=enforce_rms, min_factor=min_factor, max_factor=max_factor)
 
+        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
         #all_rms = [x.rms() for x in rec_obj.profiles]
         #all_mean = [x.mean() for x in rec_obj.profiles]
         #if enforce_rms is None:
@@ -266,6 +271,7 @@ class LasingReconstruction:
                 'mean_slice_dict': self.mean_slice_dict,
                 'mean_current': self.mean_current,
                 'linear_conversion': int(self.lasing_options['x_conversion'] == 'linear'),
+                'dispersion': np.array([self.images_off.dispersion, self.images_on.dispersion]),
                 'lasing_options': self.lasing_options,
                 }
         for key, obj in [('images_on', self.images_on), ('images_off', self.images_off)]:
@@ -273,15 +279,17 @@ class LasingReconstruction:
             d['raw_images'] = obj.images_xy
             d['tE_images'] = obj.images_tE
             d['current_profile'] = obj.profile
-            if hasattr(obj, 'beam_positions'):
+            if hasattr(obj, 'beam_positions') and obj.beam_positions is not None:
+                d['distances'] = obj.tracker.structure_gap/2 - np.abs(obj.beam_positions)
                 d['beam_positions'] = obj.beam_positions
                 d['delta_distances'] = obj.delta_distances
                 d['meas_screen_centroids'] = obj.meas_screen_centroids
             else:
+                d['distances'] = None
                 d['beam_positions'] = None
                 d['delta_distances'] = None
                 d['meas_screen_centroids'] = None
-            if hasattr(obj, 'linear_factors'):
+            if hasattr(obj, 'linear_factors') and obj.linear_factors is not None:
                 d['linear_factors'] = obj.linear_factors
             else:
                 d['linear_factors'] = None
@@ -297,7 +305,7 @@ class LasingReconstruction:
         y_axis = self.images_on.y_axis
         charge = tracker.total_charge
         ref_profile = self.images_on.profile
-        raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'])
+        raw_image = prepare_raw_image(raw_image, self.lasing_options['subtract_quantile'], self.lasing_options['max_quantile'], self.lasing_options['max_absolute'])
         image_xy = image_analysis.Image(raw_image, x_axis, y_axis, charge)
         image_E, _ = self.images_on.convert_y_single(image_xy)
 
@@ -346,12 +354,12 @@ class LasingReconstructionImagesBase:
         self.ref_slice_dict = ref_slice_dict
         self.lasing_options = lasing_options
 
-    def add_dict(self, data_dict, max_index=None):
+    def add_dict(self, data_dict, max_index=None, screen_centerX=0, screen_centerY=0):
         images = data_dict['pyscan_result']['image'].astype(np.float64)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.data['meta_data']['streaking_direction'] == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, screen_centerX, screen_centerY, max_index)
 
     @property
     def ref_slice_dict(self):
@@ -512,6 +520,7 @@ class LasingReconstructionImagesBase:
 
         subtract_quantile = self.lasing_options['subtract_quantile']
         subtract_absolute = self.lasing_options['subtract_absolute']
+        max_absolute = self.lasing_options['max_absolute']
         max_quantile = self.lasing_options['max_quantile']
         xcutoff, ycutoff = self.lasing_options['void_cutoff']
         self.x_axis0 = x_axis
@@ -527,7 +536,7 @@ class LasingReconstructionImagesBase:
                 break
             if subtract_absolute:
                 img = img - subtract_absolute
-            img = prepare_raw_image(img, subtract_quantile, max_quantile)
+            img = prepare_raw_image(img, subtract_quantile, max_quantile, max_absolute)
             image = image_analysis.Image(img, self.x_axis, y_axis, self.total_charge, self.energy_eV)
             image = image.cut_voids(xcutoff, ycutoff)
             self.images_xy.append(image)
@@ -573,7 +582,7 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
                 new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=current_cutoff)
                 new_profile = new_img.get_profile()
                 current = np.abs(new_profile.get_current())
-                new_profile.aggressive_cutoff(current_cutoff/current.max())
+                new_profile.cutoff(current_cutoff/current.max())
                 new_profile.crop()
                 self.images_tE.append(new_img)
                 self.profiles.append(new_profile)
@@ -614,12 +623,12 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
         data_dict = h5_storage.loadH5Recursive(filename)
         self.add_dict(data_dict)
 
-    def add_dict(self, data_dict, max_index=None):
+    def add_dict(self, data_dict, max_index=None, screen_centerX=0, screen_centerY=0):
         images = data_dict['pyscan_result']['image'].astype(np.float64)
         x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64)
         y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64)
         rotate = self.tracker.structure.dim == 'Y'
-        self.add_images(images, x_axis, y_axis, rotate, 0, 0, max_index)
+        self.add_images(images, x_axis, y_axis, rotate, screen_centerX, screen_centerY, max_index)
 
     def get_current_profiles(self):
         self.profiles = []
@@ -760,11 +769,13 @@ def all_slice_to_mean_slice_dict(all_slice_dict, cut_extremes=None):
                 }
     return mean_slice_dict
 
-def prepare_raw_image(img, subtract_quantile, max_quantile):
+def prepare_raw_image(img, subtract_quantile, max_quantile, max_absolute):
     if subtract_quantile is not None:
         img = img - np.quantile(img, subtract_quantile)
     if max_quantile is not None:
         img = img.clip(0, np.quantile(img, max_quantile))
+    if max_absolute is not None:
+        img = img.clip(0, max_absolute)
     img = img.clip(0, None)
     return img
 

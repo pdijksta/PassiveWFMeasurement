@@ -329,6 +329,7 @@ def get_default_beam_spec():
             'nemity': 755e-9,
             'n_mesh': 500,
             'cutoff_sigma': 5,
+            'energy_chirp': 0,
             }.copy()
     return outp
 
@@ -352,15 +353,17 @@ def get_default_lasing_options():
             'subtract_quantile': 0.1,
             'subtract_absolute': None,
             'max_quantile': None,
+            'max_absolute': None,
             'slice_factor': 3,
             'current_cutoff': 0.5e3,
             'x_conversion': 'wake',
             'x_linear_factor': 1,
+            'adjust_linear_factor': False,
             'rms_sigma': 5,
             't_lims': None,
             'ref_t': None,
             'E_lims': None,
-            'slice_method': 'cut',
+            'slice_method': 'full',
             'plot_slice_analysis': False,
             'plot_slice_analysis_save_path': None,
             'adjust_beam_position': True,

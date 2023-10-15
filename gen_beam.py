@@ -128,6 +128,7 @@ class Beam:
             for dim_col, index_col in self.dim_index.items():
                 value = matrix6D[lat_dim_index[dim_row], lat_dim_index[dim_col]]
                 matrix[index_row,index_col] = value
+        # We need to ignore time because we want to keep the time frame of reference at the streaker, not at the screen.
         if 't' in self.dim_index and self.ignore_time:
             t_index = self.dim_index['t']
             matrix[t_index,:] = 0
@@ -259,7 +260,10 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         arr[n_dim] = gen_beamT(n_particles, beamProfile)
         n_dim += 1
     if 'delta' in dimensions:
-        arr[n_dim] = 0
+        if specifications['energy_chirp']:
+            arr[n_dim] = arr[dim_index['t']]*specifications['energy_chirp']/energy_eV
+        else:
+            arr[n_dim] = 0
         dim_index['delta'] = n_dim
         n_dim += 1
 

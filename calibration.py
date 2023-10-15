@@ -480,7 +480,7 @@ class StructureCalibrator(LogMsgBase):
         delta_structure0_range = self.structure_calib_options['delta_structure0_range']
         delta_gap_scan_range = np.linspace(delta_gap_range.min() - delta_structure0_range.min()*2, delta_gap_range.max() + delta_structure0_range.max()*2, self.structure_calib_options['delta_gap_scan_n'])
         gap0 = self.tracker.structure_gap
-        structure_position0 = self.tracker.structure_position0
+        structure_position0 = self.tracker.calib.structure_position0
         old_calibration = self.tracker.calib
 
         distance_rms_arr = np.zeros([n_positions, len(delta_gap_scan_range), 2])
@@ -627,6 +627,8 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
     structure_position0 = tracker.calib.structure_position0
     new_structure_center0 = structure_position0 + delta_position
     new_calib = StructureCalibration(tracker.structure_name, screen_center, delta_gap, new_structure_center0)
+
+    gauss_dict = tracker.reconstruct_profile_Gauss_forced(tracker.structure_gap, tracker.beam_position+delta_position, meas_screen_raw)
     outp = {
             'calib': new_calib,
             'old_calib': tracker.calib,
@@ -636,6 +638,7 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
             'find_beam_position_result': result_dict,
             'backward_dict': back_dict,
             'forward_dict': forward_dict,
+            'gauss_dict': gauss_dict,
             }
     if output_beam:
         outp['beam'] = beam
@@ -653,10 +656,13 @@ class CentroidCalibrator(LogMsgBase):
         self.current_calib = calib
 
     def forward_propagate_all(self, beamProfile):
+        return self.forward_propagate_any(beamProfile, self.data.positions)
+
+    def forward_propagate_any(self, beamProfile, positions):
         forward_dicts = []
-        centroids = np.zeros(len(self.data.positions))
+        centroids = np.zeros(len(positions))
         beam_sizes = centroids.copy()
-        for ctr, position in enumerate(self.data.positions):
+        for ctr, position in enumerate(positions):
             beam = self.tracker.gen_beam(beamProfile)
             _d = self.current_calib.gap_and_beam_position_from_gap0(self.data.structure_gap, position)
             gap = _d['gap']
@@ -671,6 +677,7 @@ class CentroidCalibrator(LogMsgBase):
                 'rms': beam_sizes,
                 'calib': self.current_calib,
                 'profile': beamProfile,
+                'positions': positions,
                 }
 
     def reconstruct_closest(self, **kwargs):
@@ -683,10 +690,4 @@ class CentroidCalibrator(LogMsgBase):
         meas_screen = median_image.get_screen_dist(self.data.streaking_direction)
         _d = pos_dicts[index_min]
         return self.tracker.reconstruct_profile_Gauss_forced(_d['gap'], _d['beam_position'], meas_screen, **kwargs)
-
-
-
-    #def current_rec_closest(self, calib):
-    #    distances = [calib.gap_and_beam_position_from_gap0(self.data.structure_gap,
-
 

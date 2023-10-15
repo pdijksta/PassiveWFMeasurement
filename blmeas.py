@@ -44,12 +44,12 @@ def get_average_blmeas_profile(images, x_axis, y_axis, calibration, centroids, p
 
     # Find out where is the head and the tail.
     # In our conventios, the head is at negative time
-    if len(phases) > 1:
+    if hasattr(phases, '__len__') and len(phases) > 1:
         dy_dphase = np.polyfit(phases, centroids, 1)[0]
         sign_dy_dt = np.sign(dy_dphase)
     else:
         print('Warning! Time orientation of bunch length measurement cannot be determined!')
-        sign_dy_dt = 1
+        sign_dy_dt = -1
 
     reverse_current = sign_dy_dt == -1
 

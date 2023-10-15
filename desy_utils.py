@@ -212,19 +212,35 @@ class Xfel_data(logMsg.LogMsgBase):
 
     def calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
         half_factor = 4
-        smoothen = 20e-6
         if profile is None:
             profile = self.profile
         if profile is None:
             profile = backup_profile
         # This function will not work if the streaking is on the other side, for example if the R34 changes sign
         tracker = self.tracker
+        smoothen = tracker.forward_options['screen_smoothen']
         axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
         trans_dist = self.get_median_sd()
         delta_x = screen_calibration.calibrate_screen0(trans_dist, profile, tracker, smoothen, half_factor, sp)
         self.change_screen0(delta_x)
         self.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3))
         return delta_x
+
+    def new_calibrate_screen0(self, sp=None, profile=None, backup_profile=None):
+        if profile is None:
+            profile = self.profile
+        if profile is None:
+            profile = backup_profile
+        # This function will not work if the streaking is on the other side, for example if the R34 changes sign
+        tracker = self.tracker
+        smoothen = tracker.forward_options['screen_smoothen']
+        axis, proj, _, index = data_loader.screen_data_to_median(self.data['pyscan_result'], self.tracker.structure.dim)
+        trans_dist = self.get_median_sd()
+        delta_x = screen_calibration.new_calibrate_screen0(trans_dist, profile, tracker, smoothen, sp=sp)
+        self.change_screen0(delta_x)
+        self.logMsg('Shifted axis by %.3f mm' % (delta_x*1e3))
+        return delta_x
+
 
     def change_screen0(self, delta_x):
         self.data['pyscan_result']['%s_axis_m' % self.tracker.structure.dim.lower()] += delta_x

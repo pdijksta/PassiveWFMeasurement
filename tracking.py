@@ -271,10 +271,13 @@ class Tracker(LogMsgBase):
 
 
         wake_time = beam.beamProfile.time
-        energy_eV = beam.energy_eV
+        if 'delta' in beam.dim_index:
+            energy_eV = beam.energy_eV*(1+beam['delta'])
+        else:
+            energy_eV = beam.energy_eV
+        mean_energy = beam.energy_eV
         wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
-        delta_xp_dipole = wake_dict_dipole['wake_potential']/energy_eV
-        delta_xp_coords_dip = np.interp(beam['t'], wake_time, delta_xp_dipole)
+        delta_xp_coords_dip = np.interp(beam['t'], wake_time, wake_dict_dipole['wake_potential'])/energy_eV
         quad_wake = self.forward_options['quad_wake']
         long_wake = self.forward_options['long_wake']
         long_wake_correction = self.forward_options['long_wake_correction']
@@ -284,8 +287,7 @@ class Tracker(LogMsgBase):
         beam_before = None
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
-            eff_quad_pot = wake_dict_quadrupole['wake_potential']/energy_eV
-            eff_quad_pot_interp = np.interp(beam['t'], wake_time, eff_quad_pot)
+            eff_quad_pot_interp = np.interp(beam['t'], wake_time, wake_dict_quadrupole['wake_potential'])/energy_eV
             k1 = -eff_quad_pot_interp/self.structure.Ls
             quad_matrix = lattice.transferMatrixQuad66_arr(self.structure.Ls, k1) # 6x6xN matrix
 
@@ -312,13 +314,13 @@ class Tracker(LogMsgBase):
         corr1_interp = corr2_interp = 0
         if long_wake:
             wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
-            delta_p = wake_dict_long['wake_potential']/energy_eV
+            delta_p = wake_dict_long['wake_potential']/mean_energy
             delta_p_interp = np.interp(beam['t'], wake_time, delta_p)
             if long_wake_correction:
                 wake_dict_c1 = self.calc_wake(beam.beamProfile, 'LongitudinalC1')
                 wake_dict_c2 = self.calc_wake(beam.beamProfile, 'LongitudinalC2')
-                corr1 = wake_dict_c1['wake_potential']/energy_eV
-                corr2 = wake_dict_c2['wake_potential']/energy_eV
+                corr1 = wake_dict_c1['wake_potential']/mean_energy
+                corr2 = wake_dict_c2['wake_potential']/mean_energy
                 delta_dim = beam[dim] - beam[dim].mean()
                 other_dim = 'x' if dim == 'y' else 'y'
                 delta_other = beam[other_dim] - beam[other_dim].mean()
@@ -362,7 +364,7 @@ class Tracker(LogMsgBase):
 
             sp_wake = subplot(sp_ctr, title='Wake', xlabel='t (fs)', ylabel='Wake effect [mrad]')
             sp_ctr += 1
-            sp_wake.plot(wake_time*1e15, delta_xp_dipole*1e3)
+            sp_wake.plot(wake_time*1e15, wake_dict_dipole['wake_potential']/mean_energy*1e3)
 
             if fig_number is not None:
                 ms.plt.figure(fig_number)
@@ -769,6 +771,8 @@ class Tracker(LogMsgBase):
                 'sim_screen': sim_screens[index],
                 'beam_position': beam_position,
                 'beam_positions': np.array(beam_position_list),
+                'centroid_meas': centroid_meas,
+                'rms_meas': rms_meas,
                 'delta_position': delta_position,
                 'gap': self.structure_gap,
                 'structure_name': self.structure_name,

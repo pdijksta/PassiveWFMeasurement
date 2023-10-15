@@ -13,12 +13,15 @@ from epics import caget, caput
 from . import config
 
 def get_readables(beamline):
-    return [
+    outp = [
             'bs://image',
             'bs://x_axis',
             'bs://y_axis',
             config.beamline_chargepv[beamline],
             ]
+    if beamline in config.beamline_bpm_pvs:
+        outp.extend(config.beamline_bpm_pvs[beamline])
+    return outp
 
 def pyscan_result_to_dict(readables, result, scrap_bs=False):
     """
@@ -102,7 +105,9 @@ def get_images(screen, n_images, beamline, dry_run=None):
         shape = image['shape']
         bytes = base64.b64decode(image['bytes'].encode())
         background = np.array(bytes, dtype=dtype).reshape(shape)
-    except:
+    except Exception as e:
+        print(e)
+        print('Error taking background')
         background = 0
 
     # Configure bsread

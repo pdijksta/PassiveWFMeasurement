@@ -37,6 +37,8 @@ class dummy_plot:
     set_xlim = dummy
     set_yticklabels = dummy
     set_yticks = dummy
+    set_xticklabels = dummy
+    set_xticks = dummy
     imshow = dummy
     fill_between = dummy
     get_ylim = get_xlim
@@ -443,7 +445,7 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
             (sp_current, 'f) Current profile', 't (fs)', 'I (kA)'),
             (sp_lasing_loss, 'g) Power from $\Delta E$', 't (fs)', '$P_\Delta$ (GW)'),
             (sp_lasing_spread, 'h) Power from $\sigma_E$', 't (fs)', '$P_\sigma$ (GW)'),
-            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$\Delta$d ($\mu$m)'),
+            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', 'd ($\mu$m)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -625,7 +627,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 (sp_slice_mean, mean_mean, mean_std),
                 (sp_slice_sigma, sigma_mean, sigma_std),
                 ]:
-            sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=err/1e6, color=fill_color2, zorder=100, lw=linewidth)
+            #sp.errorbar(xx_plot[0]*1e15, mean/1e6, yerr=err/1e6, color=fill_color2, zorder=100, lw=linewidth)
+            sp.plot(xx_plot[0]*1e15, mean/1e6, color=fill_color2, zorder=100, lw=linewidth)
 
         current_mean = mean_slice_dict['current']['mean']
         current_std = mean_slice_dict['current']['std']
@@ -662,8 +665,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         #yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
         #yy_err = np.nanstd(lasing_dict['all_'+key], axis=0)/1e9 / np.sqrt(n_shots)
         yy_plot = lasing_dict[key]['power']/1e9
-        yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots2)
-        sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
+        #yy_err = lasing_dict[key]['power_err']/1e9 / np.sqrt(n_shots2)
+        #sp.errorbar(xx_plot, yy_plot, yerr=yy_err, color=dark_green, zorder=100, lw=linewidth)
+        sp.plot(xx_plot, yy_plot, color=dark_green, zorder=100, lw=linewidth)
     #for sp in sp_lasing_loss, sp_lasing_spread:
     #    ylim = sp.get_ylim()
     #    sp.set_ylim([max(-10, ylim[0]), ylim[1]])
@@ -675,10 +679,10 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 ('Lasing Off', 'images_off', 'tab:blue'),
                 ('Lasing On', 'images_on', 'tab:red'),
                 ]:
-            delta_distance = result_dict[key]['delta_distances']
+            distances = result_dict[key]['distances']
             mean_x = result_dict[key]['meas_screen_centroids']
-            if delta_distance is not None:
-                sp_orbit.plot(mean_x*1e3, delta_distance*1e6, label=label, color=color, ls='None', marker='.')
+            if distances is not None:
+                sp_orbit.plot(mean_x*1e3, distances*1e6, label=label, color=color, ls='None', marker='.')
                 sp_orbit_legend = True
     elif result_dict['lasing_options']['x_conversion'] == 'linear':
         for label, key, color in [
@@ -688,7 +692,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             sp_orbit.set_title('Linear calibration')
             sp_orbit.set_xlabel('Image index')
             sp_orbit.set_ylabel('Calibration ($\mu$m/fs)')
-            if 'linear_factors' in result_dict[key]:
+            if 'linear_factors' in result_dict[key] and result_dict[key]['linear_factors'] is not None:
                 factors = (1/result_dict[key]['linear_factors'])
 
                 sp_orbit.plot(factors/1e9, label=label, color=color, ls='None', marker='.')
@@ -740,6 +744,12 @@ def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
     back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean', color='red')
     recon_forward_screen = tdc_dict['forward_dict']['screen']
     recon_forward_screen.plot_standard(sp_screen, label='Back and forth', color='red', show_mean=True)
+
+    rec_profile = tdc_dict['gauss_dict']['reconstructed_profile']
+    rec_profile.plot_standard(sp_profile, label='Reconstructed', center='Mean', color='green')
+    rec_screen = tdc_dict['gauss_dict']['reconstructed_screen']
+    rec_screen.plot_standard(sp_screen, label='Reconstructed', show_mean=True, color='green')
+
     sp_profile.legend()
     sp_screen.legend()
     return plot_handles

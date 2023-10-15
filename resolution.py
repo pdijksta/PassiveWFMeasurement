@@ -1,10 +1,13 @@
 import numpy as np
 
-def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False, long_wake=False):
+def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False, long_wake=False, add_chirp=0):
     #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
     beam_spec = tracker.beam_spec.copy()
     beam_spec.update(tracker.beam_optics)
-    beam = tracker.gen_beam(beamprofile, other_dim=use_other_dim)
+    if add_chirp:
+        beam_spec['energy_chirp'] = add_chirp
+    tracker.beam_spec = beam_spec
+    beam = tracker.gen_beam(beamprofile, other_dim=use_other_dim, delta=(long_wake or add_chirp))
     forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
     beam = forward_dict['beam_at_screen']
     r12 = tracker.r12
@@ -16,7 +19,7 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
     dx_dt_t = wf_t[:-1]
     beam_t = beam['t']
     beam_x = beam[dim] + np.random.randn(beam_t.size)*camera_res
-    hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam_x, bins=bins)
+    hist, xedges, yedges = np.histogram2d(beam_t, beam_x, bins=bins)
     t_axis = (xedges[1:] + xedges[:-1])/2.
     x_axis = (yedges[1:] + yedges[:-1])/2.
     x_axis2 = np.ones_like(hist)*x_axis
@@ -45,7 +48,7 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
     if use_other_dim:
         other_dim = 'x' if dim == 'y' else 'y'
         beam_y = beam[other_dim] + np.random.randn(beam_t.size)*camera_res
-        hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam_y, bins=bins)
+        hist, xedges, yedges = np.histogram2d(beam_t, beam_y, bins=bins)
         current_t = hist.sum(axis=1)
         y_axis = (yedges[1:] + yedges[:-1])/2.
         y_axis2 = np.ones_like(hist)*y_axis
@@ -55,6 +58,23 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
         beamsize_y = np.sqrt(beamsize_ysq)
         output['other_beamsize'] = beamsize_y
         output['other_center'] = mean_y
+
+        hist, xedges, yedges = np.histogram2d(beam_x, beam_y, bins=bins)
+        current_t = hist.sum(axis=1)
+        y_axis = (yedges[1:] + yedges[:-1])/2.
+        y_axis2 = np.ones_like(hist)*y_axis
+        mean_y = np.sum(hist*y_axis, axis=1) / current_t
+        mean_y2 = np.ones_like(hist)*mean_y[:,np.newaxis]
+        beamsize_ysq = np.sum(hist*(y_axis2 - mean_y2)**2, axis=1) / current_t
+        beamsize_y = np.sqrt(beamsize_ysq)
+        x_axis2 = (xedges[1:] + xedges[:-1])/2
+        if np.any(np.diff(wf_x) < 0):
+            output['other_time2'] = np.interp(x_axis2, wf_x[::-1], wf_t[::-1])[::-1]
+            output['other_beamsize2'] = beamsize_y[::-1]
+        else:
+            output['other_time2'] = np.interp(x_axis2, wf_x, wf_t)
+            output['other_beamsize2'] = beamsize_y
+
     if long_wake:
         hist, xedges, yedges = np.histogram2d(beam_t-beam_t.mean(), beam['delta'], bins=bins)
         y_axis = (yedges[1:] + yedges[:-1])/2.
@@ -66,8 +86,6 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
         beamsize_y = np.sqrt(beamsize_ysq)
         output['delta_beamsize'] = beamsize_y
         output['delta_center'] = mean_y
-
-
     return output
 
 def plot_resolution(res_dict, sp_current, sp_res, max_res=20e-15):

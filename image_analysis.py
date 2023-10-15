@@ -15,7 +15,7 @@ class Image(LogMsgBase):
             raise ValueError('Size of x_axis is %i' % x_axis.size)
 
         if image.shape[0] != y_axis.size or image.shape[1] != x_axis.size:
-            raise ValueError('Wrong shapes!', image.shape, x_axis.shape, y_axis.shape)
+            raise ValueError('Wrong shapes!', image.shape, y_axis.size, x_axis.size)
 
         if x_axis[1] < x_axis[0]:
             x_axis = x_axis[::-1]
@@ -207,10 +207,10 @@ class Image(LogMsgBase):
 
             mean_full, rms_full = calc_rms(y_axis, intensity)
             prof = beam_profile.AnyProfile(y_axis, intensity)
-            prof.aggressive_cutoff(0.02)
-            prof.crop()
+            prof.aggressive_cutoff(0.02, center='Mean')
+            status = prof.crop(quiet=True)
 
-            if len(prof) < 3:
+            if (not status) or (len(prof) < 3):
                 slice_cutoff_mean.append(0)
                 slice_cutoff_rms.append(0)
                 slice_cutoff_lim1.append(0)

@@ -1,11 +1,13 @@
 import itertools
 import numpy as np
+
 from . import gaussfit
 from . import lattice
 from . import beam_profile
 from . import h5_storage
 from . import config
 from . import image_analysis
+from . import myplotstyle as ms
 
 default_cutoff = config.get_default_forward_options()['screen_cutoff']
 
@@ -207,6 +209,42 @@ class DataLoaderBase:
             self.sd_dict[dimension]['rms'].append(sd.rms())
         self.sd_dict[dimension]['mean'] = np.array(self.sd_dict[dimension]['mean'])
         self.sd_dict[dimension]['rms'] = np.array(self.sd_dict[dimension]['rms'])
+
+    def plot_all(self, ny, nx, title=None, only_one_fig=False, figsize=(12,10), plot_kwargs={}, subplots_adjust_kwargs={}):
+        fig_ctr = 0
+        sp_ctr = np.inf
+        figs = []
+        all_sps = []
+        for n_image, image in enumerate(self.images):
+            if sp_ctr > nx*ny:
+                if fig_ctr > 0 and only_one_fig:
+                    break
+                fig = ms.figure(title, figsize=figsize)
+                if subplots_adjust_kwargs:
+                    fig.subplots_adjust(**subplots_adjust_kwargs)
+                figs.append(fig)
+                fig_ctr += 1
+                subplot = ms.subplot_factory(ny, nx, False)
+                sp_ctr = 1
+                all_sps.append([])
+            sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel='x (mm)', ylabel='y (mm)')
+            sp_ctr += 1
+            image.plot_img_and_proj(sp, **plot_kwargs)
+            all_sps[fig_ctr-1].append(sp)
+
+        return figs, all_sps
+
+
+class DataLoaderSimple(DataLoaderBase):
+    def __init__(self, image_data, x_axis_m, y_axis_m, charge, energy_eV, data_loader_options):
+        DataLoaderBase.__init__(self)
+        self.image_data = image_data
+        self.x_axis_m = x_axis_m
+        self.y_axis_m = y_axis_m
+        self.charge = charge
+        self.energy_eV = energy_eV
+        self.data_loader_options = data_loader_options
+
 
 class DataLoaderSinglePosition(DataLoaderBase):
     def __init__(self, structure, structure_gap, structure_position, images, x_axis_m, y_axis_m, lat, charge, energy_eV, screen_name, data_loader_options):

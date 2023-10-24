@@ -555,7 +555,7 @@ def plot_simple_daq(data_dict, dim):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=False):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True):
 
     linewidth = 0.8
     dark_blue  = "#185c8c"
@@ -700,6 +700,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
 
     if sp_orbit_legend:
         sp_orbit.legend()
+    outp['current_center_plot'] = current_center_plot
     return outp
 
 def tdc_calib_figure(figsize=None):
@@ -733,7 +734,7 @@ def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
     blmeas_profile = tdc_dict['blmeas_profile']
     blmeas_profile.plot_standard(sp_profile, label='Measured', center='Mean')
 
-    image.plot_img_and_proj(sp_image, plot_gauss=False)
+    image.plot_img_and_proj(sp_image, plot_gauss=False, sqrt=True)
     raw_screen = tdc_dict['meas_screen_raw']
     raw_screen.plot_standard(sp_screen, label='Measured', color='black', show_mean=True)
 

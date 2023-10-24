@@ -46,7 +46,7 @@ def get_median(projx, method, output):
 def screen_data_to_median(pyscan_result, dim, output='data'):
     """
     dim: 'X' or 'Y'
-    Returns: x_axis, proj, charge
+    Returns: x_axis, proj, charge, index
     """
     if dim == 'X':
         x_axis = pyscan_result['x_axis_m'].astype(np.float64)

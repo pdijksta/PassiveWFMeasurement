@@ -261,6 +261,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             ls['E_lims'] = [0, 0]
         self.EnergyLimit1.setText('%.4f' % (ls['E_lims'][0]*1e-6))
         self.EnergyLimit2.setText('%.4f' % (ls['E_lims'][1]*1e-6))
+        self.VoidCutoffX.setText('%.4f' % ls['void_cutoff'][0])
+        self.VoidCutoffY.setText('%.4f' % ls['void_cutoff'][1])
 
         self.DeltaUndulatorK.setText('%.4f' % config.default_deltaK)
 
@@ -536,6 +538,15 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             outp['E_lims'] = np.array([w2f(self.EnergyLimit1)*1e6, w2f(self.EnergyLimit2)*1e6])
         else:
             outp['E_lims'] = None
+        outp['void_cutoff'] = []
+        if self.VoidCutoffXCheck.isChecked():
+            outp['void_cutoff'].append(w2f(self.VoidCutoffX))
+        else:
+            outp['void_cutoff'].append(None)
+        if self.VoidCutoffYCheck.isChecked():
+            outp['void_cutoff'].append(w2f(self.VoidCutoffY))
+        else:
+            outp['void_cutoff'].append(None)
         outp['plot_slice_analysis'] = self.PlotSliceAnalysisCheck.isChecked()
         outp['plot_slice_analysis_save_path'] = self.save_dir+'/slice_analysis'
         return outp

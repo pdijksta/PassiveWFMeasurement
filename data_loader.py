@@ -171,7 +171,7 @@ class DataLoaderBase:
             for image in images:
                 np.clip(image - np.quantile(image, subtract_quantile), 0, None, out=image)
 
-        if void_cutoff is not None:
+        if void_cutoff is not None and any(void_cutoff):
             image_sum = images.sum(axis=0)
             profX = beam_profile.AnyProfile(x_axis_m, np.sum(image_sum, axis=0))
             profX.aggressive_cutoff(void_cutoff[0])

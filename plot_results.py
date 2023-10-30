@@ -510,7 +510,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
 
     return gauss_dict
 
-def plot_simple_daq(data_dict, dim):
+def plot_simple_daq(data_dict, dim, **plot_kwargs):
     images = data_dict['pyscan_result']['image'].squeeze()
     x_axis = data_dict['pyscan_result']['x_axis_m'].astype(np.float64).squeeze()
     y_axis = data_dict['pyscan_result']['y_axis_m'].astype(np.float64).squeeze()
@@ -539,12 +539,12 @@ def plot_simple_daq(data_dict, dim):
     sp_ctr = 1
     sp_img = subplot(sp_ctr, title='Median image', xlabel=xlabel, ylabel=ylabel)
     sp_ctr += 1
-
     sp_proj = subplot(sp_ctr, title='Projections', xlabel=xlabel, ylabel='Intensity (arb. units)')
     sp_ctr += 1
 
-
-    image.plot_img_and_proj(sp_img)
+    if 'sqrt' not in plot_kwargs and 'log' not in plot_kwargs:
+        plot_kwargs['sqrt'] = True
+    image.plot_img_and_proj(sp_img, **plot_kwargs)
 
     for index in range(len(proj)):
         if index == median_index:

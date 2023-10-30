@@ -549,6 +549,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
             outp['void_cutoff'].append(None)
         outp['plot_slice_analysis'] = self.PlotSliceAnalysisCheck.isChecked()
         outp['plot_slice_analysis_save_path'] = self.save_dir+'/slice_analysis'
+        outp['slice_method'] = self.SliceAnalysisMethod.currentText()
         return outp
 
     def reconstruct_current(self):

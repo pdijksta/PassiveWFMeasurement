@@ -151,7 +151,42 @@ def load_avg_blmeas(file_or_dict):
     else:
         return load_avg_blmeas_new(blmeas_dict)
 
-def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=True, profile_center_plot='Mean', current_cutoff=0.1e3, data_loader_options=None):
+tds_freq_dict = {
+        'SINDI01': 2.9988e9,
+        'S30CB14': 5.712e9,
+        'SATMA02': 11.9952e9,
+        }
+
+screen_tds_dict = {
+        'SINDI02-DSCR075': 'SINDI01',
+        'SINDI02-DLAC055': 'SINDI01',
+        'S10DI02-DSCR020': 'SINDI01',
+        'S10BD01-DSCR030': 'SINDI01',
+        'SARCL01-DSCR170': 'S30CB14',
+        'SARCL02-DSCR280': 'S30CB14',
+        'SARBD01-DSCR050': 'S30CB14',
+        'SARBD02-DSCR050': 'S30CB14',
+        'SATBD01-DSCR120': 'SATMA02',
+        'SATBD02-DSCR050': 'SATMA02',
+        }
+
+streaking_dict = {
+        'SINDI02-DSCR075': 'Y',
+        'SINDI02-DLAC055': 'Y',
+        'S10DI02-DSCR020': 'Y',
+        'S10BD01-DSCR030': 'Y',
+        'SARCL01-DSCR170': 'Y',
+        'SARCL02-DSCR280': 'Y',
+        'SARBD01-DSCR050': 'Y',
+        'SARBD02-DSCR050': 'Y',
+        'SATBD01-DSCR120': 'X',
+        'SATBD02-DSCR050': 'X',
+        }
+
+
+def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=True, profile_center_plot='Mean', current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None):
+
+    outp = {}
     if type(file_or_dict) is dict:
         all_data = file_or_dict
     else:
@@ -172,49 +207,26 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
 
-    #voltage = abs(processed_data['Voltage axis'][0])
+    voltage = abs(processed_data['Voltage axis'][0])*1e6
     energy_eV = data['Input data']['beamEnergy']*1e6
     #_ii = processed_data['Fit current profile_image_0']
     #_tt = processed_data['Good region time axis_image_0']
     #charge = np.trapz(_ii, _tt)*1e-12
     #print(charge)
 
-    tds_freq_dict = {
-            'SINDI02-DSCR075': 2.9988e9,
-            'SINDI02-DLAC055': 2.9988e9,
-            'S10DI02-DSCR020': 2.9988e9,
-            'S10BD01-DSCR030': 2.9988e9,
-            'SARCL01-DSCR170': 5.712e9,
-            'SARCL02-DSCR280': 5.712e9,
-            'SARBD01-DSCR050': 5.712e9,
-            'SARBD02-DSCR050': 5.712e9,
-            'SATBD01-DSCR120': 11.9952e9,
-            'SATBD02-DSCR050': 11.9952e9,
-            }
-    streaking_dict = {
-            'SINDI02-DSCR075': 'Y',
-            'SINDI02-DLAC055': 'Y',
-            'S10DI02-DSCR020': 'Y',
-            'S10BD01-DSCR030': 'Y',
-            'SARCL01-DSCR170': 'Y',
-            'SARCL02-DSCR280': 'Y',
-            'SARBD01-DSCR050': 'Y',
-            'SARBD02-DSCR050': 'Y',
-            'SATBD01-DSCR120': 'X',
-            'SATBD02-DSCR050': 'X',
-            }
 
-
-    tds_freq = tds_freq_dict[data['Input data']['profileMonitor']]
-    streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
+    tds = screen_tds_dict[data['Input data']['profileMonitor']]
+    tds_freq = tds_freq_dict[tds]
+    if streaking_direction is None:
+        streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
 
     zero_crossings = [1,]
     if 'Beam images 2' in processed_data:
         zero_crossings.append(2)
 
     fig_main = ms.figure('Main result %s' % title, figsize=(16,10))
-    fig_main.subplots_adjust(wspace=0.35, hspace=0.3)
-    subplot_main = ms.subplot_factory(2, 4)
+    fig_main.subplots_adjust(wspace=0.3, hspace=0.3)
+    subplot_main = ms.subplot_factory(3, 3)
     sp_ctr_main = 1
 
     sp_calib = subplot_main(sp_ctr_main, grid=True, title='Calibration phase scan', xlabel='$\Delta$Phase (deg)', ylabel='Screen centroid ($\mu$m)')
@@ -229,10 +241,13 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
     sp_bunch_duration = subplot_main(sp_ctr_main, grid=True, title='Bunch durations', xlabel='$\Delta$Phase (deg)', ylabel='Bunch duration (fs)')
     sp_ctr_main += 1
 
-    sp_average_profile = subplot_main(sp_ctr_main, grid=True, title='Representative profiles', xlabel='t (fs)', ylabel='I (kA)')
+    sp_example_image1 = subplot_main(sp_ctr_main, grid=False, xlabel='x (mm)', ylabel='y (mm)')
     sp_ctr_main += 1
 
-    sp_example_image = subplot_main(sp_ctr_main, grid=False, xlabel='x (mm)', ylabel='y (mm)')
+    sp_example_image2 = subplot_main(sp_ctr_main, grid=False, xlabel='x (mm)', ylabel='y (mm)')
+    sp_ctr_main += 1
+
+    sp_average_profile = subplot_main(sp_ctr_main, grid=True, title='Representative profiles', xlabel='t (fs)', ylabel='I (kA)')
     sp_ctr_main += 1
 
     calibrations = []
@@ -244,16 +259,21 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
     all_fits = []
 
     for zero_crossing in zero_crossings:
+        outp[zero_crossing] = {}
+
         if zero_crossing == 1:
             zc_str = ''
         elif zero_crossing == 2:
             zc_str = ' 2'
-        phases_deg = processed_data['Phase'+zc_str].astype(float)
+        phases_deg = processed_data['Phase'+zc_str].astype(float).copy()
+        outp[zero_crossing]['phases_raw'] = phases_deg.copy()
         #phases_deg0 = phases_deg.copy()
         phase_old = phases_deg[0]
         for n_phase, phase in enumerate(phases_deg[1:], 1):
             if abs(phase - phase_old) > 180:
                 phases_deg[n_phase] += 360
+            phase_old = phases_deg[n_phase]
+        outp[zero_crossing]['phases_deg'] = phases_deg
         #print(phases_deg0)
         #print(phases_deg)
 
@@ -296,7 +316,11 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
             elif streaking_direction == 'X':
                 projections[n_phase] = single_phase_data.image_data.sum(axis=1)
 
-            if zero_crossing == 1 and n_phase == n_phases//2:
+            if n_phase == n_phases//2:
+                if zero_crossing == 1:
+                    sp_example_image = sp_example_image1
+                elif zero_crossing == 2:
+                    sp_example_image = sp_example_image2
                 example_image = single_phase_data.images[n_images//2]
                 gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=True)
                 sp_example_image.set_title('Phase %.2f deg, image %i' % (phase_deg, n_images//2), fontsize=None)
@@ -310,6 +334,9 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
         if error_of_the_average and n_images > 1:
             centroids_err /= np.sqrt(n_images-1)
 
+        outp[zero_crossing]['centroids'] = centroids
+        outp[zero_crossing]['centroids_err'] = centroids_err
+
         phases_rad = phases_deg * np.pi / 180
         all_phases_rad.append(phases_rad)
 
@@ -317,7 +344,7 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
             phases_rad_fit = phases_rad
         if zero_crossing == 2:
             phases_rad_fit = phases_rad - np.pi
-        phases_rad_fit= phases_rad_fit - np.mean(phases_rad_fit)
+        phases_rad_fit = phases_rad_fit - np.mean(phases_rad_fit)
 
         p, cov = np.polyfit(phases_rad_fit, centroids, 1, w=1/centroids_err, cov='unscaled')
         poly = np.poly1d(p)
@@ -330,7 +357,7 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
 
         calibration = p[0] * 2*np.pi*tds_freq
         calibration_error = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
-        label = '%i: %.1f $\pm$ %.2f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
+        label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
 
         calibrations.append(calibration)
         calibrations_err.append(calibration_error)
@@ -338,7 +365,7 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
         if zero_crossing == 2:
             phases_plot = phases_deg - 180
         else:
-            phases_plot = phases_deg
+            phases_plot = phases_deg.copy()
         phases_plot -= phases_plot.mean()
         all_phases_plot.append(phases_plot)
 
@@ -377,7 +404,10 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
 
     ms.plt.figure(fig_main.number)
 
-    voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3), np.zeros(3)
+    voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3)*np.nan, np.zeros(3)*np.nan
+    outp['beamsizes'] = beamsizes
+    outp['voltages'] = voltages
+    outp['calibrations'] = calibrations
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:
@@ -391,6 +421,10 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
         rms = fwhm.copy()
         gauss = fwhm.copy()
 
+        outp[zero_crossing]['fwhm'] = fwhm
+        outp[zero_crossing]['rms'] = rms
+        outp[zero_crossing]['gauss'] = gauss
+
         sp = subplot_main(sp_ctr_main, title='Zero crossing %i, %i profiles' % (zero_crossing, fwhm.size), xlabel='t (fs)', ylabel='I (kA)')
         sp_ctr_main += 1
 
@@ -400,6 +434,7 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
             projections = projections[:,:,::-1]
 
         all_profiles = []
+        outp[zero_crossing]['profiles'] = all_profiles
         for n_phase, n_image in itertools.product(range(projections.shape[0]), range(projections.shape[1])):
             proj = projections[n_phase, n_image]
             profile = beam_profile.BeamProfile(time, proj, energy_eV, charge)
@@ -412,17 +447,20 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
             fwhm[n_phase, n_image] = profile.fwhm()
             rms[n_phase, n_image] = profile.rms()
 
+        outp[zero_crossing]['y_rms'] = rms*np.abs(cal)
+
         mean_profile = get_mean_profile(all_profiles)
+        outp[zero_crossing]['representative_profile'] = mean_profile
         mean_profile.plot_standard(sp_average_profile, label='Zc %i' % zero_crossing, center=profile_center_plot)
 
         phases_plot = all_phases_plot[ctr]
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
         textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
         textstr += 'Bunch durations:'
-        for label, arr, color in [
-                ('rms', rms, 'tab:blue'),
-                ('fwhm', fwhm, 'tab:orange'),
-                ('gauss $\sigma$', gauss, 'tab:green'),
+        for label, label3, arr, color, factor in [
+                ('rms', 'rms', rms, 'tab:blue', 1),
+                ('fwhm/2.355', 'fwhm', fwhm, 'tab:orange', 1/np.sqrt(8*np.log(2))),
+                ('gauss $\sigma$', 'gauss', gauss, 'tab:green', 1),
                 ]:
             label2 = 'Zc %i: %s' % (zero_crossing, label)
             if zero_crossing == 1:
@@ -430,8 +468,8 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
             elif zero_crossing == 2:
                 ls = 'dashed'
                 label2 = None
-            sp_bunch_duration.errorbar(phases_plot, np.mean(arr, axis=1)*1e15, yerr=np.std(arr, axis=1)*1e15, label=label2, color=color, ls=ls, capsize=5)
-            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label, np.mean(arr)*1e15, np.std(arr)*1e15)
+            sp_bunch_duration.errorbar(phases_plot, np.mean(arr, axis=1)*1e15*factor, yerr=np.std(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
+            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.mean(arr)*1e15, np.std(arr)*1e15)
         sp.text(0.05, 0.95, textstr, transform=sp.transAxes, verticalalignment='top', bbox=textbbox)
 
         if len(zero_crossings) == 2:
@@ -458,10 +496,11 @@ def analyze_blmeas(file_or_dict, charge, voltage, force_cal=None, title=None, pl
         else:
             sp_parabola.text(0.02, 0.5, 'Unstreaked beam size not measured', transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
 
-
     sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
     sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()
     if len(zero_crossings) == 2:
         sp_average_profile.legend()
+
+    return outp
 

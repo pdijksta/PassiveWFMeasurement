@@ -219,6 +219,9 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
     tds_freq = tds_freq_dict[tds]
     if streaking_direction is None:
         streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
+    outp['tds'] = tds
+    outp['tds_freq'] = tds_freq
+    outp['streaking_direction'] = streaking_direction
 
     zero_crossings = [1,]
     if 'Beam images 2' in processed_data:
@@ -406,6 +409,7 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
 
     voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3)*np.nan, np.zeros(3)*np.nan
     outp['beamsizes'] = beamsizes
+    outp['beamsizes_err'] = beamsizes_err
     outp['voltages'] = voltages
     outp['calibrations'] = calibrations
 
@@ -480,7 +484,6 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
     if len(zero_crossings) == 2:
         voltages[1] = 0
         beamsizes[1] = processed_data['Beam sizes without streaking']*1e-6
-        sp_parabola.errorbar(voltages/1e6, beamsizes*1e6, yerr=beamsizes_err*1e6, ls='None', capsize=5)
         if beamsizes[1] != 0:
             beamsizes_err[1] = processed_data['Beam sizes without streaking errors']*1e-6
             par_fit = np.poly1d(np.polyfit(voltages, beamsizes, 2, w=1/beamsizes_err))
@@ -495,6 +498,7 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
             sp_parabola.text(0.02, 0.5, textstr, transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
         else:
             sp_parabola.text(0.02, 0.5, 'Unstreaked beam size not measured', transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
+        sp_parabola.errorbar(voltages/1e6, beamsizes*1e6, yerr=beamsizes_err*1e6, ls='None', capsize=5)
 
     sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
     sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')

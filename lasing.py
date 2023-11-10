@@ -279,6 +279,9 @@ class LasingReconstruction:
             d['raw_images'] = obj.images_xy
             d['tE_images'] = obj.images_tE
             d['current_profile'] = obj.profile
+            d['tracker_gap'] = obj.tracker.structure_gap
+            d['tracker_beam_position'] = obj.tracker.beam_position
+            d['tracker_distance'] = obj.tracker.structure_gap/2 - abs(obj.tracker.beam_position)
             if hasattr(obj, 'beam_positions') and obj.beam_positions is not None:
                 d['distances'] = obj.tracker.structure_gap/2 - np.abs(obj.beam_positions)
                 d['beam_positions'] = obj.beam_positions
@@ -611,6 +614,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
     def __init__(self, identifier, tracker, lasing_options, profile=None, ref_slice_dict=None, ref_y=None):
         self.tracker = tracker
         self.profile = profile
+        self.profiles = None
         self.gap = self.tracker.structure_gap
 
         self.do_recon_plot = False

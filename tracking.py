@@ -781,7 +781,7 @@ class Tracker(LogMsgBase):
                 'mean_arr': np.array(mean_list),
                 'distance': distance,
                 }
-        self.logMsg('Beam position found. Delta: %i um. Target: %.2f mm. Result: %.2f mm. %i iterations' % (round(delta_position*1e6), target_meas*1e3, target_list[index]*1e3, n_iter-3))
+        self.logMsg('Beam position found. Distance %i um. Delta: %i um. Target: %.2f mm. Result: %.2f mm. %i iterations' % (round(distance*1e6), round(delta_position*1e6), target_meas*1e3, target_list[index]*1e3, n_iter-3))
         return output
 
 

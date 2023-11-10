@@ -203,6 +203,7 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
                 'void_cutoff': [None, None],
                 'cutX': None,
                 'cutY': None,
+                'screen_cutoff': 0,
                 }
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}

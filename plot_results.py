@@ -46,9 +46,8 @@ class dummy_plot:
 def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
     center = 'Mean'
     if plot_handles is None:
-        fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = gauss_recon_figure(figsize)
-    else:
-        fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = plot_handles
+        plot_handles = gauss_recon_figure(figsize)
+    fig, (sp_screen_pos, sp_screen_neg, sp_profile_pos, sp_profile_neg) = plot_handles
 
     if len(gauss_dicts) == 0:
         raise ValueError
@@ -83,6 +82,7 @@ def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max
 
     for _sp in sp_profile_pos, sp_profile_neg:
         _sp.legend(title='rms (fs)')
+    return plot_handles
 
 def gauss_recon_figure(figsize=None):
     if figsize is None:
@@ -459,6 +459,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     opt_func_profiles = gauss_dict['opt_func_profiles']
     opt_func_sigmas = np.array(gauss_dict['opt_func_sigmas'])
     meas_screen_raw = gauss_dict['meas_screen_raw']
+    meas_screen = gauss_dict['meas_screen']
     gauss_sigma = gauss_dict['gauss_sigma']
 
     if plot_handles is None:
@@ -484,7 +485,8 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
         rms_arr[opt_ctr] = screen.rms()
         centroid_arr[opt_ctr] = screen.mean()
 
-    meas_screen_raw.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
+    meas_screen_raw.plot_standard(sp_screen, color='gray', ls='--', label=r'$\rho_0(x)$')
+    meas_screen.plot_standard(sp_screen, color='black', ls='--', label=r'$\rho(x)$')
 
     #best_screen.plot_standard(sp_screen, color='red', lw=3, label='Final')
     #best_profile.plot_standard(sp_profile, color='red', lw=3, label='Final', center='Mean')
@@ -684,6 +686,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             if distances is not None:
                 sp_orbit.plot(mean_x*1e3, distances*1e6, label=label, color=color, ls='None', marker='.')
                 sp_orbit_legend = True
+            sp_orbit.axhline(result_dict[key]['tracker_distance']*1e6, color=color, ls='--')
     elif result_dict['lasing_options']['x_conversion'] == 'linear':
         for label, key, color in [
                 ('Lasing Off', 'images_off', 'tab:blue'),

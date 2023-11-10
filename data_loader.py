@@ -204,6 +204,7 @@ class DataLoaderBase:
         self.sd_dict[dimension] = {'sd': [], 'mean': [], 'rms': []}
         for img in self.images:
             sd = img.get_screen_dist(dimension)
+            sd.aggressive_cutoff(self.data_loader_options['screen_cutoff'])
             self.sd_dict[dimension]['sd'].append(sd)
             self.sd_dict[dimension]['mean'].append(sd.mean())
             self.sd_dict[dimension]['rms'].append(sd.rms())

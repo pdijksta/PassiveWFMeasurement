@@ -340,8 +340,6 @@ def get_default_structure_calibrator_options():
             'fit_gap': True,
             'fit_order': False,
             'proj_cutoff': 2e-2,
-            'gap_recon_precision': 1e-6,
-            'gap_recon_delta': [-100e-6, 100e-6],
             'delta_gap_range': np.linspace(-80, 80.01, 51)*1e-6,
             'delta_structure0_range': np.linspace(-10, 10, 21)*1e-6,
             'delta_gap_scan_n': 10,
@@ -392,6 +390,7 @@ def get_default_data_loader_options():
             'cutY': None,
             'multi_zero_position': 0,
             'zero_positions': None,
+            'screen_cutoff': 0,
             }.copy()
     return outp
 

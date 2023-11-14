@@ -105,7 +105,8 @@ def load_avg_blmeas_new(file_or_dict):
                 'current': curr_best,
                 'current_reduced': curr_best - curr_best.min(),
                 'all_current': all_current,
-                'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis]
+                'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis],
+                'calibration': calibration,
                 }
     return outp
 
@@ -134,7 +135,8 @@ def load_avg_blmeas_old(file_or_dict):
                 'current': curr_best,
                 'current_reduced': curr_best - curr_best.min(),
                 'all_current': all_current,
-                'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis]
+                'all_current_reduced': all_current - all_current.min(axis=1)[:,np.newaxis],
+                'calibration': calibration,
                 }
     return outp
 

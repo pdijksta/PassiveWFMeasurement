@@ -472,8 +472,12 @@ class BeamProfile(Profile):
         return sp.plot(x, y*factor/1e3, **kwargs)
 
 
-def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1, len_profile=config.get_default_backward_options()['len_profile']):
+def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1, len_profile=config.get_default_backward_options()['len_profile'], print_calib=False):
     blmeas_dict = blmeas.load_avg_blmeas(file_or_dict)[zero_crossing]
+    if type(file_or_dict) is str:
+        print('File %s: Calibration %.3f um/fs' % (file_or_dict, blmeas_dict['calibration']/1e9))
+    else:
+        print('Calibration %.3f um/fs' % (blmeas_dict['calibration']/1e9))
 
     tt = blmeas_dict['time']
     if subtract_min:

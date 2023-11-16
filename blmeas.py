@@ -241,7 +241,7 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
     sp_residual = subplot_main(sp_ctr_main, grid=True, title='Calibration fit residuals', xlabel='$\Delta$Phase (deg)', ylabel='Fit residuals ($\mu$m)')
     sp_ctr_main += 1
 
-    sp_parabola = subplot_main(sp_ctr_main, grid=True, title='Rms beam size parabola', xlabel='Voltage (MV)', ylabel='Rms beam size ($\mu$m)')
+    sp_parabola = subplot_main(sp_ctr_main, grid=True, title='Rms beam size parabola', xlabel='Voltage (MV)', ylabel='Beam size (mm$^2$)')
     sp_ctr_main += 1
 
     sp_bunch_duration = subplot_main(sp_ctr_main, grid=True, title='Bunch durations', xlabel='$\Delta$Phase (deg)', ylabel='Bunch duration (fs)')
@@ -271,7 +271,11 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
             zc_str = ''
         elif zero_crossing == 2:
             zc_str = ' 2'
-        phases_deg = processed_data['Phase'+zc_str].astype(float).copy()
+        _phases_deg = processed_data['Phase'+zc_str]
+        if type(_phases_deg) is float:
+            phases_deg = np.array([_phases_deg])
+        else:
+            phases_deg = _phases_deg.astype(float).copy()
         outp[zero_crossing]['phases_raw'] = phases_deg.copy()
         #phases_deg0 = phases_deg.copy()
         phase_old = phases_deg[0]
@@ -287,7 +291,14 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
         x_axis = processed_data['x axis'+zc_str].astype(float)*1e-6
         y_axis = processed_data['y axis'+zc_str].astype(float)*1e-6
 
+        if streaking_direction == 'X':
+            y_axis, x_axis = x_axis, y_axis
+
         #zc_data = analyze(images, x_axis, y_axis, phases_deg, charge, energy_eV, streaking_direction)
+
+        if len(images.shape) == 3:
+            images = images[np.newaxis,...]
+        n_phases, n_images, leny, lenx = images.shape
         if x_axis[0] > x_axis[1]:
             x_axis = x_axis[::-1]
             images = images[:,:,:,::-1]
@@ -295,7 +306,6 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
             y_axis = y_axis[::-1]
             images = images[:,:,::-1]
 
-        n_phases, n_images, leny, lenx = images.shape
         all_centroids = np.zeros([n_phases, n_images], float)
         data_objs = []
 
@@ -331,80 +341,97 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
                 gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=True)
                 sp_example_image.set_title('Phase %.2f deg, image %i' % (phase_deg, n_images//2), fontsize=None)
                 textstr = 'Dim x/y: %i/%i\n' % (len(x_axis), len(y_axis))
-                textstr += '$\sigma_x$: %.0f $\mu$m\n' % (gf_dict['gf_x'].sigma*1e6)
-                textstr += '$\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
+                textstr += 'gf $\sigma_x$: %.0f $\mu$m\n' % (gf_dict['gf_x'].sigma*1e6)
+                textstr += 'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
                 sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
 
-        centroids = np.mean(all_centroids, axis=1)
-        centroids_err = np.std(all_centroids, axis=1)
-        if error_of_the_average and n_images > 1:
-            centroids_err /= np.sqrt(n_images-1)
+        if n_phases >= 2:
+            centroids = np.mean(all_centroids, axis=1)
+            centroids_err = np.std(all_centroids, axis=1)
+            if error_of_the_average and n_images > 1:
+                centroids_err /= np.sqrt(n_images-1)
 
-        outp[zero_crossing]['centroids'] = centroids
-        outp[zero_crossing]['centroids_err'] = centroids_err
+            outp[zero_crossing]['centroids'] = centroids
+            outp[zero_crossing]['centroids_err'] = centroids_err
 
-        phases_rad = phases_deg * np.pi / 180
-        all_phases_rad.append(phases_rad)
+            phases_rad = phases_deg * np.pi / 180
+            all_phases_rad.append(phases_rad)
 
-        if zero_crossing == 1:
-            phases_rad_fit = phases_rad
-        if zero_crossing == 2:
-            phases_rad_fit = phases_rad - np.pi
-        phases_rad_fit = phases_rad_fit - np.mean(phases_rad_fit)
+            if zero_crossing == 1:
+                phases_rad_fit = phases_rad
+            if zero_crossing == 2:
+                phases_rad_fit = phases_rad - np.pi
+            phases_rad_fit = phases_rad_fit - np.mean(phases_rad_fit)
 
-        p, cov = np.polyfit(phases_rad_fit, centroids, 1, w=1/centroids_err, cov='unscaled')
-        poly = np.poly1d(p)
-        all_fits.append(poly)
-        centroids_fit = poly(phases_rad_fit)
-        residuals = centroids - centroids_fit
-        chi_square = np.sum(residuals**2/centroids_err**2)
-        nu = len(phases_deg) - 2
-        chi_square_red = chi_square/nu
+            weights0 = 1/centroids_err
+            weights = np.clip(weights0, 0, np.mean(weights0))
 
-        calibration = p[0] * 2*np.pi*tds_freq
-        calibration_error = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
-        label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
 
-        calibrations.append(calibration)
-        calibrations_err.append(calibration_error)
+            p, cov = np.polyfit(phases_rad_fit, centroids, 1, w=weights, cov='unscaled')
+            poly = np.poly1d(p)
+            all_fits.append(poly)
+            centroids_fit = poly(phases_rad_fit)
+            residuals = centroids - centroids_fit
+            chi_square = np.sum(residuals**2/centroids_err**2)
+            nu = len(phases_deg) - 2
+            chi_square_red = chi_square/nu
 
-        if zero_crossing == 2:
-            phases_plot = phases_deg - 180
-        else:
-            phases_plot = phases_deg.copy()
-        phases_plot -= phases_plot.mean()
-        all_phases_plot.append(phases_plot)
+            calibration = p[0] * 2*np.pi*tds_freq
+            calibration_error = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
+            label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
 
-        color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
-        sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
+            calibrations.append(calibration)
+            calibrations_err.append(calibration_error)
 
-        sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
-        sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
+            if zero_crossing == 2:
+                phases_plot = phases_deg - 180
+            else:
+                phases_plot = phases_deg.copy()
+            phases_plot -= phases_plot.mean()
+            all_phases_plot.append(phases_plot)
 
-        for n_phase, phase_deg in enumerate(phases_deg):
-            if plot_all_images:
-                figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Phase %.3f' % phase_deg, plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
-                all_sps2 = []
-                for sps in all_sps:
-                    all_sps2.extend(sps)
-                for n_image, centroid in enumerate(all_centroids[n_phase]):
-                    if streaking_direction == 'X':
-                        all_sps2[n_image].axvline(centroid*1e3, color='cyan')
-                    if streaking_direction == 'Y':
-                        all_sps2[n_image].axhline(centroid*1e3, color='cyan')
+            color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
+            sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
 
-    calibrations = np.array(calibrations)
-    calibrations_err = np.array(calibrations_err)
+            sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
+            sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
+
+            for n_phase, phase_deg in enumerate(phases_deg):
+                if plot_all_images:
+                    figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Phase %.3f' % phase_deg, plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
+                    all_sps2 = []
+                    for sps in all_sps:
+                        all_sps2.extend(sps)
+                    for n_image, centroid in enumerate(all_centroids[n_phase]):
+                        if streaking_direction == 'X':
+                            all_sps2[n_image].axvline(centroid*1e3, color='cyan')
+                        if streaking_direction == 'Y':
+                            all_sps2[n_image].axhline(centroid*1e3, color='cyan')
+        elif not force_cal:
+            raise ValueError('Not enough phase set points and calibration not provided')
+
+    if n_phases >= 2:
+        calibrations = np.array(calibrations)
+        calibrations_err = np.array(calibrations_err)
+    else:
+        calibrations = np.array([force_cal, -force_cal])
+        calibrations_err = None
 
     if len(zero_crossings) == 2:
-        weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
-        a1, b1 = all_fits[0]
-        a2, b2 = all_fits[1]
-        phase_cross = (b2 - b1)/(a1 - a2)
-        sp_calib.axvline(phase_cross*180/np.pi, color='black', ls='--')
-        textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % ((np.mean(all_phases_rad[0])+phase_cross)*180/np.pi, phase_cross*180/np.pi)
-        textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
-        sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
+        if calibrations_err is None:
+            weighted_calibration = np.mean(np.abs(calibrations))
+        else:
+            weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
+        if n_phases >= 2:
+            a1, b1 = all_fits[0]
+            a2, b2 = all_fits[1]
+            phase_cross = (b2 - b1)/(a1 - a2)
+            sp_calib.axvline(phase_cross*180/np.pi, color='black', ls='--')
+            textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % ((np.mean(all_phases_rad[0])+phase_cross)*180/np.pi, phase_cross*180/np.pi)
+            textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
+            sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
+            if force_cal:
+                weighted_calibration = force_cal
     else:
         separate_calibrations = True
 
@@ -460,7 +487,10 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
         outp[zero_crossing]['representative_profile'] = mean_profile
         mean_profile.plot_standard(sp_average_profile, label='Zc %i' % zero_crossing, center=profile_center_plot)
 
-        phases_plot = all_phases_plot[ctr]
+        if all_phases_plot:
+            phases_plot = all_phases_plot[ctr]
+        else:
+            phases_plot = phases_deg
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
         textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
         textstr += 'Bunch durations:'
@@ -489,22 +519,35 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
         beamsizes[1] = processed_data['Beam sizes without streaking']*1e-6
         if beamsizes[1] != 0:
             beamsizes_err[1] = processed_data['Beam sizes without streaking errors']*1e-6
-            par_fit = np.poly1d(np.polyfit(voltages, beamsizes, 2, w=1/beamsizes_err))
+            beamsizes_sq_err = 2*beamsizes*beamsizes_err
+            popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
+            par_fit = np.poly1d(popt)
             xx = np.linspace(voltages[0], voltages[2], 100)
             yy = par_fit(xx)
             sp_parabola.plot(xx/1e6, yy*1e6, ls='--')
+
+            corr_rms_blen = np.sqrt(popt[0])*voltage/weighted_calibration
+            corr_rms_blen_err = corr_rms_blen/(2*popt[0])*np.sqrt(pcov[0,0])
+
             textstr = 'First zero crossing to the right.\n'
-            textstr += r'$\sigma$ ($\mu$m) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m' % (par_fit[2]*1e18, par_fit[1]*1e12, par_fit[0]*1e6)
+            textstr += r'$\sigma^2$ ($\mu$m$^2$) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m$^2$' % (par_fit[2]*1e24, par_fit[1]*1e18, par_fit[0]*1e12)
+            textstr += '\nCorrected rms bunch duration: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
             min_volt = -par_fit[1]/(2*par_fit[2])
             sp_parabola.axvline(min_volt*1e-6, color='black', ls='--')
             textstr += '\nMin. rms beamsize at %.2f MV' % (min_volt*1e-6)
+            res = beamsizes[1] / weighted_calibration
+            textstr += '\nTime resolution %.2f fs' % (res*1e15)
             sp_parabola.text(0.02, 0.5, textstr, transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
         else:
+            corr_rms_blen, corr_rms_blen = None, None
             sp_parabola.text(0.02, 0.5, 'Unstreaked beam size not measured', transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
-        sp_parabola.errorbar(voltages/1e6, beamsizes*1e6, yerr=beamsizes_err*1e6, ls='None', capsize=5)
+        outp['corr_rms_blen'] = corr_rms_blen
+        outp['corr_rms_blen_err'] = corr_rms_blen_err
+        sp_parabola.errorbar(voltages/1e6, beamsizes**2*1e6, yerr=beamsizes_sq_err*1e6, ls='None', capsize=5)
 
-    sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
-    sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
+    if n_phases >= 2:
+        sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
+        sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()
     if len(zero_crossings) == 2:
         sp_average_profile.legend()

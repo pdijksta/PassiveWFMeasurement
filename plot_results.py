@@ -734,7 +734,8 @@ def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
         _, plot_handles = tdc_calib_figure(figsize)
     sp_image, sp_profile, sp_screen = plot_handles
 
-    blmeas_profile = tdc_dict['blmeas_profile']
+    blmeas_profile = copy.deepcopy(tdc_dict['blmeas_profile'])
+    blmeas_profile.crop()
     blmeas_profile.plot_standard(sp_profile, label='Input', center='Mean')
 
     image.plot_img_and_proj(sp_image, plot_gauss=False, sqrt=True)

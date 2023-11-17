@@ -539,10 +539,11 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
             textstr += '\nTime resolution %.2f fs' % (res*1e15)
             sp_parabola.text(0.02, 0.5, textstr, transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
         else:
-            corr_rms_blen, corr_rms_blen = None, None
+            corr_rms_blen, corr_rms_blen_err = None, None
             sp_parabola.text(0.02, 0.5, 'Unstreaked beam size not measured', transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
         outp['corr_rms_blen'] = corr_rms_blen
         outp['corr_rms_blen_err'] = corr_rms_blen_err
+        beamsizes_sq_err = 2*beamsizes*beamsizes_err
         sp_parabola.errorbar(voltages/1e6, beamsizes**2*1e6, yerr=beamsizes_sq_err*1e6, ls='None', capsize=5)
 
     if n_phases >= 2:

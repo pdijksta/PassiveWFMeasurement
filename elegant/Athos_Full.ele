@@ -1,5 +1,5 @@
 &run_setup
-	lattice		= ./Athos_2021-12-07.lat,
+	lattice		= ./Athos_2023-11-18.lat,
 	use_beamline	= SATDI01_TO_END,
 	rootname	= Athos_Full,
 	output		= %s.out,

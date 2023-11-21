@@ -38,6 +38,7 @@ from PassiveWFMeasurement import myplotstyle as ms
 # - display bunch duration better
 # - resolution plots, current profile source
 # - 0 in TDC calibration
+# - Change TDS resolution to delta position from delta gap
 
 if __name__ == '__main__':
     logger = logMsg.get_logger(config.logfile, 'PassiveWFMeasurement')

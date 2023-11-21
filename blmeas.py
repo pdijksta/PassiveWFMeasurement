@@ -186,7 +186,7 @@ streaking_dict = {
         }
 
 
-def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=True, profile_center_plot='Mean', current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None):
+def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=True, profile_center_plot='Mean', current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None):
 
     outp = {}
     if type(file_or_dict) is dict:
@@ -212,11 +212,13 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
 
     voltage = abs(processed_data['Voltage axis'][0])*1e6
     energy_eV = data['Input data']['beamEnergy']*1e6
-    #_ii = processed_data['Fit current profile_image_0']
-    #_tt = processed_data['Good region time axis_image_0']
-    #charge = np.trapz(_ii, _tt)*1e-12
-    #print(charge)
-
+    _ii = processed_data['Current profile_image_0']
+    _tt = processed_data['Good region time axis_image_0']
+    if force_charge:
+        charge = force_charge
+    else:
+        charge = np.abs(np.trapz(_ii, _tt*1e-15))
+        #print('Charge %.2e' % charge)
 
     tds = screen_tds_dict[data['Input data']['profileMonitor']]
     tds_freq = tds_freq_dict[tds]
@@ -230,7 +232,7 @@ def analyze_blmeas(file_or_dict, charge, force_cal=None, title=None, plot_all_im
     if 'Beam images 2' in processed_data:
         zero_crossings.append(2)
 
-    fig_main = ms.figure('Main result %s' % title, figsize=(16,10))
+    fig_main = ms.figure('%s %.1f pC' % (title, charge*1e12), figsize=(16,10))
     fig_main.subplots_adjust(wspace=0.3, hspace=0.3)
     subplot_main = ms.subplot_factory(3, 3)
     sp_ctr_main = 1

@@ -642,6 +642,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     current_profile = copy.deepcopy(result_dict['images_off']['current_profile'])
     if result_dict['linear_conversion']:
         current_profile = None
+        current_center_plot = None
     else:
         current_center_plot = np.mean(current_center)
     if current_profile is not None:

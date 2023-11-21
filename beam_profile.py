@@ -49,6 +49,9 @@ class Profile:
         self._gf_xx = None
         self._gf_yy = None
 
+    def shift_xx(self, shift):
+        self._xx -= shift
+
     def expand(self, ratio):
         len_add = int(len(self)*ratio)
         diff = self._xx[1] - self._xx[0]

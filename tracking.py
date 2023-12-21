@@ -269,7 +269,6 @@ class Tracker(LogMsgBase):
         beam: must correspond to middle of structure
         """
 
-
         wake_time = beam.beamProfile.time
         if 'delta' in beam.dim_index:
             energy_eV = beam.energy_eV*(1+beam['delta'])

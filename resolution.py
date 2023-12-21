@@ -1,19 +1,11 @@
 import numpy as np
 
-def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False, long_wake=False, add_chirp=0):
-    #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
-    beam_spec = tracker.beam_spec.copy()
-    beam_spec.update(tracker.beam_optics)
-    if add_chirp:
-        beam_spec['energy_chirp'] = add_chirp
-    tracker.beam_spec = beam_spec
-    beam = tracker.gen_beam(beamprofile, other_dim=use_other_dim, delta=(long_wake or add_chirp))
-    forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
+def beam_to_res(forward_dict, r12, energy_eV, camera_res, bins, dim, use_other_dim, long_wake):
     beam = forward_dict['beam_at_screen']
-    r12 = tracker.r12
+    beamprofile = beam.beamProfile
     wake_dict = forward_dict['wake_dict_dipole']
     wake_dict_quad = forward_dict['wake_dict_quadrupole']
-    wf_x = wake_dict['wake_potential'] / tracker.energy_eV * r12
+    wf_x = wake_dict['wake_potential'] / energy_eV * r12
     wf_t = beamprofile.time
     dxdt = np.diff(wf_x)/np.diff(wf_t)
     dx_dt_t = wf_t[:-1]
@@ -87,6 +79,18 @@ def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), cam
         output['delta_beamsize'] = beamsize_y
         output['delta_center'] = mean_y
     return output
+
+
+def calc_resolution(beamprofile, gap, beam_offset, tracker, bins=(150, 100), camera_res=20e-6, dim='x', use_other_dim=False, long_wake=False, add_chirp=0):
+    #wf_calc = beamprofile.calc_wake(semigap*2, beam_offset, struct_length)
+    beam_spec = tracker.beam_spec.copy()
+    beam_spec.update(tracker.beam_optics)
+    if add_chirp:
+        beam_spec['energy_chirp'] = add_chirp
+    tracker.beam_spec = beam_spec
+    beam = tracker.gen_beam(beamprofile, other_dim=use_other_dim, delta=(long_wake or add_chirp))
+    forward_dict = tracker.forward_propagate_forced(gap, beam_offset, beam, output_details=True)
+    return beam_to_res(forward_dict, tracker.r12, tracker.energy_eV, camera_res, bins, dim, use_other_dim, long_wake)
 
 def plot_resolution(res_dict, sp_current, sp_res, max_res=20e-15):
     bp = res_dict['beamprofile']

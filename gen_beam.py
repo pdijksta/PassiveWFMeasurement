@@ -265,7 +265,8 @@ def beam_from_spec(dimensions, specifications, n_particles, beamProfile, total_c
         else:
             arr[n_dim] = 0
         if specifications['energy_spread']:
-            arr[n_dim] += np.random.randn(len(arr[n_dim]))*specifications['energy_spread']/energy_eV
+            rand = np.clip(np.random.randn(len(arr[n_dim])), -s['cutoff_sigma'], s['cutoff_sigma'])
+            arr[n_dim] += rand*specifications['energy_spread']/energy_eV
         dim_index['delta'] = n_dim
         n_dim += 1
 

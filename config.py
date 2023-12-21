@@ -330,6 +330,7 @@ def get_default_beam_spec():
             'n_mesh': 500,
             'cutoff_sigma': 5,
             'energy_chirp': 0,
+            'energy_spread': 0,
             }.copy()
     return outp
 

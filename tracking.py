@@ -269,6 +269,7 @@ class Tracker(LogMsgBase):
         beam: must correspond to middle of structure
         """
 
+        beam0 = beam
         wake_time = beam.beamProfile.time
         if 'delta' in beam.dim_index:
             energy_eV = beam.energy_eV*(1+beam['delta'])
@@ -287,7 +288,8 @@ class Tracker(LogMsgBase):
         if quad_wake:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             eff_quad_pot_interp = np.interp(beam['t'], wake_time, wake_dict_quadrupole['wake_potential'])/energy_eV
-            k1 = -eff_quad_pot_interp/self.structure.Ls
+            k1_sign = {'y': 1, 'x': -1}[dim]
+            k1 = k1_sign*eff_quad_pot_interp/self.structure.Ls
             quad_matrix = lattice.transferMatrixQuad66_arr(self.structure.Ls, k1) # 6x6xN matrix
 
             halfmat = lattice.transferMatrixDrift66(-self.structure.Ls/2.)
@@ -310,21 +312,22 @@ class Tracker(LogMsgBase):
         beam_after_streaker = beam.child()
 
         wake_dict_long = wake_dict_c1 = wake_dict_c2 = None
-        corr1_interp = corr2_interp = 0
         if long_wake:
-            wake_dict_long = self.calc_wake(beam.beamProfile, 'Longitudinal')
+            wake_dict_long = self.calc_wake(beam0.beamProfile, 'Longitudinal')
             delta_p = wake_dict_long['wake_potential']/mean_energy
-            delta_p_interp = np.interp(beam['t'], wake_time, delta_p)
+            delta_p_interp = np.interp(beam0['t'], wake_time, delta_p)
             if long_wake_correction:
-                wake_dict_c1 = self.calc_wake(beam.beamProfile, 'LongitudinalC1')
-                wake_dict_c2 = self.calc_wake(beam.beamProfile, 'LongitudinalC2')
+                wake_dict_c1 = self.calc_wake(beam0.beamProfile, 'LongitudinalC1')
+                wake_dict_c2 = self.calc_wake(beam0.beamProfile, 'LongitudinalC2')
                 corr1 = wake_dict_c1['wake_potential']/mean_energy
                 corr2 = wake_dict_c2['wake_potential']/mean_energy
-                delta_dim = beam[dim] - beam[dim].mean()
+                delta_dim = beam0[dim] - beam0[dim].mean()
                 other_dim = 'x' if dim == 'y' else 'y'
-                delta_other = beam[other_dim] - beam[other_dim].mean()
-                corr1_interp = np.interp(beam['t'], wake_time, corr1) * -delta_dim
-                corr2_interp = np.interp(beam['t'], wake_time, corr2) * (-delta_dim**2 + delta_other**2)/2
+                delta_other = beam0[other_dim] - beam0[other_dim].mean()
+                corr1_interp = np.interp(beam0['t'], wake_time, corr1) * -delta_dim
+                corr2_interp = np.interp(beam0['t'], wake_time, corr2) * (-delta_dim**2 + delta_other**2)/2
+            else:
+                corr1_interp = corr2_interp = 0
             beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
 
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip

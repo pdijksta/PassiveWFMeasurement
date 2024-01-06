@@ -336,7 +336,8 @@ class Tracker(LogMsgBase):
             corr1_interp = corr2_interp = 0
             wake_dict_c1 = wake_dict_c2 = None
 
-        beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
+        if 'delta' in beam_after_streaker.dim_index:
+            beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
 
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)

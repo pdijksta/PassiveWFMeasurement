@@ -296,6 +296,7 @@ def get_default_forward_options():
             'ocelot_wake_sampling': 500,
             'screen_bins': 1000,
             'screen_smoothen': 20e-6,
+            'dipole_wake': True,
             'quad_wake': False,
             'long_wake': False,
             'long_wake_correction': False,

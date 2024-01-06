@@ -271,25 +271,26 @@ class Tracker(LogMsgBase):
 
         beam0 = beam
         wake_time = beam.beamProfile.time
+        dim = self.structure.dim.lower()
+        other_dim = 'x' if dim == 'y' else 'y'
+        mean_energy = beam.energy_eV
+
         if 'delta' in beam.dim_index:
             energy_eV = beam.energy_eV*(1+beam['delta'])
         else:
             energy_eV = beam.energy_eV
-        mean_energy = beam.energy_eV
-        wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
-        delta_xp_coords_dip = np.interp(beam['t'], wake_time, wake_dict_dipole['wake_potential'])/energy_eV
-        quad_wake = self.forward_options['quad_wake']
-        long_wake = self.forward_options['long_wake']
-        long_wake_correction = self.forward_options['long_wake_correction']
-        dim = self.structure.dim.lower()
 
-        wake_dict_quadrupole = None
-        beam_before = None
-        if quad_wake:
+        if self.forward_options['dipole_wake']:
+            wake_dict_dipole = self.calc_wake(beam.beamProfile, 'Dipole')
+            delta_xp_coords_dip = np.interp(beam['t'], wake_time, wake_dict_dipole['wake_potential'])/energy_eV
+        else:
+            wake_dict_dipole = None
+            delta_xp_coords_dip = 0
+
+        if self.forward_options['quad_wake']:
             wake_dict_quadrupole = self.calc_wake(beam.beamProfile, 'Quadrupole')
             eff_quad_pot_interp = np.interp(beam['t'], wake_time, wake_dict_quadrupole['wake_potential'])/energy_eV
-            k1_sign = {'y': 1, 'x': -1}[dim]
-            k1 = k1_sign*eff_quad_pot_interp/self.structure.Ls
+            k1 = {'y': 1, 'x': -1}[dim]*eff_quad_pot_interp/self.structure.Ls
             quad_matrix = lattice.transferMatrixQuad66_arr(self.structure.Ls, k1) # 6x6xN matrix
 
             halfmat = lattice.transferMatrixDrift66(-self.structure.Ls/2.)
@@ -308,32 +309,40 @@ class Tracker(LogMsgBase):
                 beam_after['y'] = quad_matrix[2,2] * y + quad_matrix[2,3] * yp
                 beam_after['yp'] = quad_matrix[3,2] * y + quad_matrix[3,3] * yp
             beam = beam_after.linear_propagate(halfmat)
+        else:
+            wake_dict_quadrupole = None
+            beam_before = None
 
         beam_after_streaker = beam.child()
 
-        wake_dict_long = wake_dict_c1 = wake_dict_c2 = None
-        if long_wake:
+        if self.forward_options['long_wake']:
             wake_dict_long = self.calc_wake(beam0.beamProfile, 'Longitudinal')
             delta_p = wake_dict_long['wake_potential']/mean_energy
             delta_p_interp = np.interp(beam0['t'], wake_time, delta_p)
-            if long_wake_correction:
-                wake_dict_c1 = self.calc_wake(beam0.beamProfile, 'LongitudinalC1')
-                wake_dict_c2 = self.calc_wake(beam0.beamProfile, 'LongitudinalC2')
-                corr1 = wake_dict_c1['wake_potential']/mean_energy
-                corr2 = wake_dict_c2['wake_potential']/mean_energy
-                delta_dim = beam0[dim] - beam0[dim].mean()
-                other_dim = 'x' if dim == 'y' else 'y'
-                delta_other = beam0[other_dim] - beam0[other_dim].mean()
-                corr1_interp = np.interp(beam0['t'], wake_time, corr1) * -delta_dim
-                corr2_interp = np.interp(beam0['t'], wake_time, corr2) * (-delta_dim**2 + delta_other**2)/2
-            else:
-                corr1_interp = corr2_interp = 0
-            beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
+        else:
+            delta_p_interp = 0
+            wake_dict_long = None
 
+        if self.forward_options['long_wake_correction']:
+            wake_dict_c1 = self.calc_wake(beam0.beamProfile, 'LongitudinalC1')
+            wake_dict_c2 = self.calc_wake(beam0.beamProfile, 'LongitudinalC2')
+            corr1 = wake_dict_c1['wake_potential']/mean_energy
+            corr2 = wake_dict_c2['wake_potential']/mean_energy
+            delta_dim = beam0[dim] - beam0[dim].mean()
+            delta_other = beam0[other_dim] - beam0[other_dim].mean()
+            corr1_interp = np.interp(beam0['t'], wake_time, corr1) * -delta_dim
+            corr2_interp = np.interp(beam0['t'], wake_time, corr2) * (-delta_dim**2 + delta_other**2)/2
+        else:
+            corr1_interp = corr2_interp = 0
+            wake_dict_c1 = wake_dict_c2 = None
+
+        beam_after_streaker['delta'] += delta_p_interp + corr1_interp + corr2_interp
         beam_after_streaker[dim+'p'] += delta_xp_coords_dip
+
         beam_at_screen = beam_after_streaker.linear_propagate(self.matrix)
         screen = self._beam2screen(beam_at_screen)
         outp_dict = {'screen': screen}
+
         if output_details:
             outp_dict.update({
                 'beam': beam,

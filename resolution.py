@@ -110,15 +110,11 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
     if dim == 'x':
         other_dim = 'y'
         disp = old_matrix[2,5]
-        r11 = old_matrix[0,0]
         r12 = old_matrix[0,1]
     elif dim == 'y':
         other_dim = 'x'
         disp = old_matrix[0,5]
-        r11 = old_matrix[2,2]
         r12 = old_matrix[2,3]
-    print(old_matrix)
-    print(disp)
 
     try:
         tracker.forward_options['dipole_wake'] = True
@@ -146,6 +142,25 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
         tracker.forward_options = old_fo
         tracker.matrix = old_matrix
 
+    def calc_beamsize(_dim):
+        beta0 = beam.specifications['beta'+_dim]
+        alpha0 = beam.specifications['alpha'+_dim]
+        gamma0 = (1+alpha0**2)/beta0
+        eps = beam.specifications['nemit'+_dim] / (energy_eV/m_e_eV)
+        if _dim == 'x':
+            r11 = old_matrix[0,0]
+            r12 = old_matrix[0,1]
+        elif _dim == 'y':
+            r11 = old_matrix[2,2]
+            r12 = old_matrix[2,3]
+        if use_quad:
+            wq = {dim: 1, other_dim: -1}[_dim]*fd_complete['wake_dict_quadrupole']['wake_potential']/energy_eV*r12
+        else:
+            wq = 0
+        beamsize_calc = np.sqrt(eps*((r11+wq)**2*beta0 -2*r12*(r11+wq)*alpha0 +r12**2*gamma0))
+        beamsize_calc0 = np.sqrt(eps*(r11**2*beta0 -2*r12*r11*alpha0 +r12**2*gamma0))
+        return beamsize_calc, beamsize_calc0
+
     ## Time resolution sim
     # dxdt
     beam_t = fd_complete['beam_at_screen']['t']
@@ -154,7 +169,7 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
         beam_x = beam_x + np.random.randn(beam_x.size)*camera_res
     hist, xedges, yedges = np.histogram2d(beam_t, beam_x, bins=bins)
     histsum = np.sum(hist, axis=1)
-    t_axis = (xedges[1:] + xedges[:-1])/2.
+    t_axis = time = (xedges[1:] + xedges[:-1])/2.
     x_axis = (yedges[1:] + yedges[:-1])/2.
     mean_x = np.sum(hist*x_axis, axis=1) / histsum
     dxdt = np.diff(mean_x) / np.diff(t_axis)
@@ -175,20 +190,13 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
     sim_time_res = beamsize/np.abs(dxdt)
 
     ## Time resolution calc
-    calc_time = fd_complete['wake_dict_dipole']['wake_time']
-    calc_x = fd_complete['wake_dict_dipole']['wake_potential']*r12/tracker.energy_eV
-    dxdt_calc = np.diff(calc_x) / np.diff(calc_time)
+    wake_time = fd_complete['wake_dict_dipole']['wake_time']
+    calc_x = fd_complete['wake_dict_dipole']['wake_potential']*r12/energy_eV
+    dxdt_calc = np.diff(calc_x) / np.diff(wake_time)
     dxdt_calc = np.append(dxdt_calc, dxdt_calc[-1])
-    beta0 = beam.specifications['beta'+dim]
-    alpha0 = beam.specifications['alpha'+dim]
-    gamma0 = (1+alpha0**2)/beta0
-    eps = beam.specifications['nemit'+dim] / (tracker.energy_eV/m_e_eV)
-    if use_quad:
-        wq = fd_complete['wake_dict_quadrupole']['wake_potential']/energy_eV*r12
-    else:
-        wq = 0
-    beamsize_calc = np.sqrt(eps*((r11+wq)**2*beta0 -2*r12*(r11+wq)*alpha0 +r12**2*gamma0))
-    calc_time_res = beamsize_calc/np.abs(dxdt_calc)
+    beamsize_calc = calc_beamsize(dim)[0]
+    calc_time_res0 = beamsize_calc/np.abs(dxdt_calc)
+    calc_time_res = np.interp(time, wake_time, calc_time_res0)
 
     ## Energy resolution sim
     beam_x = fd_complete['beam_at_screen'][dim]
@@ -198,35 +206,36 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
         beam_y = beam_y + np.random.randn(beam_y.size)*camera_res
     hist, xedges, yedges = np.histogram2d(beam_x, beam_y, bins=bins)
     histsum = np.sum(hist, axis=1)
-    x_axis = streaked_axis = (xedges[1:] + xedges[:-1])/2.
+    x_axis = (xedges[1:] + xedges[:-1])/2.
     y_axis = (yedges[1:] + yedges[:-1])/2.
 
     mean_y = np.sum(hist*y_axis, axis=1) / histsum
     beamsize = np.sqrt(np.sum(hist*y_axis**2, axis=1) / histsum - mean_y**2)
-    sim_energy_spread = beamsize/disp*tracker.energy_eV
-    sim_energy_mean = mean_y/disp*tracker.energy_eV
+    sim_meas_espread0 = beamsize/disp*energy_eV
+    sim_energy_mean0 = mean_y/disp*energy_eV
     if np.mean(np.diff(calc_x)) < 0:
         calc_x2 = calc_x[::-1]
-        calc_time2 = calc_time[::-1]
+        wake_time2 = wake_time[::-1]
+        reverse = True
     else:
-        calc_x2, calc_time2 = calc_x, calc_time
-    sim_energy_time = np.interp(x_axis, calc_x2, calc_time2)
-
+        calc_x2, wake_time2 = calc_x, wake_time
+        reverse = False
+    sim_energy_time = np.interp(x_axis, calc_x2, wake_time2)
+    if reverse:
+        sim_energy_time = sim_energy_time[::-1]
+        sim_meas_espread0 = sim_meas_espread0[::-1]
+        sim_energy_mean0 = sim_energy_mean0[::-1]
+    sim_meas_espread = np.interp(time, sim_energy_time, sim_meas_espread0)
+    sim_energy_mean = np.interp(time, sim_energy_time, sim_energy_mean0)
 
     ## Energy resolution calc
     # natural beam size
-    beam_t = fd_no_disp_no_dipole['beam_at_screen']['t']
-    beam_y = fd_no_disp_no_dipole['beam_at_screen'][other_dim]
-    if camera_res:
-        beam_y = beam_y + np.random.randn(beam_y.size)*camera_res
-    hist, xedges, yedges = np.histogram2d(beam_t, beam_y, bins=bins)
-    histsum = np.sum(hist, axis=1)
-    t_axis = (xedges[1:] + xedges[:-1])/2.
-    y_axis = (yedges[1:] + yedges[:-1])/2.
-
-    mean_y = np.sum(hist*t_axis, axis=1) / histsum
-    beamsize = np.sqrt(np.sum(hist*y_axis**2, axis=1) / histsum - mean_y**2)
-    calc_eres1 = beamsize/disp*tracker.energy_eV
+    beamsize = calc_beamsize(other_dim)[0]
+    calc_eres10 = beamsize/disp*energy_eV
+    if use_quad:
+        calc_eres1 = np.interp(time, wake_time, calc_eres10)
+    else:
+        calc_eres1 = calc_eres10*np.ones_like(time, float)
 
     # energy chirp
     beam_t = fd_complete['beam_at_screen']['t']
@@ -238,9 +247,19 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
     mean_p = np.sum(hist*p_axis, axis=1) / histsum
     dp_dt = np.diff(mean_p)/np.diff(t_axis)
     dp_dt = np.append(dp_dt, dp_dt[-1])
-    calc_eres2 = sim_time_res*np.abs(dp_dt)
+    calc_eres2 = calc_time_res*np.abs(dp_dt)
 
     # Induced espread
+    sigx = calc_beamsize(dim)[1]
+    sigy = calc_beamsize(other_dim)[1]
+    espread_c10 = fd_complete['wake_dict_c1']['wake_potential'] * sigx
+    espread_c1 = np.interp(time, wake_time, espread_c10)
+    espread_c20 = fd_complete['wake_dict_c2']['wake_potential'] * np.sqrt((sigx**4+sigy**4)/2)
+    espread_c2 = np.interp(time, wake_time, espread_c20)
+
+    calc_eres = np.sqrt(calc_eres1**2+calc_eres2**2+espread_c1**2+espread_c2**2)
+
+    ## Simulated induced espread
     beam_t = fd_same_p0['beam_at_screen']['t']
     beam_p = (1+fd_same_p0['beam_at_screen']['delta'])*energy_eV
     hist, xedges, yedges = np.histogram2d(beam_t, beam_p, bins=bins)
@@ -248,25 +267,24 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
     t_axis = (xedges[1:] + xedges[:-1])/2.
     p_axis = (yedges[1:] + yedges[:-1])/2.
     mean_p = np.sum(hist*p_axis, axis=1) / histsum
-    calc_eres3 = np.sqrt(np.sum(hist*p_axis**2, axis=1) / histsum - mean_p**2)
+    sim_true_espread = np.sqrt(np.sum(hist*p_axis**2, axis=1) / histsum - mean_p**2)
 
-    calc_eres = np.sqrt(calc_eres1**2+calc_eres2**2+calc_eres3**2)
+
     output = {
             'fd_no_disp_no_dipole': fd_no_disp_no_dipole,
             'fd_complete': fd_complete,
             'fd_same_p0': fd_same_p0,
-            'sim_time': t_axis,
-            'streaked_axis': streaked_axis,
+            'time': time,
             'sim_time_res': sim_time_res,
-            'calc_time': calc_time,
             'calc_time_res': calc_time_res,
             'calc_eres1': calc_eres1,
             'calc_eres2': calc_eres2,
-            'calc_eres3': calc_eres3,
+            'espread_c1': espread_c1,
+            'espread_c2': espread_c2,
             'calc_eres': calc_eres,
-            'sim_energy_spread': sim_energy_spread,
+            'sim_meas_espread': sim_meas_espread,
+            'sim_true_espread': sim_true_espread,
             'sim_energy_mean': sim_energy_mean,
-            'sim_energy_time': sim_energy_time,
             }
     return output
 

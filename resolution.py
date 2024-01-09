@@ -252,9 +252,9 @@ def simulate_resolution_complete(tracker, beam, bins=(50,50), camera_res=0, use_
     # Induced espread
     sigx = calc_beamsize(dim)[1]
     sigy = calc_beamsize(other_dim)[1]
-    espread_c10 = fd_complete['wake_dict_c1']['wake_potential'] * sigx
+    espread_c10 = np.abs(fd_complete['wake_dict_c1']['wake_potential']) * sigx
     espread_c1 = np.interp(time, wake_time, espread_c10)
-    espread_c20 = fd_complete['wake_dict_c2']['wake_potential'] * np.sqrt((sigx**4+sigy**4)/2)
+    espread_c20 = np.abs(fd_complete['wake_dict_c2']['wake_potential']) * np.sqrt((sigx**4+sigy**4)/2)
     espread_c2 = np.interp(time, wake_time, espread_c20)
 
     calc_eres = np.sqrt(calc_eres1**2+calc_eres2**2+espread_c1**2+espread_c2**2)

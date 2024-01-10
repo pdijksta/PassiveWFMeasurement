@@ -17,7 +17,7 @@ def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=F
     wake_sampling = self.forward_options['ocelot_wake_sampling']
 
     # OCELOT needs beam before the structure, not at the center
-    drift_neg = lattice.transferMatrixDrift66(-0.5)
+    drift_neg = lattice.transferMatrixDrift66(-0.5*self.structure.Ls)
     beam_before_streaker = beam.linear_propagate(drift_neg)
 
     # Init waketable
@@ -28,7 +28,7 @@ def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=F
     width = self.structure.w
     t = self.structure.g
     p = self.structure.p
-    length = 1
+    length = self.structure.Ls
     sigma = beam.beamProfile.rms() * c # around 5 um
     # Ocelot uses orientation of corrugated plate. This code uses streaking direction
     orient = {'X': 'vert', 'Y': 'horz'}[self.structure.dim]

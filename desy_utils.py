@@ -42,6 +42,10 @@ matrix_0380 = np.array([
     [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000,],
     ])
 
+# Reference time frame is when the streaking effect is applied.
+for mat in matrix_0000, matrix_0304, matrix_0380:
+    mat[4] = [0, 0, 0, 0, 1, 0]
+
 default_optics = {
         'betax': 34.509,
         'alphax': 1.068,

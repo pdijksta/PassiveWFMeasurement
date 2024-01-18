@@ -444,6 +444,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     outp['beamsizes_err'] = beamsizes_err
     outp['voltages'] = voltages
     outp['calibrations'] = calibrations
+    outp['calibrations_err'] = calibrations_err
+    outp['weighted_calibration'] = weighted_calibration
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:

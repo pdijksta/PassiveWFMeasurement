@@ -132,7 +132,7 @@ class Beam:
         if 't' in self.dim_index and self.ignore_time:
             t_index = self.dim_index['t']
             matrix[t_index,:] = 0
-            matrix[:, t_index] = 0
+            #matrix[:, t_index] = 0
             matrix[t_index, t_index] = 1
         arr = matrix @ self.arr
         return self.child(arr)

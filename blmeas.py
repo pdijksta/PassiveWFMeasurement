@@ -352,8 +352,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
 
         if n_phases >= 2:
-            centroids = np.mean(all_centroids, axis=1)
-            centroids_err = np.std(all_centroids, axis=1)
+            centroids = np.nanmean(all_centroids, axis=1)
+            centroids_err = np.nanstd(all_centroids, axis=1)
             if error_of_the_average and n_images > 1:
                 centroids_err /= np.sqrt(n_images-1)
 
@@ -372,8 +372,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             weights0 = 1/centroids_err
             weights = np.clip(weights0, 0, np.mean(weights0))
 
-
-            p, cov = np.polyfit(phases_rad_fit, centroids, 1, w=weights, cov='unscaled')
+            notnan = ~np.isnan(centroids)
+            p, cov = np.polyfit(phases_rad_fit[notnan], centroids[notnan], 1, w=weights[notnan], cov='unscaled')
             poly = np.poly1d(p)
             all_fits.append(poly)
             centroids_fit = poly(phases_rad_fit)

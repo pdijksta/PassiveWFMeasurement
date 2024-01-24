@@ -513,13 +513,13 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             elif zero_crossing == 2:
                 ls = 'dashed'
                 label2 = None
-            sp_bunch_duration.errorbar(phases_plot, np.mean(arr, axis=1)*1e15*factor, yerr=np.std(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
-            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.mean(arr)*1e15, np.std(arr)*1e15)
+            sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
+            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp.text(0.05, 0.95, textstr, transform=sp.transAxes, verticalalignment='top', bbox=textbbox)
 
         if len(zero_crossings) == 2:
-            beamsizes[ctr*2] = np.mean(rms)*np.abs(cal)
-            beamsizes_err[ctr*2] = np.std(rms)*np.abs(cal)
+            beamsizes[ctr*2] = np.nanmean(rms)*np.abs(cal)
+            beamsizes_err[ctr*2] = np.nanstd(rms)*np.abs(cal)
             voltages[ctr*2] = voltage*(-1)**ctr
 
     if len(zero_crossings) == 2:

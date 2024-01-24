@@ -204,6 +204,14 @@ class DataLoaderBase:
         self.sd_dict[dimension] = {'sd': [], 'mean': [], 'rms': []}
         for img in self.images:
             sd = img.get_screen_dist(dimension)
+            if self.data_loader_options['screen_cutoff_relative']:
+                nn = self.data_loader_options['screen_cutoff_edge_points']
+                edge1 = np.max(sd.intensity[:nn])
+                edge2 = np.max(sd.intensity[-nn:])
+                cutoff = min(edge1, edge2)*self.data_loader_options['screen_cutoff_relative_factor']
+                cutoff_factor = cutoff/sd.intensity.max()
+                sd.aggressive_cutoff(cutoff_factor)
+
             sd.aggressive_cutoff(self.data_loader_options['screen_cutoff'])
             self.sd_dict[dimension]['sd'].append(sd)
             self.sd_dict[dimension]['mean'].append(sd.mean())

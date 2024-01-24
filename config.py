@@ -393,6 +393,9 @@ def get_default_data_loader_options():
             'multi_zero_position': 0,
             'zero_positions': None,
             'screen_cutoff': 0,
+            'screen_cutoff_relative': False,
+            'screen_cutoff_edge_points': 10,
+            'screen_cutoff_relative_factor': 2,
             }.copy()
     return outp
 

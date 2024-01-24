@@ -206,6 +206,9 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 'cutX': None,
                 'cutY': None,
                 'screen_cutoff': 0,
+                'screen_cutoff_relative': True,
+                'screen_cutoff_edge_points': 10,
+                'screen_cutoff_relative_factor': 2,
                 }
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
@@ -219,6 +222,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     else:
         charge = np.abs(np.trapz(_ii, _tt*1e-15))
         #print('Charge %.2e' % charge)
+    outp['charge'] = charge
 
     tds = screen_tds_dict[data['Input data']['profileMonitor']]
     tds_freq = tds_freq_dict[tds]
@@ -477,8 +481,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             proj = projections[n_phase, n_image]
             profile = beam_profile.BeamProfile(time, proj, energy_eV, charge)
             cutoff_factor = current_cutoff*(time[1]-time[0])/profile.charge_dist.max()
-            profile.aggressive_cutoff(cutoff_factor)
             gauss[n_phase, n_image] = profile.gaussfit.sigma
+            profile.aggressive_cutoff(cutoff_factor)
             profile.crop()
             profile.plot_standard(sp, center=profile_center_plot)
             all_profiles.append(profile)

@@ -365,8 +365,12 @@ class BeamProfile(Profile):
         else:
             self._yy = charge_dist
         self.energy_eV = energy_eV
-        self.total_charge = total_charge
+        self._total_charge = total_charge
         self.wake_dict = {}
+
+    @property
+    def total_charge(self):
+        return self._total_charge
 
     def calc_wake(self, structure, gap, beam_position, wake_type):
         """

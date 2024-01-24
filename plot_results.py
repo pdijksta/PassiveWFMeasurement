@@ -557,7 +557,7 @@ def plot_simple_daq(data_dict, dim, **plot_kwargs):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True, shift_time_axis=True):
 
     linewidth = 0.8
     dark_blue  = "#185c8c"
@@ -637,7 +637,10 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         mask2 = current_mean > current_cutoff
         sp_current.errorbar(mean_slice_dict['t']['mean'][mask2]*1e15, current_mean[mask2]/1e3, yerr=current_std[mask2]/1e3, label=label, color=fill_color)
 
-        current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
+        if shift_time_axis:
+            current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
+        else:
+            current_center.append(0)
 
     current_profile = copy.deepcopy(result_dict['images_off']['current_profile'])
     if result_dict['linear_conversion']:

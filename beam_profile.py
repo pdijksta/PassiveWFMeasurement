@@ -372,6 +372,11 @@ class BeamProfile(Profile):
     def total_charge(self):
         return self._total_charge
 
+    @total_charge.setter
+    def total_charge(self, total_charge):
+        self._total_charge = total_charge
+        self._yy = self._yy * total_charge / np.sum(self._yy)
+
     def calc_wake(self, structure, gap, beam_position, wake_type):
         """
         wake_type: can be 'Dipole', 'Quadrupole', or 'Longitudinal'

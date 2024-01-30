@@ -3,8 +3,12 @@ import copy
 import numpy as np
 
 from . import h5_storage
+from . import data_loader
+from . import calibration
+from . import blmeas
 from . import lattice
 from . import beam_profile
+from . import tracking
 from . import myplotstyle as ms
 from . import image_analysis
 
@@ -119,6 +123,110 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             'las_rec': las_rec,
             'result_dict': result_dict,
             'las_rec_images': las_rec_images,
+            }
+    return outp
+
+def tds_obtain_lasing(blmeas_file, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, calib0, beamline, structure_name, screen_name, norm_factor=None):
+    blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False)
+    blmeas_profile = blmeas_dict[1]['representative_profile']
+
+    if type(file_or_dict_off) is dict:
+        lasing_off_dict = file_or_dict_off
+    else:
+        lasing_off_dict = h5_storage.loadH5Recursive(file_or_dict_off)
+    if type(file_or_dict_on) is dict:
+        lasing_on_dict = file_or_dict_on
+    else:
+        lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
+
+    meta_data = lasing_off_dict['meta_data_begin']
+    tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib0, screen_name)
+    tracker.find_beam_position_options['position_explore'] = 50e-6
+
+    median_index = data_loader.get_median(lasing_off_dict['pyscan_result']['image'].astype(float).sum(axis=-2), 'mean', 'index')
+    x_axis = lasing_off_dict['pyscan_result']['x_axis_m'].astype(float)
+    y_axis = lasing_off_dict['pyscan_result']['y_axis_m'].astype(float)
+    if tracker.structure.dim == 'X':
+        x_axis = x_axis - calib0.screen_center
+    if tracker.structure.dim == 'Y':
+        y_axis = y_axis - calib0.screen_center
+
+    image_arr = lasing_off_dict['pyscan_result']['image'][median_index].astype(float)
+    if x_axis[0] > x_axis[1]:
+        x_axis = x_axis[::-1]
+        image_arr = image_arr[:,::-1]
+    if y_axis[0] > y_axis[1]:
+        y_axis = y_axis[::-1]
+        image_arr = image_arr[::-1]
+    screen_proj = image_arr.sum(axis=-2)
+    median_image = image_analysis.Image(image_arr, x_axis, y_axis, charge=blmeas_profile.total_charge)
+    raw_screen = beam_profile.ScreenDistribution(x_axis, screen_proj, total_charge=blmeas_profile.total_charge)
+
+    blmeas_profile.total_charge = tracker.total_charge
+    tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
+    tracker.update_calib(tds_calib['calib'])
+    tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
+
+    las_rec_images = {}
+
+    # Allow supply of two trackers, the first for lasing off and the second for lasing on
+    if hasattr(tracker, '__iter__'):
+        tracker1, tracker2 = tracker
+    else:
+        tracker1 = tracker2 = tracker
+    trackers = [tracker1, tracker2]
+
+    for main_ctr, (data_dict, title, _tracker) in enumerate([(lasing_off_dict, 'Lasing Off', tracker1), (lasing_on_dict, 'Lasing On', tracker2)]):
+        if main_ctr == 0:
+            ref_y = None
+        else:
+            ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
+        if main_ctr == 1:
+            profile = las_rec_images['Lasing Off'].profile
+            ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+        else:
+            profile = None
+            ref_slice_dict = None
+
+        rec_obj = LasingReconstructionImages(title, _tracker, lasing_options, profile=profile, ref_y=ref_y)
+        if trackers[main_ctr].structure.dim == 'X':
+            screen_centerX, screen_centerY = _tracker.calib.screen_center, 0
+        elif trackers[main_ctr].structure.dim == 'Y':
+            screen_centerX, screen_centerY = 0, trackers[main_ctr].calib.screen_center
+        rec_obj.add_dict(data_dict, screen_centerX=screen_centerX, screen_centerY=screen_centerY)
+        #rec_obj.process_data(ref_slice_dict=ref_slice_dict)
+        self = rec_obj
+
+        self.convert_y()
+        self.profile = blmeas_profile
+        self.wake_t, self.wake_x = self.calc_wake()
+        if self.lasing_options['adjust_beam_position']:
+            self.get_streaker_offsets()
+        self.convert_x_wake()
+
+        self.slice_x()
+        self.fit_slice()
+
+        if ref_slice_dict is not None:
+            self.ref_slice_dict = ref_slice_dict
+        elif self.ref_slice_dict is None:
+            self.ref_slice_dict = self.slice_dicts[0]
+
+        if self.ref_slice_dict is None:
+            raise ValueError('No ref_slice_dict defined!')
+        self.interpolate_slice(self.ref_slice_dict)
+
+        las_rec_images[title] = rec_obj
+
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
+    las_rec.lasing_analysis(norm_factor=norm_factor)
+    result_dict = las_rec.get_result_dict()
+    outp = {
+            'las_rec': las_rec,
+            'result_dict': result_dict,
+            'las_rec_images': las_rec_images,
+            'median_image': median_image,
+            'tds_calib': tds_calib,
             }
     return outp
 

@@ -405,6 +405,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     outp['weighted_calibration'] = weighted_calibration
     outp['all_phases_rad'] = np.array(all_phases_rad)
     outp['all_phases_plot'] = np.array(all_phases_plot)
+    outp['separate_calibrations'] = separate_calibrations
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:

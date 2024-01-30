@@ -801,7 +801,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
                 else:
                     wake_t, wake_x = self.calc_wake(self.beam_positions[ctr])
                     img_cut = img.cut(wake_x.min(), wake_x.max())
-                    img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
+                    img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False, current_profile=self.profile)
             self.images_tE.append(img_tE)
             self.cut_images.append(img_cut)
 

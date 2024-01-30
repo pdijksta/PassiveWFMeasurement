@@ -454,7 +454,7 @@ class Image(LogMsgBase):
             refx = 0
         return self.child(image, new_x_axis-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None):
         diff = np.diff(wake_time)
         assert np.all(diff >= 0) or np.all(diff <= 0)
         if wake_time[1] < wake_time[0]:
@@ -501,7 +501,8 @@ class Image(LogMsgBase):
             else:
                 new_img1[:,t_index] = self.image[:,x_index] / sum_slice * delta_cumsum / full_intensity
             if np.any(np.isnan(new_img1[:,t_index])):
-                import pdb; pdb.set_trace()
+                raise ValueError
+                #import pdb; pdb.set_trace()
             prev_cumsum = cumsum
 
             if print_:
@@ -520,6 +521,10 @@ class Image(LogMsgBase):
             sp = subplot(sp_ctr, title='Wake', xlabel='time [fs]', ylabel='Screen x [mm]')
             sp_ctr += 1
             sp.plot(wake_time*1e15, wake_x*1e3)
+            if current_profile is not None:
+                sp2 = sp.twinx()
+                sp2.plot(current_profile.time*1e15, current_profile.charge_dist, color='black')
+                sp2.set_ylabel('Profile (arb. units)')
 
             sp = subplot(sp_ctr, title='Image projection X', xlabel='x [mm]', ylabel='Intensity (arb. units)')
             sp_ctr += 1
@@ -528,6 +533,10 @@ class Image(LogMsgBase):
             sp = subplot(sp_ctr, title='Image projection T', xlabel='t [fs]', ylabel='Intensity (arb. units)')
             sp_ctr += 1
             sp.plot(output.x_axis*1e15, output.image.sum(axis=-2))
+            if current_profile is not None:
+                sp2 = sp.twinx()
+                sp2.plot(current_profile.time*1e15, current_profile.charge_dist, color='black')
+                sp2.set_ylabel('Profile (arb. units)')
 
             sp = subplot(sp_ctr, title='Image old', xlabel='x [mm]', ylabel='y [mm]', grid=False)
             sp_ctr += 1
@@ -539,16 +548,7 @@ class Image(LogMsgBase):
                 output.plot_img_and_proj(sp)
             except:
                 print('Cannot plot output')
-
-            sp = subplot(sp_ctr, title='Image new 1', xlabel='t [fs]', ylabel=' y [mm]', grid=False)
-            sp_ctr += 1
-            new_obj1 = self.child(new_img1, new_t_axis, self.y_axis, x_unit='s', xlabel='t (fs)')
-            try:
-                new_obj1.plot_img_and_proj(sp)
-            except:
-                print('Cannot plot new_obj1')
             #fig.savefig('/tmp/debug_fig.pdf')
-
         return output
 
     def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False, plot_slice_lims=False):

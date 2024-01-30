@@ -326,8 +326,8 @@ def get_default_reconstruct_gauss_options():
 
 def get_default_beam_spec():
     outp = {
-            'nemitx': 755e-9,
-            'nemity': 755e-9,
+            'nemitx': 250e-9,
+            'nemity': 250e-9,
             'n_mesh': 500,
             'cutoff_sigma': 5,
             'energy_chirp': 0,

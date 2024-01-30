@@ -8,7 +8,6 @@ from . import calibration
 from . import blmeas
 from . import lattice
 from . import beam_profile
-from . import tracking
 from . import myplotstyle as ms
 from . import image_analysis
 
@@ -126,9 +125,10 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
-def tds_obtain_lasing(blmeas_file, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, calib0, beamline, structure_name, screen_name, norm_factor=None):
+def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None):
     blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False)
     blmeas_profile = blmeas_dict[1]['representative_profile']
+    blmeas_profile.center('Mean')
 
     if type(file_or_dict_off) is dict:
         lasing_off_dict = file_or_dict_off
@@ -139,10 +139,7 @@ def tds_obtain_lasing(blmeas_file, file_or_dict_off, file_or_dict_on, lasing_opt
     else:
         lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
 
-    meta_data = lasing_off_dict['meta_data_begin']
-    tracker = tracking.get_default_tracker(beamline, structure_name, meta_data, calib0, screen_name)
-    tracker.find_beam_position_options['position_explore'] = 50e-6
-
+    calib0 = tracker.calib
     median_index = data_loader.get_median(lasing_off_dict['pyscan_result']['image'].astype(float).sum(axis=-2), 'mean', 'index')
     x_axis = lasing_off_dict['pyscan_result']['x_axis_m'].astype(float)
     y_axis = lasing_off_dict['pyscan_result']['y_axis_m'].astype(float)
@@ -166,6 +163,7 @@ def tds_obtain_lasing(blmeas_file, file_or_dict_off, file_or_dict_on, lasing_opt
     tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
     tracker.update_calib(tds_calib['calib'])
     tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
+    tracker.update_calib(tds_calib['calib'])
 
     las_rec_images = {}
 
@@ -225,8 +223,9 @@ def tds_obtain_lasing(blmeas_file, file_or_dict_off, file_or_dict_on, lasing_opt
             'las_rec': las_rec,
             'result_dict': result_dict,
             'las_rec_images': las_rec_images,
-            'median_image': median_image,
+            'example_image': median_image,
             'tds_calib': tds_calib,
+            'blmeas_dict': blmeas_dict,
             }
     return outp
 

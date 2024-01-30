@@ -933,3 +933,153 @@ def plot_single_sided_calib(calib_dict):
 
     return fig
 
+def blmeas_figure(figsize=None):
+    fig = plt.figure(figsize=figsize)
+    fig.canvas.manager.set_window_title('Bunch profile analysis')
+    fig.subplots_adjust(hspace=0.35, wspace=0.35)
+    subplot = ms.subplot_factory(3,3)
+    subplots = [subplot(sp_ctr) for sp_ctr in range(1, 1+9)]
+    clear_blmeas_figure(*subplots)
+    return fig, subplots
+
+
+def clear_blmeas_figure(sp_calib, sp_residual, sp_parabola, sp_bunch_duration, sp_example_image1, sp_example_image2, sp_average_profile, sp_zc1, sp_zc2, title_example1=None, title_example2=None):
+    for sp, title, xlabel, ylabel in [
+            (sp_calib, 'Calibration phase scan', '$\Delta$Phase (deg)', 'Screen centroid ($\mu$m)'),
+            (sp_residual, 'Calibration fit residuals', '$\Delta$Phase (deg)', 'Fit residuals ($\mu$m)'),
+            (sp_parabola, 'Rms beam size parabola', 'Voltage (MV)', 'Beam size (mm$^2$)'),
+            (sp_bunch_duration, 'Bunch durations', '$\Delta$Phase (deg)', 'Bunch duration (fs)'),
+            (sp_example_image1, title_example1, '$x$ (mm)', '$y$ (mm)'),
+            (sp_example_image2, title_example2, '$x$ (mm)', '$y$ (mm)'),
+            (sp_average_profile, 'Representative profiles', '$t$ (fs)', '$I$ (kA)'),
+            (sp_zc1, 'Zero crossing 1', '$t$ (fs)', '$I$ (kA)'),
+            (sp_zc2, 'Zero crossing 2', '$t$ (fs)', '$I$ (kA)'),
+            ]:
+        sp.clear()
+        sp.set_title(title)
+        sp.set_xlabel(xlabel)
+        sp.set_ylabel(ylabel)
+        sp.grid(False)
+
+def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center_plot='Mean'):
+
+    textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
+
+    if plot_handles is None:
+        plot_handles = blmeas_figure(figsize=figsize)
+    fig_main, (sp_calib, sp_residual, sp_parabola, sp_bunch_duration, sp_example_image1, sp_example_image2, sp_average_profile, sp_zc1, sp_zc2) = plot_handles
+
+    zero_crossings = result['zero_crossings']
+    calibrations_err = result['calibrations_err']
+    calibrations = result['calibrations']
+    all_phases_rad = result['all_phases_rad']
+    all_phases_plot = result['all_phases_plot']
+
+    for zc_ctr, (zero_crossing, sp_example_image, sp_zc) in enumerate(zip(zero_crossings, [sp_example_image1, sp_example_image2], [sp_zc1, sp_zc2])):
+        phases_deg = result[zero_crossing]['phases_deg']
+        phases_plot = result[zero_crossing]['phases_plot']
+        example_image = result[zero_crossing]['example_image']
+        x_axis = result[zero_crossing]['x_axis']
+        y_axis = result[zero_crossing]['y_axis']
+        n_images = result[zero_crossing]['n_images']
+        chi_square_red = result[zero_crossing]['chi_square_red']
+        centroids = result[zero_crossing]['centroids']
+        centroids_err = result[zero_crossing]['centroids_err']
+        centroids_fit = result[zero_crossing]['centroids_fit']
+        calibration = calibrations[zc_ctr]
+        calibration_error = calibrations_err[zc_ctr]
+        residuals = result[zero_crossing]['residuals']
+        n_phases = result[zero_crossing]['n_phases']
+        fwhm = result[zero_crossing]['fwhm']
+        rms = result[zero_crossing]['rms']
+        gauss = result[zero_crossing]['gauss']
+        profiles = result[zero_crossing]['profiles']
+
+        gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=True)
+        sp_example_image.set_title('Phase %.2f deg, image %i' % (phases_deg[len(phases_deg)//2], n_images//2), fontsize=None)
+        textstr = 'Dim x/y: %i/%i\n' % (len(x_axis), len(y_axis))
+        textstr += 'gf $\sigma_x$: %.0f $\mu$m\n' % (gf_dict['gf_x'].sigma*1e6)
+        textstr += 'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
+        sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
+
+        color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
+        label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
+        sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
+
+        sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
+        sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
+
+        sp_zc.set_title('Zero crossing %i, %i profiles' % (zero_crossing, fwhm.size))
+
+        for profile in profiles:
+            profile.plot_standard(sp_zc, center=profile_center_plot)
+        result[zero_crossing]['representative_profile'].plot_standard(sp_average_profile, label='Zc %i' % zero_crossing, center=profile_center_plot)
+
+        if all_phases_plot.size:
+            phases_plot = all_phases_plot[zc_ctr]
+        else:
+            phases_plot = phases_deg
+        textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
+        textstr += 'Calibration: %.2f $\mu$m/fs\n' % (calibration*1e-9)
+        textstr += 'Bunch durations:'
+        for label, label3, arr, color, factor in [
+                ('rms', 'rms', rms, 'tab:blue', 1),
+                ('fwhm/2.355', 'fwhm', fwhm, 'tab:orange', 1/np.sqrt(8*np.log(2))),
+                ('gauss $\sigma$', 'gauss', gauss, 'tab:green', 1),
+                ]:
+            label2 = 'Zc %i: %s' % (zero_crossing, label)
+            if zero_crossing == 1:
+                ls = 'solid'
+            elif zero_crossing == 2:
+                ls = 'dashed'
+                label2 = None
+            sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
+            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
+        sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
+
+
+    if len(zero_crossings) == 2:
+        if calibrations_err is None:
+            weighted_calibration = np.mean(np.abs(calibrations))
+        else:
+            weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
+        if n_phases >= 2:
+            a1, b1 = result[1]['polyfit']
+            a2, b2 = result[2]['polyfit']
+            phase_cross = (b2 - b1)/(a1 - a2)
+            sp_calib.axvline(phase_cross*180/np.pi, color='black', ls='--')
+            textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % ((np.mean(all_phases_rad[0])+phase_cross)*180/np.pi, phase_cross*180/np.pi)
+            textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
+            sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
+
+        beamsizes = result['beamsizes']
+        beamsizes_sq_err = result['beamsizes_sq_err']
+        voltages = result['voltages']
+
+        if beamsizes[1] != 0:
+            par_fit = np.poly1d(result['parabola_popt'])
+            corr_rms_blen = result['corr_rms_blen']
+            corr_rms_blen_err = result['corr_rms_blen_err']
+            sp_parabola.plot(result['parabola_x']/1e6, result['parabola_y']*1e6, ls='--')
+            textstr = 'First zero crossing to the right.\n'
+            textstr += r'$\sigma^2$ ($\mu$m$^2$) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m$^2$' % (par_fit[2]*1e24, par_fit[1]*1e18, par_fit[0]*1e12)
+            textstr += '\nCorrected rms bunch duration: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
+            min_volt = -par_fit[1]/(2*par_fit[2])
+            sp_parabola.axvline(min_volt*1e-6, color='black', ls='--')
+            textstr += '\nMin. rms beamsize at %.2f MV' % (min_volt*1e-6)
+            res = beamsizes[1] / weighted_calibration
+            textstr += '\nTime resolution %.2f fs' % (res*1e15)
+            sp_parabola.text(0.02, 0.5, textstr, transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
+        else:
+            corr_rms_blen, corr_rms_blen_err = None, None
+            sp_parabola.text(0.02, 0.5, 'Unstreaked beam size not measured', transform=sp_parabola.transAxes, verticalalignment='top', bbox=textbbox, fontsize='x-small')
+        sp_parabola.errorbar(voltages/1e6, beamsizes**2*1e6, yerr=beamsizes_sq_err*1e6, ls='None', capsize=5)
+
+    if n_phases >= 2:
+        sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
+        sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
+    sp_bunch_duration.legend()
+    if len(zero_crossings) == 2:
+        sp_average_profile.legend()
+
+

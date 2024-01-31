@@ -662,7 +662,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         res_time = res_dict['time']
         mask = res*1e15 < lim
         sp_current.plot(res_time[mask]*1e15, res[mask]*1e15, color='tab:orange', ls='--', label='Resolution')
-    sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
+    sp_current.axhline(current_cutoff/1e3, color='black', ls='--', label='Cutoff')
     sp_current.legend(loc='upper right')
     sp_slice_mean.legend()
     sp_slice_sigma.legend(handlelength=1)

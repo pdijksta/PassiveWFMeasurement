@@ -139,34 +139,6 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
     else:
         lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
 
-    calib0 = tracker.calib
-    median_index = data_loader.get_median(lasing_off_dict['pyscan_result']['image'].astype(float).sum(axis=-2), 'mean', 'index')
-    x_axis = lasing_off_dict['pyscan_result']['x_axis_m'].astype(float)
-    y_axis = lasing_off_dict['pyscan_result']['y_axis_m'].astype(float)
-    if tracker.structure.dim == 'X':
-        x_axis = x_axis - calib0.screen_center
-    if tracker.structure.dim == 'Y':
-        y_axis = y_axis - calib0.screen_center
-
-    image_arr = lasing_off_dict['pyscan_result']['image'][median_index].astype(float)
-    if x_axis[0] > x_axis[1]:
-        x_axis = x_axis[::-1]
-        image_arr = image_arr[:,::-1]
-    if y_axis[0] > y_axis[1]:
-        y_axis = y_axis[::-1]
-        image_arr = image_arr[::-1]
-    screen_proj = image_arr.sum(axis=-2)
-    median_image = image_analysis.Image(image_arr, x_axis, y_axis, charge=blmeas_profile.total_charge)
-    raw_screen = beam_profile.ScreenDistribution(x_axis, screen_proj, total_charge=blmeas_profile.total_charge)
-
-    blmeas_profile.total_charge = tracker.total_charge
-    tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
-    tracker.update_calib(tds_calib['calib'])
-    tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
-    tracker.update_calib(tds_calib['calib'])
-
-    las_rec_images = {}
-
     # Allow supply of two trackers, the first for lasing off and the second for lasing on
     if hasattr(tracker, '__iter__'):
         tracker1, tracker2 = tracker
@@ -174,7 +146,34 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
         tracker1 = tracker2 = tracker
     trackers = [tracker1, tracker2]
 
+    las_rec_images = {}
     for main_ctr, (data_dict, title, _tracker) in enumerate([(lasing_off_dict, 'Lasing Off', tracker1), (lasing_on_dict, 'Lasing On', tracker2)]):
+
+        calib0 = tracker.calib
+        median_index = data_loader.get_median(lasing_off_dict['pyscan_result']['image'].astype(float).sum(axis=-2), 'mean', 'index')
+        x_axis = lasing_off_dict['pyscan_result']['x_axis_m'].astype(float)
+        y_axis = lasing_off_dict['pyscan_result']['y_axis_m'].astype(float)
+        if tracker.structure.dim == 'X':
+            x_axis = x_axis - calib0.screen_center
+        if tracker.structure.dim == 'Y':
+            y_axis = y_axis - calib0.screen_center
+        image_arr = data_dict['pyscan_result']['image'][median_index].astype(float)
+        if x_axis[0] > x_axis[1]:
+            x_axis = x_axis[::-1]
+            image_arr = image_arr[:,::-1]
+        if y_axis[0] > y_axis[1]:
+            y_axis = y_axis[::-1]
+            image_arr = image_arr[::-1]
+        screen_proj = image_arr.sum(axis=-2)
+        median_image = image_analysis.Image(image_arr, x_axis, y_axis, charge=blmeas_profile.total_charge)
+        raw_screen = beam_profile.ScreenDistribution(x_axis, screen_proj, total_charge=blmeas_profile.total_charge)
+
+        blmeas_profile.total_charge = tracker.total_charge
+        tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
+        tracker.update_calib(tds_calib['calib'])
+        tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
+        tracker.update_calib(tds_calib['calib'])
+
         if main_ctr == 0:
             ref_y = None
         else:

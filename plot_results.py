@@ -559,6 +559,8 @@ def plot_simple_daq(data_dict, dim, **plot_kwargs):
 
 def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True, shift_time_axis=True):
 
+    textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
+
     linewidth = 0.8
     dark_blue  = "#185c8c"
     dark_red   = "#991c1d"
@@ -657,7 +659,15 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
     sp_slice_mean.legend()
     sp_slice_sigma.legend(handlelength=1)
 
-    for key, sp in [('all_Eloss', sp_lasing_loss), ('all_Espread', sp_lasing_spread)]:
+    for method, sp in [('Eloss', sp_lasing_loss), ('Espread', sp_lasing_spread)]:
+        key = 'all_'+method
+        textstrs = []
+        for info in ('rms', 'fwhm'):
+            arr = lasing_dict['%s_%s' % (info, method)]
+            textstrs.append('%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
+        textstr = '\n'.join(textstrs)
+        sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)
+
         plot_min = np.nanmin(lasing_dict[key], axis=0)
         plot_max = np.nanmax(lasing_dict[key], axis=0)
         sp.fill_between(lasing_dict['time']*1e15, plot_min/1e9, plot_max/1e9, color='tab:green', alpha=0.35)

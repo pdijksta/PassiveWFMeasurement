@@ -349,6 +349,10 @@ class LasingReconstruction:
         n_images = len(all_slice_dict['Lasing On']['t'])
         all_loss = np.zeros([n_images, mask.sum()])
         all_spread = all_loss.copy()
+        rms_eloss = np.zeros(n_images)
+        fwhm_eloss = rms_eloss.copy()
+        rms_espread = rms_eloss.copy()
+        fwhm_espread = rms_eloss.copy()
 
         for ctr in range(n_images):
             current = all_slice_dict['Lasing On']['current'][ctr, mask]
@@ -365,8 +369,19 @@ class LasingReconstruction:
             power_spread = power_Espread(slice_time, current, sq_increase, None, photon_energy_factors, norm_factor=norm_factor)
             power_spread[mask2] = 0
             all_spread[ctr] = power_spread
+
+            for power_arr, rms_arr, fwhm_arr in [(power_loss, rms_eloss, fwhm_eloss), (power_spread, rms_espread, fwhm_espread)]:
+                power_loss2 = power_arr.copy()
+                power_loss2[power_loss2 < 0] = 0
+                _, rms_arr[ctr] = image_analysis.calc_rms(slice_time, power_loss2)
+                fwhm_arr[ctr] = image_analysis.calc_fwhm(slice_time, power_loss2)
+
         lasing_dict['all_Eloss'] = all_loss
         lasing_dict['all_Espread'] = all_spread
+        lasing_dict['rms_Eloss'] = rms_eloss
+        lasing_dict['fwhm_Eloss'] = fwhm_eloss
+        lasing_dict['rms_Espread'] = rms_espread
+        lasing_dict['fwhm_Espread'] = fwhm_espread
 
         self.analysis_complete = True
 

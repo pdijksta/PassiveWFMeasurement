@@ -104,6 +104,8 @@ class Image(LogMsgBase):
     def invertY(self):
         return self.child(self.image.copy()[::-1], self.x_axis.copy(), self.y_axis.copy())
 
+    #def redistribute(self, dimension,
+
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
@@ -658,4 +660,11 @@ def calc_rms(xx, yy):
     mean = np.sum(xx*yy)/np.sum(yy)
     rms = np.sqrt(np.sum((xx-mean)**2*yy)/np.sum(yy))
     return mean, rms
+
+def calc_fwhm(xx, yy):
+    halfmax = np.max(yy)/2
+    mask = yy >= halfmax
+    x1 = xx[mask][0]
+    x2 = xx[mask][-1]
+    return abs(x2-x1) + abs(xx[1]-xx[0])
 

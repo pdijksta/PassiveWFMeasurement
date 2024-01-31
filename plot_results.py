@@ -442,7 +442,7 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
             (sp_image_off, 'c) Lasing Off', '$t$ (fs)', '$\Delta E$ (MeV)'),
             (sp_slice_mean, 'd) Energy loss', '$t$ (fs)', '$\Delta E$ (MeV)'),
             (sp_slice_sigma, 'e) Energy spread', '$t$ (fs)', '$\sigma_E$ (MeV)'),
-            (sp_current, 'f) Current profile', '$t$ (fs)', '$I$ (kA)'),
+            (sp_current, 'f) $I(t)$ and $r_t(t)$', '$t$ (fs)', '$I$ (kA), $r_t$ (fs)'),
             (sp_lasing_loss, 'g) Power from $\Delta E$', '$t$ (fs)', '$P_\Delta$ (GW)'),
             (sp_lasing_spread, 'h) Power from $\sigma_E$', '$t$ (fs)', '$P_\sigma$ (GW)'),
             (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$d$ ($\mu$m)'),
@@ -654,8 +654,16 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         current_profile.cutoff(0.1)
         current_profile.crop()
         current_profile.plot_standard(sp_current, center_float=current_center_plot, label='Reference', color='black')
+
+    if 'resolution_dict' in result_dict:
+        res_dict = result_dict['resolution_dict']
+        lim = sp_current.get_ylim()[1]
+        res = res_dict['resolution']
+        res_time = res_dict['time']
+        mask = res*1e15 < lim
+        sp_current.plot(res_time[mask]*1e15, res[mask]*1e15, color='tab:orange', ls='--', label='Resolution')
     sp_current.axhline(current_cutoff/1e3, color='black', ls='--')
-    sp_current.legend()
+    sp_current.legend(loc='upper right')
     sp_slice_mean.legend()
     sp_slice_sigma.legend(handlelength=1)
 
@@ -1092,5 +1100,4 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
     sp_bunch_duration.legend()
     if len(zero_crossings) == 2:
         sp_average_profile.legend()
-
 

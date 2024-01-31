@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 from . import h5_storage
+from . import resolution
 from . import data_loader
 from . import calibration
 from . import blmeas
@@ -218,6 +219,19 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
     las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
     las_rec.lasing_analysis(norm_factor=norm_factor)
     result_dict = las_rec.get_result_dict()
+
+    d1 = result_dict['images_off']['distances']
+    d2 = result_dict['images_on']['distances']
+    if d1 is not None and d2 is not None:
+        mean_distance = np.mean(list(d1)+list(d2))
+        qw = tracker.forward_options['quad_wake']
+        tracker.forward_options['quad_wake'] = True
+        res_dict = resolution.calc_resolution(profile, tracker.structure_gap, tracker.structure_gap/2 - mean_distance, tracker, camera_res=10e-6, dim=tracker.structure.dim.lower())
+        tracker.forward_options['quad_wake'] = qw
+    else:
+        res_dict = None
+    result_dict['resolution_dict'] = res_dict
+
     outp = {
             'las_rec': las_rec,
             'result_dict': result_dict,

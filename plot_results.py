@@ -559,7 +559,7 @@ def plot_simple_daq(data_dict, dim, **plot_kwargs):
         screen.plot_standard(sp_proj, color=color, lw=lw)
     return fig, (sp_img, sp_proj)
 
-def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True, shift_time_axis=True):
+def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={'Lasing Off': 'Lasing Off', 'Lasing On': 'Lasing On'}, sharex=True, sqrt=True, shift_time_axis=True, text=True):
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
 
@@ -676,7 +676,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             arr = lasing_dict['%s_%s' % (info, method)]
             textstrs.append('%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
         textstr = '\n'.join(textstrs)
-        sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)
+        if text:
+            sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)
 
         plot_min = np.nanmin(lasing_dict[key], axis=0)
         plot_max = np.nanmax(lasing_dict[key], axis=0)

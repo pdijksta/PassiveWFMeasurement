@@ -41,7 +41,9 @@ class dummy_plot:
     set_xticks = dummy
     imshow = dummy
     fill_between = dummy
+    text = dummy
     get_ylim = get_xlim
+    transAxes = None
 
 def plot_reconstruction(gauss_dicts, plot_handles=None, blmeas_profile=None, max_distance=350e-6, type_='centroid', figsize=None):
     center = 'Mean'

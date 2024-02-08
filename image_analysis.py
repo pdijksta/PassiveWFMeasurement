@@ -1,4 +1,6 @@
+import operator
 import numpy as np
+import scipy
 from scipy.optimize import OptimizeWarning
 import matplotlib.pyplot as plt
 
@@ -456,7 +458,98 @@ class Image(LogMsgBase):
             refx = 0
         return self.child(image, new_x_axis-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=None, size_factor=10):
+
+        diff = np.diff(wake_time)
+        assert np.all(diff >= 0) or np.all(diff <= 0)
+        if wake_x[1] < wake_x[0]:
+            wake_x = wake_x[::-1]
+            wake_time = wake_time[::-1]
+
+        new_time_len = self.image.shape[1]*size_factor
+        new_t_axis = np.linspace(wake_time.min(), wake_time.max(), new_time_len)
+        new_arr = np.zeros([len(self.y_axis), len(new_t_axis)], float)
+
+        indicesT = np.arange(len(new_t_axis))
+        indicesX = np.arange(len(self.x_axis))
+        delta_x = (self.x_axis[1] - self.x_axis[0])/2
+        sign_wake = np.sign(np.mean(wake_x))
+
+        for op in operator.lt, operator.gt:
+            mask = op(self.x_axis, 0)
+            x_axis = self.x_axis[mask]
+            indices = indicesX[mask]
+            if np.sign(np.mean(x_axis)) != sign_wake:
+                x_axis = -x_axis[::-1]
+                indices = indices[::-1]
+            for nx, x in zip(indices, x_axis):
+                times = np.interp([x-delta_x, x+delta_x], wake_x, wake_time)
+                indices = np.interp(times, new_t_axis, indicesT)
+                i00, i01 = sorted(indices)
+                i0, i1 = int(i00), int(i01)+1
+                if i0 == new_time_len-1:
+                    continue
+                if i1 == new_time_len:
+                    i1 -= 1
+                len_new = i1-i0+1
+                weights = np.ones(len_new)
+                weights[0] = i00-i0
+                weights[-1] = i1 - i01
+                weights /= np.sum(weights)
+                new_arr[:,i0:i1+1] += (self.image[:,nx, np.newaxis] * weights[np.newaxis,:])
+
+        new_arr[:,0] = new_arr[:,-1] = 0
+        new_arr *= self.image.sum()/new_arr.sum()
+
+        if time_smoothing is not None:
+            nconv = int(time_smoothing / (new_t_axis[1] - new_t_axis[0]))
+            kernel = np.ones(nconv)/nconv
+            new_arr1 = scipy.ndimage.correlate1d(new_arr, kernel, axis=1)
+        else:
+            new_arr1 = new_arr
+        new_arr1 = np.reshape(new_arr1, [self.image.shape[0], self.image.shape[1], size_factor]).sum(axis=-1)
+        new_img1 = self.child(new_arr1, new_t_axis[::size_factor], self.y_axis, xlabel='t (fs)', x_unit='s')
+
+        if debug:
+            new_arr = np.reshape(new_arr, [self.image.shape[0], self.image.shape[1], size_factor]).sum(axis=-1)
+            new_img = self.child(new_arr, new_t_axis[::size_factor], self.y_axis, xlabel='t (fs)', x_unit='s')
+
+            old_img = self.old_x_to_t(wake_x, wake_time)
+
+            fig = ms.figure('Test new image analysis')
+            fig.subplots_adjust(hspace=0.35)
+
+            subplot = ms.subplot_factory(3, 3, False)
+            sp_ctr = 1
+
+            sp_current = subplot(sp_ctr, title='Current profiles', xlabel='t (fs)', ylabel='I (kA)')
+            sp_ctr += 1
+
+            sp_y = subplot(sp_ctr, title='Y projections', xlabel='y (mm)', ylabel=r'$\rho$ (nC/m)')
+            sp_ctr += 1
+
+            for img, label in [
+                    (new_img, 'New output'),
+                    (self, 'Input'),
+                    (old_img, 'Old output'),
+                    (new_img1, 'After smoothing'),
+                    ]:
+                sp = subplot(sp_ctr, title=label, xlabel='x (mm)', ylabel='x (mm)')
+                sp_ctr += 1
+                self.plot_img_and_proj(sp)
+                if img.x_unit == 's':
+                    profile = beam_profile.BeamProfile(img.x_axis, img.image.sum(axis=0), self.energy_eV, self.charge)
+                    profile.plot_standard(sp_current, label=label)
+
+                dist = img.get_screen_dist('Y')
+                dist.total_charge = self.charge
+                dist.plot_standard(sp_y, label=label)
+
+            sp_current.legend()
+            sp_y.legend()
+        return new_img1
+
+    def old_x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None):
         diff = np.diff(wake_time)
         assert np.all(diff >= 0) or np.all(diff <= 0)
         if wake_time[1] < wake_time[0]:

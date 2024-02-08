@@ -814,22 +814,23 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
     def convert_x_wake(self):
         self.images_tE = []
         self.cut_images = []
-        x_min, x_max = self.wake_x.min(), self.wake_x.max()
+        #x_min, x_max = self.wake_x.min(), self.wake_x.max()
         for ctr, img in enumerate(self.images_E):
+            img_cut = None
             if self.lasing_options['self_consistent_profile']:
                 if self.profiles is None:
                     self.get_current_profiles()
                 wake_t, wake_x = self.calc_wake(profile=self.profiles[ctr])
-                img_cut = img.cut(wake_x.min(), wake_x.max())
-                img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False)
+                #img_cut = img.cut(wake_x.min(), wake_x.max())
+                img_tE = img.x_to_t(wake_x, wake_t, debug=False)
             else:
                 if self.beam_positions is None:
-                    img_cut = img.cut(x_min, x_max)
-                    img_tE = img_cut.x_to_t(self.wake_x, self.wake_t, debug=False)
+                    #img_cut = img.cut(x_min, x_max)
+                    img_tE = img.x_to_t(self.wake_x, self.wake_t, debug=False)
                 else:
                     wake_t, wake_x = self.calc_wake(self.beam_positions[ctr])
-                    img_cut = img.cut(wake_x.min(), wake_x.max())
-                    img_tE = img_cut.x_to_t(wake_x, wake_t, debug=False, current_profile=self.profile)
+                    #img_cut = img.cut(wake_x.min(), wake_x.max())
+                    img_tE = img.x_to_t(wake_x, wake_t, debug=False, current_profile=self.profile)
             self.images_tE.append(img_tE)
             self.cut_images.append(img_cut)
 

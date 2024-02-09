@@ -126,7 +126,7 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
-def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None):
+def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False):
     blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False)
     blmeas_profile = blmeas_dict[1]['representative_profile']
     blmeas_profile.center('Mean')
@@ -170,10 +170,9 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
         raw_screen = beam_profile.ScreenDistribution(x_axis, screen_proj, total_charge=blmeas_profile.total_charge)
 
         blmeas_profile.total_charge = tracker.total_charge
-        tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
-        tracker.update_calib(tds_calib['calib'])
-        tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen)
-        tracker.update_calib(tds_calib['calib'])
+        for _ in range(2):
+            tds_calib = calibration.tdc_calibration(tracker, blmeas_profile, raw_screen, backward=backward)
+            tracker.update_calib(tds_calib['calib'])
 
         if main_ctr == 0:
             ref_y = None
@@ -792,7 +791,10 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
         beam_positions = []
         position_dicts = []
         for meas_screen in self.meas_screens:
-            position_dict = self.tracker.find_beam_position(self.tracker.beam_position, meas_screen, self.profile)
+            if self.lasing_options['adjust_beam_position_backward']:
+                position_dict = self.tracker.find_beam_position_backward(self.tracker.beam_position, meas_screen, self.profile)
+            else:
+                position_dict = self.tracker.find_beam_position(self.tracker.beam_position, meas_screen, self.profile)
             position_dicts.append(position_dict)
             beam_positions.append(position_dict['beam_position'])
         self.beam_positions = np.array(beam_positions)
@@ -832,6 +834,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
                     #img_cut = img.cut(wake_x.min(), wake_x.max())
                     img_tE = img.x_to_t(wake_x, wake_t, debug=False, current_profile=self.profile)
             self.images_tE.append(img_tE)
+            #import pdb; pdb.set_trace()
             self.cut_images.append(img_cut)
 
     def process_data(self, ref_slice_dict=None, slice_fit=True):

@@ -644,11 +644,13 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         if shift_time_axis:
             current_center.append(np.sum(mean_slice_dict['t']['mean']*current_mean)/current_mean.sum())
         else:
-            current_center.append(0)
+            current_center.append(None)
 
     current_profile = copy.deepcopy(result_dict['images_off']['current_profile'])
     if result_dict['linear_conversion']:
         current_profile = None
+        current_center_plot = None
+    elif None in current_center:
         current_center_plot = None
     else:
         current_center_plot = np.mean(current_center)
@@ -675,6 +677,8 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         for info in ('rms', 'fwhm'):
             arr = lasing_dict['%s_%s' % (info, method)]
             textstrs.append('%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
+            if info == 'rms':
+                textstrs.append('%s*2.355 (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15*2.355, np.nanstd(arr)*1e15*2.355))
         textstr = '\n'.join(textstrs)
         if text:
             sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)
@@ -754,29 +758,30 @@ def clear_tdc_calib_figure(sp_image, sp_profile, sp_screen):
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None):
+def plot_tdc_calibration(tdc_dict, image, plot_handles=None, figsize=None, center='Mean'):
     if plot_handles is None:
         _, plot_handles = tdc_calib_figure(figsize)
     sp_image, sp_profile, sp_screen = plot_handles
 
     blmeas_profile = copy.deepcopy(tdc_dict['blmeas_profile'])
     blmeas_profile.crop()
-    blmeas_profile.plot_standard(sp_profile, label='Input', center='Mean')
+    blmeas_profile.plot_standard(sp_profile, label='Input %.1f fs' % (blmeas_profile.rms()*1e15), center=center)
 
     image.plot_img_and_proj(sp_image, plot_gauss=False, sqrt=True)
     raw_screen = tdc_dict['meas_screen_raw']
     raw_screen.plot_standard(sp_screen, label='Measured', color='black', show_mean=True)
 
-    forward_screen = tdc_dict['tdc_forward_screen']
-    forward_screen.plot_standard(sp_screen, label='Input forward', show_mean=True)
+    if 'tdc_forward_screen' in tdc_dict:
+        forward_screen = tdc_dict['tdc_forward_screen']
+        forward_screen.plot_standard(sp_screen, label='Input forward', show_mean=True)
 
     back_profile = tdc_dict['backward_dict']['profile']
-    back_profile.plot_standard(sp_profile, label='Backward propagated', center='Mean', color='red')
+    back_profile.plot_standard(sp_profile, label='Backward propagated %.1f fs' % (back_profile.rms()*1e15), center=center, color='red')
     recon_forward_screen = tdc_dict['forward_dict']['screen']
     recon_forward_screen.plot_standard(sp_screen, label='Back and forth', color='red', show_mean=True)
 
     rec_profile = tdc_dict['gauss_dict']['reconstructed_profile']
-    rec_profile.plot_standard(sp_profile, label='Reconstructed', center='Mean', color='green')
+    rec_profile.plot_standard(sp_profile, label='Reconstructed %.1f fs' % (rec_profile.rms()*1e15), center=center, color='green')
     rec_screen = tdc_dict['gauss_dict']['reconstructed_screen']
     rec_screen.plot_standard(sp_screen, label='Reconstructed', show_mean=True, color='green')
 

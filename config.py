@@ -367,6 +367,7 @@ def get_default_lasing_options():
             'plot_slice_analysis': False,
             'plot_slice_analysis_save_path': None,
             'adjust_beam_position': True,
+            'adjust_beam_position_backward': False,
             'self_consistent_profile': False,
             'cut_extremes': None,
             'void_cutoff': [1e-3, 1e-3],

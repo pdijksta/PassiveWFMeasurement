@@ -434,7 +434,7 @@ class Tracker(LogMsgBase):
 
         return outp
 
-    def backward_propagate(self, screen, beamProfile, plot_details=False):
+    def backward_propagate(self, screen, beamProfile, plot_details=False, beam_position=None):
         if self.total_charge != beamProfile.total_charge:
             raise ValueError('Charges are unequal (pC), tracker/beam_profile:', self.total_charge*1e12, beamProfile.total_charge*1e12)
         global backward_ctr
@@ -442,8 +442,9 @@ class Tracker(LogMsgBase):
 
         beamProfile = copy.deepcopy(beamProfile)
         beamProfile.expand(0.3)
+        _beam_position = self.beam_position if beam_position is None else beam_position
 
-        wf_dict = beamProfile.calc_wake(self.structure, self.structure_gap, self.beam_position, 'Dipole')
+        wf_dict = beamProfile.calc_wake(self.structure, self.structure_gap, _beam_position, 'Dipole')
         wake_time = wf_dict['wake_time']
         wake_deltaE = wf_dict['wake_potential']
         wake_x = wake_deltaE/self.energy_eV * self.r12
@@ -748,12 +749,13 @@ class Tracker(LogMsgBase):
             index = bisect.bisect(beam_position_list, beam_position)
             beam_position_list.insert(index, beam_position)
             sim_screens.insert(index, sim_screen)
-            mean_list.insert(index, sim_screen.mean())
-            rms_list.insert(index, sim_screen.rms())
+            mean, rms = sim_screen.mean(), sim_screen.rms()
+            mean_list.insert(index, mean)
+            rms_list.insert(index, rms)
             if method == 'centroid':
-                target_list.insert(index, sim_screen.mean())
+                target_list.insert(index, mean)
             elif method == 'beamsize' or method == 'rms':
-                target_list.insert(index, sim_screen.rms())
+                target_list.insert(index, rms)
 
         def get_index_min(output='index'):
             beam_offset_arr = np.array(beam_position_list)
@@ -794,6 +796,72 @@ class Tracker(LogMsgBase):
                 'distance': distance,
                 }
         self.logMsg('Beam position found. Distance %i um. Delta: %i um. Target: %.2f mm. Result: %.2f mm. %i iterations' % (round(distance*1e6), round(delta_position*1e6), target_meas*1e3, target_list[index]*1e3, n_iter-3))
+        return output
+
+    def find_beam_position_backward(self, position0, meas_screen_raw, profile):
+        position_explore = self.find_beam_position_options['position_explore']
+        prec = self.find_beam_position_options['precision']
+        max_iterations = self.find_beam_position_options['max_iterations']
+
+        beam_position_list = []
+        back_profile_list = []
+        target_list = []
+        n_iter = 0
+
+        prepare_dict = self.prepare_screen(meas_screen_raw)
+        screen = prepare_dict['screen']
+        target = profile.rms()
+
+        def backward(beam_position):
+            beam_position = np.round(beam_position/prec)*prec
+            if beam_position in beam_position_list:
+                return
+            nonlocal n_iter
+            n_iter += 1
+            back_profile = self.backward_propagate(screen, profile, beam_position=beam_position)['profile']
+
+            index = bisect.bisect(beam_position_list, beam_position)
+            beam_position_list.insert(index, beam_position)
+            back_profile_list.insert(index, back_profile)
+            target_list.insert(index, back_profile.rms())
+
+        def get_index_min(output='index'):
+            beam_offset_arr = np.array(beam_position_list)
+            target_arr = np.array(target_list)
+            index_min = np.argmin(np.abs(target_arr - target))
+            sort = np.argsort(target_arr)
+            beam_position = np.interp(target, target_arr[sort], beam_offset_arr[sort])
+            if output == 'index':
+                return index_min.squeeze()
+            elif output == 'offset':
+                return beam_position
+
+        beam_offset_arr = np.linspace(position0-position_explore, position0+position_explore, 3)
+        for beam_position in beam_offset_arr:
+            backward(beam_position)
+        for _ in range(max_iterations):
+            beam_position = get_index_min(output='offset')
+            backward(beam_position)
+        index = get_index_min(output='index')
+        beam_position = beam_position_list[index]
+        delta_position = beam_position - position0
+        distance = self.structure_gap/2 - abs(beam_position)
+
+        output = {
+                'back_profiles': back_profile_list,
+                'meas_screen': meas_screen_raw,
+                'back_profile': back_profile_list[index],
+                'beam_position': beam_position,
+                'beam_positions': np.array(beam_position_list),
+                'target_rms': target,
+                'delta_position': delta_position,
+                'gap': self.structure_gap,
+                'structure_name': self.structure_name,
+                'beam_offset0': position0,
+                'rms_arr': np.array(target_list),
+                'distance': distance,
+                }
+        self.logMsg('Beam position found. Distance %i um. Delta: %i um. Target: %.1f fs. Result: %.1f fs. %i iterations' % (round(distance*1e6), round(delta_position*1e6), target*1e15, target_list[index]*1e15, n_iter-3))
         return output
 
 

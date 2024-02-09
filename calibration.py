@@ -607,9 +607,12 @@ class StructureCalibrator(LogMsgBase):
         index_arr = np.arange(len(self.raw_struct_positions))
         return index_arr[(distances <= max_distance) * (distances >=min_distance)]
 
-def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False):
+def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False, backward=False):
     position0 = tracker.beam_position
-    result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile)
+    if backward:
+        result_dict = tracker.find_beam_position_backward(position0, meas_screen_raw, blmeas_profile)
+    else:
+        result_dict = tracker.find_beam_position(position0, meas_screen_raw, blmeas_profile)
     delta_position = result_dict['delta_position']
     meas_screen = tracker.prepare_screen(meas_screen_raw)['screen']
     force_pos_old = tracker.force_beam_position
@@ -634,12 +637,16 @@ def tdc_calibration(tracker, blmeas_profile, meas_screen_raw, output_beam=False)
             'old_calib': tracker.calib,
             'blmeas_profile': blmeas_profile,
             'meas_screen_raw': meas_screen_raw,
-            'tdc_forward_screen': result_dict['sim_screen'],
             'find_beam_position_result': result_dict,
             'backward_dict': back_dict,
             'forward_dict': forward_dict,
             'gauss_dict': gauss_dict,
             }
+    if backward:
+        outp['tdc_backward_profile'] = result_dict['back_profile']
+    else:
+        outp['tdc_forward_screen'] = result_dict['sim_screen']
+
     if output_beam:
         outp['beam'] = beam
     return outp

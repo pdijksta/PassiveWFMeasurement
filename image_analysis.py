@@ -106,8 +106,6 @@ class Image(LogMsgBase):
     def invertY(self):
         return self.child(self.image.copy()[::-1], self.x_axis.copy(), self.y_axis.copy())
 
-    #def redistribute(self, dimension,
-
     def cut(self, x_min, x_max):
         x_axis = self.x_axis
         x_mask = np.logical_and(x_axis >= x_min, x_axis <= x_max)
@@ -458,7 +456,7 @@ class Image(LogMsgBase):
             refx = 0
         return self.child(image, new_x_axis-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=None, size_factor=10):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10):
 
         diff = np.diff(wake_time)
         assert np.all(diff >= 0) or np.all(diff <= 0)
@@ -525,7 +523,10 @@ class Image(LogMsgBase):
             sp_current = subplot(sp_ctr, title='Current profiles', xlabel='t (fs)', ylabel='I (kA)')
             sp_ctr += 1
 
-            sp_y = subplot(sp_ctr, title='Y projections', xlabel='y (mm)', ylabel=r'$\rho$ (nC/m)')
+            if current_profile:
+                current_profile.plot_standard(sp_current, label='I (t)')
+
+            sp_y = subplot(sp_ctr, title='Y projections', xlabel=new_img.ylabel, ylabel='Intensity (arb. units)')
             sp_ctr += 1
 
             for img, label in [
@@ -534,7 +535,7 @@ class Image(LogMsgBase):
                     (old_img, 'Old output'),
                     (new_img1, 'After smoothing'),
                     ]:
-                sp = subplot(sp_ctr, title=label, xlabel='x (mm)', ylabel='x (mm)')
+                sp = subplot(sp_ctr, title=label, xlabel='x (mm)', ylabel=img.ylabel)
                 sp_ctr += 1
                 self.plot_img_and_proj(sp)
                 if img.x_unit == 's':
@@ -543,7 +544,7 @@ class Image(LogMsgBase):
 
                 dist = img.get_screen_dist('Y')
                 dist.total_charge = self.charge
-                dist.plot_standard(sp_y, label=label)
+                sp_y.plot(dist.x, dist.intensity, label=label)
 
             sp_current.legend()
             sp_y.legend()

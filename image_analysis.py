@@ -427,7 +427,9 @@ class Image(LogMsgBase):
         self.slice_dict = slice_dict
         return slice_dict
 
-    def y_to_eV(self, dispersion, energy_eV, ref_y=None):
+    def y_to_eV(self, dispersion, energy_eV=None, ref_y=None):
+        if energy_eV is None:
+            energy_eV = self.energy_eV
         if ref_y is None:
             ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
         if dispersion == 0:

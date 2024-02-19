@@ -496,7 +496,10 @@ class Image(LogMsgBase):
         if time_smoothing is not None:
             nconv = int(time_smoothing / (new_t_axis_final[1] - new_t_axis_final[0]))
             kernel = np.ones(nconv)/nconv
-            new_arr1 = scipy.ndimage.correlate1d(new_arr, kernel, axis=1)
+            if kernel.size:
+                new_arr1 = scipy.ndimage.correlate1d(new_arr, kernel, axis=1)
+            else:
+                new_arr1 = new_arr
         else:
             new_arr1 = new_arr
         new_img = self.child(new_arr1, new_t_axis_final, self.y_axis, xlabel='t (fs)', x_unit='s')

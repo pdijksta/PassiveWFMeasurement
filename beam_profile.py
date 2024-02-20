@@ -6,13 +6,22 @@ from . import blmeas
 from . import config
 
 def _mean(xx, yy):
-    return np.sum(xx*yy) / np.sum(yy)
+    s1 = np.sum(xx*yy)
+    s2 = np.sum(yy)
+    if s2 == 0:
+        return np.nan
+    else:
+        return s1/s2
 
 def _rms(xx, yy):
     mean = _mean(xx, yy)
     square = (xx - mean)**2
-    rms = np.sqrt(np.sum(square * yy) / np.sum(yy))
-    return rms
+    s1 = np.sum(square * yy)
+    s2 = np.sum(yy)
+    if s2 == 0:
+        return np.nan
+    else:
+        return np.sqrt(s1/s2)
 
 def find_rising_flank(arr, method='Size'):
     """

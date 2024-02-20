@@ -126,8 +126,8 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
-def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False):
-    blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False)
+def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False, blmeas_kwargs={}):
+    blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False, **blmeas_kwargs)
     blmeas_profile = blmeas_dict[1]['representative_profile']
     blmeas_profile.center('Mean')
 

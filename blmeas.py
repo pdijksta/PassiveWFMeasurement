@@ -469,6 +469,9 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
             corr_rms_blen = np.sqrt(popt[0])*voltage/weighted_calibration
             corr_rms_blen_err = corr_rms_blen/(2*popt[0])*np.sqrt(pcov[0,0])
+        else:
+            corr_rms_blen = 0
+            corr_rms_blen_err = 0
 
         outp['corr_rms_blen'] = corr_rms_blen
         outp['corr_rms_blen_err'] = corr_rms_blen_err

@@ -148,6 +148,7 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
     trackers = [tracker1, tracker2]
 
     las_rec_images = {}
+    median_images = {}
     for main_ctr, (data_dict, title, _tracker) in enumerate([(lasing_off_dict, 'Lasing Off', tracker1), (lasing_on_dict, 'Lasing On', tracker2)]):
 
         calib0 = tracker.calib
@@ -166,7 +167,7 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
             y_axis = y_axis[::-1]
             image_arr = image_arr[::-1]
         screen_proj = image_arr.sum(axis=-2)
-        median_image = image_analysis.Image(image_arr, x_axis, y_axis, charge=blmeas_profile.total_charge)
+        median_images[title] = image_analysis.Image(image_arr, x_axis, y_axis, charge=blmeas_profile.total_charge)
         raw_screen = beam_profile.ScreenDistribution(x_axis, screen_proj, total_charge=blmeas_profile.total_charge)
 
         blmeas_profile.total_charge = tracker.total_charge
@@ -235,7 +236,7 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
             'las_rec': las_rec,
             'result_dict': result_dict,
             'las_rec_images': las_rec_images,
-            'example_image': median_image,
+            'example_images': median_images,
             'tds_calib': tds_calib,
             'blmeas_dict': blmeas_dict,
             }

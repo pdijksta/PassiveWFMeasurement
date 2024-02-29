@@ -750,8 +750,12 @@ class Image(LogMsgBase):
         return outp
 
 def calc_rms(xx, yy):
-    mean = np.sum(xx*yy)/np.sum(yy)
-    rms = np.sqrt(np.sum((xx-mean)**2*yy)/np.sum(yy))
+    s2 = np.sum(yy)
+    if s2 == 0:
+        return np.nan, np.nan
+    else:
+        mean = np.sum(xx*yy)/s2
+        rms = np.sqrt(np.sum((xx-mean)**2*yy)/s2)
     return mean, rms
 
 def calc_fwhm(xx, yy):

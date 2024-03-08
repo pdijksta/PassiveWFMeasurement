@@ -705,7 +705,7 @@ class Image(LogMsgBase):
             if 'eref' in slice_dict:
                 yy = yy + slice_dict[slice_method]['eref']*y_factor
             yy_err = np.sqrt(slice_dict[slice_method]['sigma_sq'][mask])*y_factor
-            sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, ls='None', marker='None', lw=1)
+            sp.errorbar(xx, yy, yerr=yy_err, color=slice_color, marker='None', lw=1)
 
             if plot_slice_lims and slice_method in ('cut', 'rms'):
                 lim1 = slice_dict[slice_method]['lim1'][mask]*y_factor

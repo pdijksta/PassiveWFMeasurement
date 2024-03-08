@@ -652,7 +652,7 @@ class LasingReconstructionImagesBase:
             this_subplots.append(sp)
             slice_dict = None
             if plot_slice and type_ in ('tE', 'slice') and hasattr(self, 'slice_dicts'):
-                slice_dict = self.slice_dicts[n_image]
+                slice_dict = self.slice_dicts_old[n_image]
             image.plot_img_and_proj(sp, slice_dict=slice_dict, **kwargs)
         return figs, subplots
 

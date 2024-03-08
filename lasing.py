@@ -835,7 +835,6 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
                     #img_cut = img.cut(wake_x.min(), wake_x.max())
                     img_tE = img.x_to_t(wake_x, wake_t, debug=False, current_profile=self.profile)
             self.images_tE.append(img_tE)
-            #import pdb; pdb.set_trace()
             self.cut_images.append(img_cut)
 
     def process_data(self, ref_slice_dict=None, slice_fit=True):

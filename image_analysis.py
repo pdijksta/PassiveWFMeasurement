@@ -466,7 +466,7 @@ class Image(LogMsgBase):
 
         diff = np.diff(wake_time)
         assert np.all(diff >= 0) or np.all(diff <= 0)
-        if wake_x[1] < wake_x[0]:
+        if wake_x[-1] < wake_x[0]:
             wake_x = wake_x[::-1]
             wake_time = wake_time[::-1]
 
@@ -489,7 +489,12 @@ class Image(LogMsgBase):
                 indices = indices[::-1]
             _x_to_t_inner(self.image, indices, indices2, x_axis, wake_x, new_arr)
 
-        new_arr[:,0] = new_arr[:,-1] = 0
+        _sum = new_arr[:,1:-1].sum()
+        if _sum != 0:
+            new_arr[:,0] = new_arr[:,-1] = 0
+        else:
+            print('Sum of new arry is 0')
+
         new_arr *= self.image.sum()/new_arr.sum()
         new_arr = np.reshape(new_arr, [self.image.shape[0], self.image.shape[1], size_factor]).sum(axis=-1)
 
@@ -524,7 +529,6 @@ class Image(LogMsgBase):
                 charge = self.charge
 
             sp_y = subplot(sp_ctr, title='Y projections', xlabel='y (mm)', ylabel='Intensity (arb. units)')
-
             sp_ctr += 1
 
             for img, label in [
@@ -534,7 +538,7 @@ class Image(LogMsgBase):
                     ]:
                 sp = subplot(sp_ctr, title=label, xlabel='x (mm)', ylabel=img.ylabel)
                 sp_ctr += 1
-                self.plot_img_and_proj(sp)
+                img.plot_img_and_proj(sp)
                 if img.x_unit == 's':
                     profile = beam_profile.BeamProfile(img.x_axis, img.image.sum(axis=0), self.energy_eV, charge)
                     profile.plot_standard(sp_current, label=label)

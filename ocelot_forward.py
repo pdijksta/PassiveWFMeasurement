@@ -3,14 +3,15 @@ from scipy.constants import c
 
 from . import lattice
 
-from ocelot.cpbd.wake3D import WakeTableDechirperOffAxis, Wake
+from ocelot.cpbd.wake3D import WakeTableDechirperOffAxis, Wake, WakeTableParallelPlate3, Wake3
 from ocelot.cpbd.elements import Drift, Marker
-from ocelot.cpbd.optics import SecondTM, Navigator
+from ocelot.cpbd.optics import SecondTM
+from ocelot.cpbd.navi import Navigator
 from ocelot.cpbd.magnetic_lattice import MagneticLattice
 from ocelot.cpbd.beam import ParticleArray
 from ocelot.cpbd.track import track
 
-def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=False):
+def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=False, threeD=False):
     self = tracker
     wake_step = self.forward_options['ocelot_wake_step']
     unit_step = self.forward_options['ocelot_unit_step']
@@ -33,8 +34,12 @@ def forward_propagate_ocelot(tracker, beam, plot_details=False, output_details=F
     # Ocelot uses orientation of corrugated plate. This code uses streaking direction
     orient = {'X': 'vert', 'Y': 'horz'}[self.structure.dim]
 
-    wake_table = WakeTableDechirperOffAxis(b, a, width, t, p, length, sigma, orient)
-    wake = Wake()
+    if threeD:
+        wake_table = WakeTableParallelPlate3(b, a, t, p, length, sigma, orient)
+        wake = Wake3()
+    else:
+        wake_table = WakeTableDechirperOffAxis(b, a, width, t, p, length, sigma, orient)
+        wake = Wake()
     wake.w_sampling = wake_sampling
     wake.wake_table = wake_table
     wake.step = wake_step

@@ -252,17 +252,17 @@ class Tracker(LogMsgBase):
         screen.reshape(self.forward_options['len_screen'])
         return screen
 
-    def forward_propagate(self, beam, plot_details=False, output_details=False):
+    def forward_propagate(self, beam, plot_details=False, output_details=False, **kwargs):
         global forward_ctr
         forward_ctr += 1
         method = self.forward_options['method']
         if method == 'thicklens':
-            return self.forward_propagate_thicklens(beam, plot_details, output_details)
+            return self.forward_propagate_thicklens(beam, plot_details, output_details, **kwargs)
         elif method == 'thinlens':
-            return obsolete_thinlens_forward.forward_propagate_thinlens(self, beam, plot_details, output_details)
+            return obsolete_thinlens_forward.forward_propagate_thinlens(self, beam, plot_details, output_details, **kwargs)
         elif method == 'ocelot':
             from . import ocelot_forward
-            return ocelot_forward.forward_propagate_ocelot(self, beam, plot_details, output_details)
+            return ocelot_forward.forward_propagate_ocelot(self, beam, plot_details, output_details, **kwargs)
 
     def forward_propagate_thicklens(self, beam, plot_details=False, output_details=False):
         """

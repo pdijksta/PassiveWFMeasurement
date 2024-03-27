@@ -482,12 +482,13 @@ class Image(LogMsgBase):
 
         for op in operator.lt, operator.gt:
             mask = op(self.x_axis, 0)
-            x_axis = self.x_axis[mask]
-            indices = indicesX[mask]
-            if np.sign(np.mean(x_axis)) != sign_wake:
-                x_axis = -x_axis[::-1]
-                indices = indices[::-1]
-            _x_to_t_inner(self.image, indices, indices2, x_axis, wake_x, new_arr)
+            if mask.sum():
+                x_axis = self.x_axis[mask]
+                indices = indicesX[mask]
+                if np.sign(np.mean(x_axis)) != sign_wake:
+                    x_axis = -x_axis[::-1]
+                    indices = indices[::-1]
+                _x_to_t_inner(self.image, indices, indices2, x_axis, wake_x, new_arr)
 
         _sum = new_arr[:,1:-1].sum()
         if _sum != 0:

@@ -7,6 +7,30 @@ from . import beam_profile
 from . import data_loader
 from . import h5_storage
 
+def tilt_reconstruction(profile1, profile2):
+    # see appendix of Schmidt et al., https://doi.org/10.1103/PhysRevAccelBeams.23.062801
+    profile1 = copy.deepcopy(profile1)
+    profile2 = copy.deepcopy(profile2)
+    assert profile1.total_charge == profile2.total_charge
+    assert profile1.energy_eV == profile2.energy_eV
+    for profile in profile1, profile2:
+        profile.center()
+        profile.crop()
+    tmin = min(profile1.time[0], profile2.time[0])
+    tmax = max(profile1.time[-1], profile2.time[-1])
+    tlen = max(len(profile1), len(profile2))
+    new_time = np.linspace(tmin, tmax, tlen)
+
+    cumsum = np.zeros_like(new_time)
+    for profile in profile1, profile2:
+        new_charge = np.interp(new_time, profile.time, profile.charge_dist, left=0, right=0)
+        cumsum += np.cumsum(new_charge)
+    new_charge_dist = np.append(np.diff(cumsum/2), [0])
+    new_profile = beam_profile.BeamProfile(new_time, new_charge_dist, profile1.energy_eV, profile1.total_charge)
+    new_profile.center()
+
+    return new_profile
+
 def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
     """
     outp can be profile or index
@@ -452,6 +476,10 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             beamsizes_err[ctr*2] = np.nanstd(rms)*np.abs(cal)
             voltages[ctr*2] = voltage*(-1)**ctr
 
+    corr_rms_blen = 0
+    corr_rms_blen_err = 0
+    resolution = 0
+    outp['corrected_profile'] = None
     if len(zero_crossings) == 2:
         voltages[1] = 0
         beamsizes[1] = processed_data['Beam sizes without streaking']*1e-6
@@ -469,13 +497,14 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
             corr_rms_blen = np.sqrt(popt[0])*voltage/weighted_calibration
             corr_rms_blen_err = corr_rms_blen/(2*popt[0])*np.sqrt(pcov[0,0])
-        else:
-            corr_rms_blen = 0
-            corr_rms_blen_err = 0
+            resolution = beamsizes[1] / weighted_calibration
+            outp['resolution'] = resolution
+            outp['corr_rms_blen'] = corr_rms_blen
+            outp['corr_rms_blen_err'] = corr_rms_blen_err
+            outp['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
 
-        outp['corr_rms_blen'] = corr_rms_blen
-        outp['corr_rms_blen_err'] = corr_rms_blen_err
-        outp['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
+    if len(zero_crossings) == 2:
+        outp['corrected_profile'] = tilt_reconstruction(outp[1]['representative_profile'], outp[2]['representative_profile'])
 
     return outp
 

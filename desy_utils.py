@@ -81,7 +81,7 @@ class Xfel_data(logMsg.LogMsgBase):
         if type(filename_or_data) in (dict, np.lib.npyio.NpzFile):
             data = filename_or_data
         else:
-            data = np.load(filename_or_data)
+            data = np.load(filename_or_data, allow_pickle=True)
         self.raw_data = dict(data)
         if use_R and 'R' in self.raw_data:
             self.matrix = self.raw_data['R']

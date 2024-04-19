@@ -375,7 +375,6 @@ class BeamProfile(Profile):
             self._yy = charge_dist
         self.energy_eV = energy_eV
         self._total_charge = total_charge
-        self.wake_dict = {}
 
     @property
     def total_charge(self):
@@ -392,11 +391,7 @@ class BeamProfile(Profile):
         """
         if abs(beam_position) > gap/2.:
             raise ValueError('Beam offset is too large! Gap: %.2e Offset: %.2e' % (gap, beam_position))
-        dict_key = gap, beam_position, structure, wake_type, len(self._xx)
-        if dict_key in self.wake_dict:
-            return self.wake_dict[dict_key]
         wf_dict = structure.convolve(self, gap/2., beam_position, wake_type)
-        self.wake_dict[dict_key] = wf_dict
         #self.logMsg('wake_dict calculated for gap %.2f mm and beam position %.2f mm' % (gap*1e3, beam_position*1e3))
         if np.any(np.isnan(wf_dict['wake_potential'])):
             raise ValueError

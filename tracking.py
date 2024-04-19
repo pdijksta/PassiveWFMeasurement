@@ -378,6 +378,10 @@ class Tracker(LogMsgBase):
             sp_ctr += 1
             sp_wake.plot(wake_time*1e15, wake_dict_dipole['wake_potential']/mean_energy*1e3)
 
+            sp_spw = subplot(sp_ctr, title='Single particle wake', xlabel='t (fs)', ylabel='Spw')
+            sp_ctr += 1
+            sp_spw.plot(wake_time*1e15, wake_dict_dipole['spw'])
+
             if fig_number is not None:
                 ms.plt.figure(fig_number)
 

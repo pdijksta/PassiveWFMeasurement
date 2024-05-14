@@ -874,7 +874,10 @@ def get_default_tracker(beamline, structure_name, meta_data, calib, screen, **kw
     backward_options = config.get_default_backward_options()
     reconstruct_gauss_options = config.get_default_reconstruct_gauss_options()
     beam_spec = config.get_default_beam_spec()
-    beam_optics = config.default_optics[beamline]
+    if 'beam_optics' not in kwargs:
+        beam_optics = config.default_optics[beamline]
+    else:
+        beam_optics = kwargs.pop('beam_optics')
     find_beam_position_options = config.get_default_find_beam_position_options()
     return Tracker(beamline, screen, structure_name, meta_data, calib, forward_options, backward_options, reconstruct_gauss_options, beam_spec, beam_optics, find_beam_position_options, **kwargs)
 

@@ -175,6 +175,7 @@ class Lattice:
 
     def get_matrix(self, from_, to):
         if from_ not in self.names_set:
+            import pdb; pdb.set_trace()
             raise ValueError('%s not found' % from_)
         if to not in self.names_set:
             raise ValueError('%s not found' % to)

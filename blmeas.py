@@ -481,6 +481,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     corr_rms_blen_err = 0
     resolution = 0
     outp['corrected_profile'] = None
+    outp['beamsizes_sq_err'] = 0
     if len(zero_crossings) == 2:
         voltages[1] = 0
         beamsizes[1] = processed_data['Beam sizes without streaking']*1e-6

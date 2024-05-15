@@ -168,7 +168,7 @@ class Beam:
         space = self['%s' % dimension]
         angle = self['%sp' % dimension]
         if normalized:
-            norm_factor = np.mean(self['p'])
+            norm_factor = self.energy_eV/electron_mass_eV
         else:
             norm_factor = 1
         return self.get_emittance_from_points(space, angle)*norm_factor

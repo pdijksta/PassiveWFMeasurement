@@ -113,7 +113,9 @@ class Lattice:
             ('delta', 5),
             ))
 
-    def __init__(self, math5_file):
+    def __init__(self, math5_file, dims=6, allow_inverse=True):
+        self.dims = dims
+        self.allow_inverse = allow_inverse
         mat = self.mat = h5_storage.loadH5Recursive(math5_file)['page1']
         self.columns = mat['columns']
         self.types = np.array([x.decode() for x in self.columns['ElementType']])
@@ -125,8 +127,7 @@ class Lattice:
 
     def generate(self, quad_k1l_dict, assert0=True):
         names, types, columns = self.names, self.types, self.columns
-        matrix = np.identity(6)
-        ele_matrix = np.zeros_like(matrix)
+        ele_matrix = np.zeros([self.dims, self.dims])
         single_matrices = []
         element_status = []
         for n_element, (type_, name) in enumerate(zip(types, names)):
@@ -149,11 +150,11 @@ class Lattice:
                 else:
                     k1 = 0.
                     _element_status = 0
-                ele_matrix = transferMatrixQuad66(length, k1)
+                ele_matrix = transferMatrixQuad66(length, k1)[:self.dims,:self.dims]
                 single_matrices.append(ele_matrix)
             else:
-                ele_matrix = np.eye(6)
-                for n_col, n_row in itertools.product(list(range(1,7)), repeat=2):
+                ele_matrix = np.eye(self.dims)
+                for n_col, n_row in itertools.product(list(range(1,1+self.dims)), repeat=2):
                     # elegant uses s for the 5th coordinate (S5). Here we transform the matrix to time.
                     factor = 1
                     if n_row == 5:
@@ -162,7 +163,6 @@ class Lattice:
                         factor *= c
                     ele_matrix[n_row-1,n_col-1] = columns['R%i%i' % (n_row, n_col)][n_element] * factor
                 single_matrices.append(ele_matrix)
-            matrix = ele_matrix @ matrix
             element_status.append(_element_status)
 
         self.single_matrices = np.array(single_matrices)
@@ -180,12 +180,14 @@ class Lattice:
             raise ValueError('%s not found' % to)
 
         if from_ == to:
-            return np.eye(6, dtype=np.float64)
+            return np.eye(self.dims, dtype=np.float64)
 
         index_from = self.get_index(from_)
         index_to = self.get_index(to)
         inverse = index_from > index_to
         if inverse:
+            if not self.allow_inverse:
+                raise ValueError
             from_, to = to, from_
             index_from, index_to = index_to, index_from
         status = self.element_status[index_from:index_to]
@@ -193,7 +195,7 @@ class Lattice:
             not_good = status == 0
             bad_elements = self.element_names[index_from:index_to][not_good]
             raise ValueError(bad_elements)
-        outp = np.eye(6, dtype=np.float64)
+        outp = np.eye(self.dims, dtype=np.float64)
         for index in range(index_from, index_to):
             mat = self.single_matrices[index]
             outp = mat @ outp

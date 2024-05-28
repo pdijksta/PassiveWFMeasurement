@@ -56,7 +56,7 @@ def transferMatrixSkewQuad66(Lq, kini):
         Mq10 = [[cplus, splus/ksq, cminus, sminus/ksq, 0, 0],
                 [-ksq*sminus, cplus, -ksq*splus, cminus, 0, 0],
                 [cminus, sminus/ksq, cplus, splus/ksq, 0, 0],
-                [-splus/ksq, cminus, -ksq*sminus, cplus, 0, 0],
+                [-ksq*splus, cminus, -ksq*sminus, cplus, 0, 0],
                 [0, 0, 0, 0, 1, 0],
                 [0, 0, 0, 0, 0, 1]]
         Mq10 = np.array(Mq10, dtype=complex)
@@ -139,6 +139,7 @@ class Lattice:
     def __init__(self, math5_file, dims=6, allow_inverse=True):
         self.dims = dims
         self.allow_inverse = allow_inverse
+        self.math5_file = math5_file
         mat = self.mat = h5_storage.loadH5Recursive(math5_file)['page1']
         self.columns = mat['columns']
         self.types = np.array([x.decode() for x in self.columns['ElementType']])

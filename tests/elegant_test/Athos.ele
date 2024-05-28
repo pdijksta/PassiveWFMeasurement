@@ -1,0 +1,72 @@
+&run_setup
+	lattice		= ./Athos_2024-05-28_11-39-51.lat,
+	use_beamline	= SwissFEL,
+	rootname	= Athos_ref,
+	output		= %s.out,
+	centroid		= %s.cen,
+	sigma		= %s.sig,
+	final		= %s.fin,
+	parameters	= %s.par,
+	magnets		= %s.mag,
+	combine_bunch_statistics = 0,
+	default_order	= 2,
+	concat_order	= 0,
+	print_statistics	= 0,
+	random_number_seed	= 9876543210,
+	p_central	= 273.411695,
+	tracking_updates	= 1
+	always_change_p0	= 1
+&end
+
+&run_control
+	n_steps	= 1,
+	reset_rf_for_each_step = 1
+&end
+
+&twiss_output
+	filename	= %s.twi,
+	matched		= 0,
+	beta_x		= 30.000001,
+	beta_y		= 29.999994,
+	alpha_x		= -0.000000,
+	alpha_y		= -0.000000,
+&end
+
+!&sdds_beam
+!	input_type= "elegant",
+!	sample_interval	= 1,
+!	input = SwissFEL_dist.sdds,
+!	reuse_bunch	= 0
+!&end
+
+&bunched_beam
+	n_particles_per_bunch = 1,
+	use_twiss_command_values = 1
+	Po = 273.411695,
+	emit_nx = 200e-9,
+	emit_ny = 200e-9,
+&end
+
+&alter_elements
+	name = "*",
+	item = "LSC",
+	type = "LSCDRIFT",
+	value = 0,
+&end
+
+&alter_elements
+	name = "*",
+	item = "LSC",
+	type = "RFCW",
+	value = 0,
+&end
+
+&matrix_output
+	individual_matrices = 1,
+	SDDS_output = %s.mat
+&end
+
+
+&track
+&end
+

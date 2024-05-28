@@ -40,6 +40,29 @@ def transferMatrixQuad66(Lq, kini):
     #assert np.all(np.imag(Mq10) == 0)
     return np.real(Mq10)
 
+def transferMatrixSkewQuad66(Lq, kini):
+    # Wiedemann 4th edition p.671
+    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+    sinh, cosh = scipy.sinh, scipy.cosh
+    if kini == 0:
+        Mq10 = transferMatrixDrift66(Lq)
+    else:
+        ksq = sqrt(kini)
+        phi = ksq*Lq
+        cplus = (cos(phi) + cosh(phi))/2
+        cminus = (cos(phi) - cosh(phi))/2
+        splus = (sin(phi) + sinh(phi))/2
+        sminus = (sin(phi) - sinh(phi))/2
+        Mq10 = [[cplus, splus/ksq, cminus, sminus/ksq, 0, 0],
+                [-ksq*sminus, cplus, -ksq*splus, cminus, 0, 0],
+                [cminus, sminus/ksq, cplus, splus/ksq, 0, 0],
+                [-splus/ksq, cminus, -ksq*sminus, cplus, 0, 0],
+                [0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1]]
+        Mq10 = np.array(Mq10, dtype=complex)
+        assert np.all(Mq10.imag == 0)
+    return np.real(Mq10)
+
 def transferMatrixBend66(Lb, angle, orientation):
     """
     Lb: arc length
@@ -130,6 +153,7 @@ class Lattice:
         ele_matrix = np.zeros([self.dims, self.dims])
         single_matrices = []
         element_status = []
+        quad_k1_dict = {}
         for n_element, (type_, name) in enumerate(zip(types, names)):
             _element_status = 1
             if type_ == 'QUAD':
@@ -150,7 +174,11 @@ class Lattice:
                 else:
                     k1 = 0.
                     _element_status = 0
-                ele_matrix = transferMatrixQuad66(length, k1)[:self.dims,:self.dims]
+                quad_k1_dict[name] = k1
+                if 'MQSK' in name:
+                    ele_matrix = transferMatrixSkewQuad66(length, k1)[:self.dims,:self.dims]
+                else:
+                    ele_matrix = transferMatrixQuad66(length, k1)[:self.dims,:self.dims]
                 single_matrices.append(ele_matrix)
             else:
                 ele_matrix = np.eye(self.dims)
@@ -169,6 +197,7 @@ class Lattice:
         self.element_status = np.array(element_status)
         self.element_names = names
         self.quad_k1l_dict = quad_k1l_dict
+        self.quad_k1_dict = quad_k1_dict
 
     def get_index(self, element):
         return int(np.argwhere(element == self.element_names).squeeze())

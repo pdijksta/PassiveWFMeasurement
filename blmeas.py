@@ -290,7 +290,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         #print(phases_deg0)
         #print(phases_deg)
 
-        images = processed_data['Beam images'+zc_str]
+        images = processed_data['Beam images'+zc_str].astype(float)
         x_axis = processed_data['x axis'+zc_str].astype(float)*1e-6
         y_axis = processed_data['y axis'+zc_str].astype(float)*1e-6
         outp[zero_crossing]['x_axis'] = x_axis

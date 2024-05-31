@@ -435,7 +435,7 @@ class BeamProfile(Profile):
     def get_current(self):
         return self._yy*self.total_charge/self.integral
 
-    def plot_standard(self, sp, norm=True, center=None, center_max=False, center_float=None, xfactor=1e15, **kwargs):
+    def plot_standard(self, sp, norm=True, center=None, center_max=False, center_float=None, xfactor=1e15, yfactor=1e-3, **kwargs):
         """
         center can be one of 'Max', 'Left', 'Right', 'Left_fit', 'Right_fit', 'Gauss'
         """
@@ -485,7 +485,7 @@ class BeamProfile(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        return sp.plot(x*xfactor, y*factor/1e3, **kwargs)
+        return sp.plot(x*xfactor, y*factor*yfactor, **kwargs)
 
 
 def profile_from_blmeas(file_or_dict, time_range, total_charge, energy_eV, cutoff, subtract_min=True, zero_crossing=1, len_profile=config.get_default_backward_options()['len_profile'], print_calib=False):

@@ -177,7 +177,7 @@ class Lattice:
                     _element_status = 0
                 quad_k1_dict[name] = k1
                 if 'MQSK' in name:
-                    ele_matrix = transferMatrixSkewQuad66(length, k1)[:self.dims,:self.dims]
+                    ele_matrix = transferMatrixSkewQuad66(length, -k1)[:self.dims,:self.dims]
                 else:
                     ele_matrix = transferMatrixQuad66(length, k1)[:self.dims,:self.dims]
                 single_matrices.append(ele_matrix)

@@ -6,15 +6,16 @@ import numpy as np
 from . import beam_profile
 from . import data_loader
 from . import h5_storage
+from . import myplotstyle as ms
 
-def tilt_reconstruction(profile1, profile2):
+def tilt_reconstruction(profile1, profile2, debug=False):
     # see appendix of Schmidt et al., https://doi.org/10.1103/PhysRevAccelBeams.23.062801
     profile1 = copy.deepcopy(profile1)
     profile2 = copy.deepcopy(profile2)
     assert profile1.total_charge == profile2.total_charge
     assert profile1.energy_eV == profile2.energy_eV
     for profile in profile1, profile2:
-        profile.center()
+        profile.center('Mean')
         profile.crop()
     tmin = min(profile1.time[0], profile2.time[0])
     tmax = max(profile1.time[-1], profile2.time[-1])
@@ -22,12 +23,23 @@ def tilt_reconstruction(profile1, profile2):
     new_time = np.linspace(tmin, tmax, tlen)
 
     cumsum = np.zeros_like(new_time)
-    for profile in profile1, profile2:
+    new_charges = []
+    for ctr, profile in enumerate([profile1, profile2]):
         new_charge = np.interp(new_time, profile.time, profile.charge_dist, left=0, right=0)
+        new_charges.append(new_charge)
         cumsum += np.cumsum(new_charge)
     new_charge_dist = np.append(np.diff(cumsum/2), [0])
     new_profile = beam_profile.BeamProfile(new_time, new_charge_dist, profile1.energy_eV, profile1.total_charge)
-    new_profile.center()
+    new_profile.center('Mean')
+
+    if debug:
+        old_fignum = ms.plt.gcf()
+        sp = ms.plt.subplot(1, 1, 1)
+        sp.plot(new_time, new_charges[0], label='New charge 1')
+        sp.plot(new_time, new_charges[1], label='New charge 2')
+        sp.plot(new_time, new_charge_dist, label='Combined')
+        sp.legend()
+        ms.plt.figure(old_fignum)
 
     return new_profile
 

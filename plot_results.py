@@ -1064,6 +1064,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
             textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
 
+    if result['corrected_profile']:
+        result['corrected_profile'].plot_standard(sp_average_profile, label='Corrected')
 
     if len(zero_crossings) == 2:
         if calibrations_err is None:

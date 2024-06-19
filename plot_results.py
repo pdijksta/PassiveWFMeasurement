@@ -1003,18 +1003,15 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
 
     for zc_ctr, (zero_crossing, sp_example_image, sp_zc) in enumerate(zip(zero_crossings, [sp_example_image1, sp_example_image2], [sp_zc1, sp_zc2])):
         phases_deg = result[zero_crossing]['phases_deg']
-        phases_plot = result[zero_crossing]['phases_plot']
+        if 'phases_plot' in result[zero_crossing]:
+            phases_plot = result[zero_crossing]['phases_plot']
+        else:
+            phases_plot = None
         example_image = result[zero_crossing]['example_image']
         x_axis = result[zero_crossing]['x_axis']
         y_axis = result[zero_crossing]['y_axis']
         n_images = result[zero_crossing]['n_images']
-        chi_square_red = result[zero_crossing]['chi_square_red']
-        centroids = result[zero_crossing]['centroids']
-        centroids_err = result[zero_crossing]['centroids_err']
-        centroids_fit = result[zero_crossing]['centroids_fit']
         calibration = calibrations[zc_ctr]
-        calibration_error = calibrations_err[zc_ctr]
-        residuals = result[zero_crossing]['residuals']
         n_phases = result[zero_crossing]['n_phases']
         fwhm = result[zero_crossing]['fwhm']
         rms = result[zero_crossing]['rms']
@@ -1028,12 +1025,20 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
         textstr += 'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
         sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
 
-        color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
-        label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
-        sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
+        if phases_plot is not None:
+            centroids = result[zero_crossing]['centroids']
+            centroids_err = result[zero_crossing]['centroids_err']
+            centroids_fit = result[zero_crossing]['centroids_fit']
+            calibration_error = calibrations_err[zc_ctr]
+            residuals = result[zero_crossing]['residuals']
 
-        sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
-        sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
+            color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
+            label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
+            sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
+
+            sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
+            chi_square_red = result[zero_crossing]['chi_square_red']
+            sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
 
         sp_zc.set_title('Zero crossing %i, %i profiles' % (zero_crossing, fwhm.size))
 

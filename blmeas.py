@@ -505,7 +505,10 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         if beamsizes[1] != 0:
             beamsizes_err[1] = processed_data['Beam sizes without streaking errors']*1e-6
             beamsizes_sq_err = 2*beamsizes*beamsizes_err
-            popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
+            try:
+                popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
+            except:
+                import pdb; pdb.set_trace()
             outp['parabola_popt'] = popt
 
             par_fit = np.poly1d(popt)

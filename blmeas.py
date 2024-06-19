@@ -247,7 +247,6 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 'screen_cutoff_relative_factor': 2,
                 }
 
-    voltage = abs(processed_data['Voltage axis'][0])*1e6
     energy_eV = data['Input data']['beamEnergy']*1e6
     _ii = processed_data['Current profile_image_0']
     _tt = processed_data['Good region time axis_image_0']
@@ -432,12 +431,14 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         separate_calibrations = True
     if force_cal:
         weighted_calibration = force_cal
+    else:
+        weighted_calibration = np.mean(np.abs(calibrations))
 
     voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3)*np.nan, np.zeros(3)*np.nan
     outp['beamsizes'] = beamsizes
     outp['beamsizes_err'] = beamsizes_err
     outp['voltages'] = voltages
-    outp['calibrations'] = calibrations
+    outp['calibrations0'] = calibrations.copy()
     outp['calibrations_err'] = calibrations_err
     outp['weighted_calibration'] = weighted_calibration
     outp['all_phases_rad'] = np.array(all_phases_rad)
@@ -451,6 +452,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             cal = calibrations[ctr]
         else:
             cal = weighted_calibration*np.sign(calibrations[ctr])
+
+        calibrations[ctr] = cal
 
         fwhm = np.zeros([projections.shape[0], projections.shape[1]], float)
         rms = fwhm.copy()
@@ -487,6 +490,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         if len(zero_crossings) == 2:
             beamsizes[ctr*2] = np.nanmean(rms)*np.abs(cal)
             beamsizes_err[ctr*2] = np.nanstd(rms)*np.abs(cal)
+            voltage = abs(processed_data['Voltage axis'][0])*1e6
             voltages[ctr*2] = voltage*(-1)**ctr
 
     corr_rms_blen = 0
@@ -494,6 +498,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     resolution = 0
     outp['corrected_profile'] = None
     outp['beamsizes_sq_err'] = 0
+    outp['calibrations'] = calibrations
     if len(zero_crossings) == 2:
         voltages[1] = 0
         beamsizes[1] = processed_data['Beam sizes without streaking']*1e-6

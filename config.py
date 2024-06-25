@@ -12,7 +12,7 @@ import numpy as np
 #
 #    structure_position0: calibration
 
-logfile = os.path.join(os.path.dirname(__file__), 'passiveWFMeasurement.log')
+logfile = '/tmp/passiveWFMeasurement.log'
 
 beamlines = [
         'Aramis',

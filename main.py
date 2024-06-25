@@ -18,6 +18,7 @@ if path not in sys.path:
     sys.path.append(path)
 
 from PassiveWFMeasurement import config
+from PassiveWFMeasurement import blmeas
 from PassiveWFMeasurement import optics
 from PassiveWFMeasurement import tracking
 from PassiveWFMeasurement import lasing
@@ -45,6 +46,8 @@ if __name__ == '__main__':
 else:
     logger = None
 
+logMsg.logMsg(__file__, logger=logger)
+
 try:
     from PassiveWFMeasurement import daq
     always_dryrun = False
@@ -60,6 +63,7 @@ try:
 except ImportError:
     elog = None
     logMsg.logMsg('ELOG unavailable', logger=logger)
+
 
 ms.set_fontsizes(config.fontsize)
 
@@ -722,7 +726,6 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         meta_data = data_dict['meta_data_begin']
         tracker = self.get_tracker(meta_data, calib_delta_gap0=True)
         tracker.find_beam_position_options['position_explore'] = w2f(self.TdcCalibrationPositionDelta)*1e-6
-        tt_range = tracker.reconstruct_gauss_options['gauss_profile_t_range']
         blmeasfile = self.ForwardBlmeasFilename.text()
         dim = config.structure_dimensions[self.structure_name]
         x_axis, proj, charge, index = data_loader.screen_data_to_median(pyscan_result, dim)
@@ -731,7 +734,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         image = image_analysis.Image(raw_image, x_axis, y_axis, charge)
 
         tracker.force_charge = charge
-        bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
+        #bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
+        bp = blmeas.analyze_blmeas(blmeasfile, force_charge=tracker.total_charge)['corrected_profile']
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
         result_dict = calibration.tdc_calibration(tracker, bp, screen_raw)
         new_calib = result_dict['calib']

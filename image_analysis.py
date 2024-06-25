@@ -2,7 +2,6 @@ import time
 import operator
 import numpy as np
 import scipy
-import numba
 from scipy.optimize import OptimizeWarning
 import matplotlib.pyplot as plt
 
@@ -770,7 +769,6 @@ def calc_fwhm(xx, yy):
     x2 = xx[mask][-1]
     return abs(x2-x1) + abs(xx[1]-xx[0])
 
-@numba.njit
 def _x_to_t_inner(image, indices, indices2, x_axis, wake_x, new_arr):
     delta_x = (x_axis[1] - x_axis[0])/2
     new_time_len = new_arr.shape[1]

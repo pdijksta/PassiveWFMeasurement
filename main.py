@@ -736,6 +736,8 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         tracker.force_charge = charge
         #bp = beam_profile.profile_from_blmeas(blmeasfile, tt_range, tracker.total_charge, tracker.energy_eV, 5e-2, len_profile=tracker.backward_options['len_profile'])
         bp = blmeas.analyze_blmeas(blmeasfile, force_charge=tracker.total_charge)['corrected_profile']
+        profile_cutoff = self.get_backward_options()['profile_cutoff']
+        bp.cutoff(profile_cutoff)
         screen_raw = beam_profile.ScreenDistribution(x_axis-self.screen_center, proj, subtract_min=True, total_charge=tracker.total_charge)
         result_dict = calibration.tdc_calibration(tracker, bp, screen_raw)
         new_calib = result_dict['calib']

@@ -126,9 +126,11 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
-def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False, blmeas_kwargs={}):
+def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False, blmeas_kwargs={}, blmeas_cutoff=None):
     blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False, **blmeas_kwargs)
-    blmeas_profile = blmeas_dict[1]['representative_profile']
+    blmeas_profile = blmeas_dict['corrected_profile']
+    if blmeas_cutoff:
+        blmeas_profile.cutoff(blmeas_cutoff)
     blmeas_profile.center('Mean')
 
     if type(file_or_dict_off) is dict:
@@ -226,6 +228,8 @@ def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, l
         mean_distance = np.mean(list(d1)+list(d2))
         qw = tracker.forward_options['quad_wake']
         tracker.forward_options['quad_wake'] = True
+        profile2 = copy.deepcopy(profile)
+        profile2.expand(0.3)
         res_dict = resolution.calc_resolution(profile, tracker.structure_gap, tracker.structure_gap/2 - mean_distance, tracker, camera_res=10e-6, dim=tracker.structure.dim.lower())
         tracker.forward_options['quad_wake'] = qw
     else:

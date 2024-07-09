@@ -388,6 +388,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             outp[zero_crossing]['chi_square_red'] = chi_square_red
 
             calibration = p[0] * 2*np.pi*tds_freq
+            outp[zero_crossing]['calibration_fit'] = calibration
             calibration_error = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
 
             calibrations.append(calibration)
@@ -505,10 +506,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         if beamsizes[1] != 0:
             beamsizes_err[1] = processed_data['Beam sizes without streaking errors']*1e-6
             beamsizes_sq_err = 2*beamsizes*beamsizes_err
-            try:
-                popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
-            except:
-                import pdb; pdb.set_trace()
+            popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
             outp['parabola_popt'] = popt
 
             par_fit = np.poly1d(popt)

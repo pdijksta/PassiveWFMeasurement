@@ -1011,7 +1011,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
         x_axis = result[zero_crossing]['x_axis']
         y_axis = result[zero_crossing]['y_axis']
         n_images = result[zero_crossing]['n_images']
-        calibration = calibrations[zc_ctr]
+        calibration = result[zero_crossing]['calibration_fit']
         n_phases = result[zero_crossing]['n_phases']
         fwhm = result[zero_crossing]['fwhm']
         rms = result[zero_crossing]['rms']

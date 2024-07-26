@@ -144,6 +144,7 @@ def closeall():
     nums = plt.get_fignums()
     for num in nums:
         plt.figure(num).clf()
+        plt.close(num)
     plt.close('all')
 
 def show():

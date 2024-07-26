@@ -88,7 +88,6 @@ class MeasScreens:
                     screen.plot_standard(sp_pos, color='black')
                     screen.plot_standard(sp_neg, color='black')
             else:
-                # Inverted sign!
                 if raw_pos > 0:
                     sp = sp_pos
                 elif raw_pos < 0:
@@ -99,7 +98,6 @@ class MeasScreens:
         return (sp_pos, sp_neg)
 
 class StructureCalibrator(LogMsgBase):
-
     def __init__(self, tracker, structure_calib_options, file_or_dict=None, logger=None):
         self.logger = logger
         self.tracker = tracker

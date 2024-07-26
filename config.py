@@ -1,4 +1,3 @@
-import os
 import itertools
 import numpy as np
 
@@ -390,6 +389,7 @@ def get_default_data_loader_options():
     outp = {
             'subtract_quantile': 0.1,
             'subtract_absolute': None,
+            'max_intensity': None,
             'void_cutoff': [1e-3, 1e-3],
             'cutX': None,
             'cutY': None,

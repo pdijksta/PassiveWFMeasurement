@@ -695,7 +695,7 @@ class Image(LogMsgBase):
         else:
             log = image
 
-        sp.imshow(log, aspect='auto', extent=extent, origin='lower', cmap=plt.get_cmap(cmapname))
+        imshow_outp = sp.imshow(log, aspect='auto', extent=extent, origin='lower', cmap=plt.get_cmap(cmapname))
 
         if slice_dict is not None:
             old_lim = sp.get_xlim(), sp.get_ylim()
@@ -720,21 +720,25 @@ class Image(LogMsgBase):
 
 
         gf_y = gf_x = None
+        plot_proj_x_outp = None
+        plot_gauss_x_outp = None
         if plot_proj or plot_proj_x:
             proj = image.sum(axis=-2)
             proj_plot = (y_axis.min() +(y_axis.max()-y_axis.min()) * proj/proj.max()*0.3)*y_factor
-            sp.plot(x_axis*x_factor, proj_plot, color=proj_color[0])
+            plot_proj_x_outp = sp.plot(x_axis*x_factor, proj_plot, color=proj_color[0])
             if plot_gauss or plot_gauss_x:
                 gf = gf_x = GaussFit(x_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color=gauss_color[0], alpha=gauss_alpha)
+                plot_gauss_x_outp = sp.plot(x_axis*x_factor, gf.reconstruction+proj_plot.min(), color=gauss_color[0], alpha=gauss_alpha)
 
+        plot_gauss_y_outp = None
+        plot_proj_y_outp = None
         if plot_proj or plot_proj_y:
             proj = image.sum(axis=-1)
             proj_plot = (x_axis.min() +(x_axis.max()-x_axis.min()) * proj/proj.max()*0.3)*x_factor
-            sp.plot(proj_plot, y_axis*y_factor, color=proj_color[1])
+            plot_proj_y_outp = sp.plot(proj_plot, y_axis*y_factor, color=proj_color[1])
             if plot_gauss or plot_gauss_y:
                 gf = gf_y = GaussFit(y_axis, proj_plot-proj_plot.min(), fit_const=False)
-                sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color[1], alpha=gauss_alpha)
+                plot_gauss_y_outp = sp.plot(gf.reconstruction+proj_plot.min(), y_axis*y_factor, color=gauss_color[1], alpha=gauss_alpha)
 
         if hlines is not None:
             for hline in hlines:
@@ -750,6 +754,12 @@ class Image(LogMsgBase):
         outp = {
                 'gf_x': gf_x,
                 'gf_y': gf_y,
+                'imshow_outp': imshow_outp,
+                'plot_gauss_y_outp': plot_gauss_y_outp,
+                'plot_proj_y_outp': plot_proj_y_outp,
+                'plot_gauss_x_outp': plot_gauss_x_outp,
+                'plot_proj_x_outp': plot_proj_x_outp,
+                'extent': extent,
                 }
         return outp
 

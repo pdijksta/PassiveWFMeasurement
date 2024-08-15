@@ -348,7 +348,7 @@ class LasingReconstruction:
         if photon_energy_factors is None:
             photon_energy_factors = np.ones_like(off_loss_mean)
         else:
-            photon_energy_factors = photon_energy_factors[mask]
+            photon_energy_factors = photon_energy_factors
 
         t_lims = self.lasing_options['t_lims']
         if t_lims is not None:

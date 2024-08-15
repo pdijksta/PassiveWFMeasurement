@@ -987,7 +987,7 @@ def clear_blmeas_figure(sp_calib, sp_residual, sp_parabola, sp_bunch_duration, s
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center_plot='Mean'):
+def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_center_plot='Mean'):
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
 

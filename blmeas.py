@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from . import beam_profile
+from . import config
 from . import data_loader
 from . import h5_storage
 from . import myplotstyle as ms
@@ -235,7 +236,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     processed_data = data['Processed data']
 
     if data_loader_options is None:
-        data_loader_options = {
+        data_loader_options = config.get_default_data_loader_options()
+        data_loader_options.update({
                 'subtract_quantile': 0.5,
                 'subtract_absolute': None,
                 'void_cutoff': [None, None],
@@ -245,7 +247,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 'screen_cutoff_relative': True,
                 'screen_cutoff_edge_points': 10,
                 'screen_cutoff_relative_factor': 2,
-                }
+                })
 
     energy_eV = data['Input data']['beamEnergy']*1e6
     _ii = processed_data['Current profile_image_0']
@@ -415,6 +417,10 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                             all_sps2[n_image].axhline(centroid*1e3, color='cyan')
         elif not force_cal:
             raise ValueError('Not enough phase set points and calibration not provided')
+        else:
+            outp[zero_crossing]['calibration_fit'] = 0
+            outp[zero_crossing]['chi_square_red'] = 0
+            outp[zero_crossing]['residuals'] = 0
 
     if n_phases >= 2:
         calibrations = np.array(calibrations)

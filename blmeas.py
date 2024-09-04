@@ -259,13 +259,15 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         #print('Charge %.2e' % charge)
     outp['charge'] = charge
 
-    tds = screen_tds_dict[data['Input data']['profileMonitor']]
+    profile_monitor = data['Input data']['profileMonitor']
+    tds = screen_tds_dict[profile_monitor]
     tds_freq = tds_freq_dict[tds]
     if streaking_direction is None:
         streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
     outp['tds'] = tds
     outp['tds_freq'] = tds_freq
     outp['streaking_direction'] = streaking_direction
+    outp['profile_monitor'] = profile_monitor
 
     zero_crossings = [1,]
     if 'Beam images 2' in processed_data:
@@ -437,7 +439,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     else:
         separate_calibrations = True
     if force_cal:
-        weighted_calibration = force_cal
+        weighted_calibration = abs(force_cal)
     else:
         weighted_calibration = np.mean(np.abs(calibrations))
 
@@ -454,7 +456,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:
-            cal = force_cal*np.sign(calibrations[ctr])
+            cal = abs(force_cal)*np.sign(calibrations[ctr])
         elif separate_calibrations:
             cal = calibrations[ctr]
         else:

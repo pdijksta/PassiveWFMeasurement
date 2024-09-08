@@ -987,7 +987,7 @@ def clear_blmeas_figure(sp_calib, sp_residual, sp_parabola, sp_bunch_duration, s
         sp.set_ylabel(ylabel)
         sp.grid(False)
 
-def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center_plot='Mean'):
+def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_center_plot='Mean', sqrt=True, log=False):
 
     textbbox = {'boxstyle': 'square', 'alpha': 0.75, 'facecolor': 'white', 'edgecolor': 'gray'}
 
@@ -1011,14 +1011,14 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=None, profile_center
         x_axis = result[zero_crossing]['x_axis']
         y_axis = result[zero_crossing]['y_axis']
         n_images = result[zero_crossing]['n_images']
-        calibration = calibrations[zc_ctr]
+        calibration = result[zero_crossing]['calibration_fit']
         n_phases = result[zero_crossing]['n_phases']
         fwhm = result[zero_crossing]['fwhm']
         rms = result[zero_crossing]['rms']
         gauss = result[zero_crossing]['gauss']
         profiles = result[zero_crossing]['profiles']
 
-        gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=True)
+        gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=sqrt, log=log)
         sp_example_image.set_title('Phase %.2f deg, image %i' % (phases_deg[len(phases_deg)//2], n_images//2), fontsize=None)
         textstr = 'Dim x/y: %i/%i\n' % (len(x_axis), len(y_axis))
         textstr += 'gf $\sigma_x$: %.0f $\mu$m\n' % (gf_dict['gf_x'].sigma*1e6)

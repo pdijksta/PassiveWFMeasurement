@@ -669,10 +669,10 @@ class Tracker(LogMsgBase):
 
         warning = False
         if index_min == 0:
-            self.logMsg('Warning! index at left border!', 'W')
+            self.logMsg('Warning! index at left border (reconstruction)!', 'W')
             warning = True
         if index_min == len(sig_t_list)-1:
-            self.logMsg('Warning! index at right border!', 'W')
+            self.logMsg('Warning! index at right border (reconstruction)!', 'W')
             warning = True
 
         best_screen = opt_func_screens[index_min]

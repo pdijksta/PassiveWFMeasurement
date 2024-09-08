@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from . import beam_profile
+from . import config
 from . import data_loader
 from . import h5_storage
 from . import myplotstyle as ms
@@ -235,7 +236,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     processed_data = data['Processed data']
 
     if data_loader_options is None:
-        data_loader_options = {
+        data_loader_options = config.get_default_data_loader_options()
+        data_loader_options.update({
                 'subtract_quantile': 0.5,
                 'subtract_absolute': None,
                 'void_cutoff': [None, None],
@@ -245,7 +247,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 'screen_cutoff_relative': True,
                 'screen_cutoff_edge_points': 10,
                 'screen_cutoff_relative_factor': 2,
-                }
+                })
 
     energy_eV = data['Input data']['beamEnergy']*1e6
     _ii = processed_data['Current profile_image_0']
@@ -257,13 +259,15 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         #print('Charge %.2e' % charge)
     outp['charge'] = charge
 
-    tds = screen_tds_dict[data['Input data']['profileMonitor']]
+    profile_monitor = data['Input data']['profileMonitor']
+    tds = screen_tds_dict[profile_monitor]
     tds_freq = tds_freq_dict[tds]
     if streaking_direction is None:
         streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
     outp['tds'] = tds
     outp['tds_freq'] = tds_freq
     outp['streaking_direction'] = streaking_direction
+    outp['profile_monitor'] = profile_monitor
 
     zero_crossings = [1,]
     if 'Beam images 2' in processed_data:
@@ -388,6 +392,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             outp[zero_crossing]['chi_square_red'] = chi_square_red
 
             calibration = p[0] * 2*np.pi*tds_freq
+            outp[zero_crossing]['calibration_fit'] = calibration
             calibration_error = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
 
             calibrations.append(calibration)
@@ -414,6 +419,10 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                             all_sps2[n_image].axhline(centroid*1e3, color='cyan')
         elif not force_cal:
             raise ValueError('Not enough phase set points and calibration not provided')
+        else:
+            outp[zero_crossing]['calibration_fit'] = 0
+            outp[zero_crossing]['chi_square_red'] = 0
+            outp[zero_crossing]['residuals'] = 0
 
     if n_phases >= 2:
         calibrations = np.array(calibrations)
@@ -430,7 +439,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     else:
         separate_calibrations = True
     if force_cal:
-        weighted_calibration = force_cal
+        weighted_calibration = abs(force_cal)
     else:
         weighted_calibration = np.mean(np.abs(calibrations))
 
@@ -447,7 +456,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:
-            cal = force_cal*np.sign(calibrations[ctr])
+            cal = abs(force_cal)*np.sign(calibrations[ctr])
         elif separate_calibrations:
             cal = calibrations[ctr]
         else:
@@ -505,10 +514,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         if beamsizes[1] != 0:
             beamsizes_err[1] = processed_data['Beam sizes without streaking errors']*1e-6
             beamsizes_sq_err = 2*beamsizes*beamsizes_err
-            try:
-                popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
-            except:
-                import pdb; pdb.set_trace()
+            popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
             outp['parabola_popt'] = popt
 
             par_fit = np.poly1d(popt)

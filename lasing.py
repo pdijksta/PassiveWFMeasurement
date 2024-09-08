@@ -348,7 +348,7 @@ class LasingReconstruction:
         if photon_energy_factors is None:
             photon_energy_factors = np.ones_like(off_loss_mean)
         else:
-            photon_energy_factors = photon_energy_factors[mask]
+            photon_energy_factors = photon_energy_factors
 
         t_lims = self.lasing_options['t_lims']
         if t_lims is not None:
@@ -669,7 +669,10 @@ class LasingReconstructionImagesBase:
         subtract_absolute = self.lasing_options['subtract_absolute']
         max_absolute = self.lasing_options['max_absolute']
         max_quantile = self.lasing_options['max_quantile']
-        xcutoff, ycutoff = self.lasing_options['void_cutoff']
+        if self.lasing_options['void_cutoff']:
+            xcutoff, ycutoff = self.lasing_options['void_cutoff']
+        else:
+            xcutoff, ycutoff = None, None
         self.x_axis0 = x_axis
         self.x_axis = x_axis - refx
         self.y_axis0 = y_axis

@@ -144,6 +144,10 @@ class DataLoaderBase:
         subtract_quantile = self.data_loader_options['subtract_quantile']
         subtract_absolute = self.data_loader_options['subtract_absolute']
         void_cutoff = self.data_loader_options['void_cutoff']
+        max_intensity = self.data_loader_options['max_intensity']
+
+        if max_intensity is not None:
+            images = np.clip(images, None, max_intensity)
 
         if subtract_quantile and subtract_absolute:
             raise ValueError('Cannot specify both absolute and quantile subtractions!')

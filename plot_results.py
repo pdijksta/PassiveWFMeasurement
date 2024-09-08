@@ -123,12 +123,12 @@ def structure_fit_figure(figsize=None):
 
 def clear_structure_fit(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_current):
     for sp, title, xlabel, ylabel in [
-            (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam X centroid (mm)'),
-            (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam X rms (mm)'),
-            (sp_center2, 'Centroid shift', 'Distance from jaw ($\mu$m)', 'Beam X centroid (mm)'),
-            (sp_sizes2, 'Size increase', 'Distance from jaw ($\mu$m)', 'Beam X rms (mm)'),
-            (sp_proj, 'Screen projections', 'x (mm)', 'Intensity (arb. units)'),
-            (sp_current, 'Beam current', 't (fs)', 'Current (kA)'),
+            (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam centroid (mm)'),
+            (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam rms (mm)'),
+            (sp_center2, 'Centroid shift', 'Distance from jaw ($\mu$m)', 'Beam centroid (mm)'),
+            (sp_sizes2, 'Size increase', 'Distance from jaw ($\mu$m)', 'Beam rms (mm)'),
+            (sp_proj, 'Screen projections', 'Streaked coordinate (mm)', 'Intensity (arb. units)'),
+            (sp_current, 'Beam current', '$t$ (fs)', '$I$ (kA)'),
             ]:
         sp.clear()
         sp.set_title(title, fontsize=config.fontsize)

@@ -42,6 +42,7 @@ structure_names = {
             'SATCL02-UDCP200',
             'SATCL02-UDCP300',
             'SATCL02-UDCP400',
+            'SATMA01-UDCP015',
             ],
         'SASE2': [
             'SASE2',
@@ -64,6 +65,9 @@ screen_names = {
             ],
         'Athos Pre-Undulator': [
             'SATMA01-DSCR030',
+            'SATBD02-DSCR050',
+            'SATBD01-DSCR120',
+            'simulation',
             ],
         'SASE2': [
             'SASE2',
@@ -97,6 +101,7 @@ lcls_structure_parameters = {
 structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
+        'SATMA01-UDCP015': aramis_structure_parameters,
         'SATMA02-UDCP045': aramis_structure_parameters,
         'SATDI01-UDCP100': aramis_structure_parameters,
         'SATDI01-UDCP200': aramis_structure_parameters,
@@ -111,6 +116,7 @@ structure_parameters = {
 structure_dimensions = {
         'SARUN18-UDCP010': 'X',
         'SARUN18-UDCP020': 'X',
+        'SATMA01-UDCP015': 'Y',
         'SATMA02-UDCP045': 'X',
         'SATDI01-UDCP100': 'Y',
         'SATDI01-UDCP200': 'X',
@@ -277,7 +283,7 @@ _aramis_pvs += ['SARBD02-DBPM010:%s1' % dim for dim in ('X', 'Y')]
 _pre_athos_pvs = ['SATDI01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([90, 210, 240, 270, 310], ['X', 'Y'])]
 _pre_athos_pvs += ['SATCB01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([220, 420], ['X', 'Y'])]
 _pre_athos_pvs += ['SATCL02-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([220, 420], ['X', 'Y'])]
-_pre_athos_pvs += ['SATMA01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([10, 20, 40], ['X', 'Y'])]
+_pre_athos_pvs += ['SATMA01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([10, 20, 40, 110, 130, 150, 170, 240, 620], ['X', 'Y'])]
 
 beamline_bpm_pvs = {
         'Aramis': _aramis_pvs,

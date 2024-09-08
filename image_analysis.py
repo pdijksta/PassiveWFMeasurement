@@ -549,6 +549,7 @@ class Image(LogMsgBase):
 
             sp_current.legend()
             sp_y.legend()
+            #import pdb; pdb.set_trace()
         if print_:
             print(time.time()-t0)
         return new_img
@@ -650,7 +651,7 @@ class Image(LogMsgBase):
             #fig.savefig('/tmp/debug_fig.pdf')
         return output
 
-    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False, plot_slice_lims=False):
+    def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, loglog=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False, plot_slice_lims=False):
 
         def unit_to_factor(unit):
             if unit == 'm':
@@ -688,8 +689,9 @@ class Image(LogMsgBase):
             image = np.clip(image, 0, np.quantile(image, cut_intensity_quantile))
 
         if log:
-            image_ = np.clip(image, 1, None)
-            log = np.log(image_)
+            log = np.log(image+1)
+        elif loglog:
+            log = np.log(np.log(image+1)+1)
         elif sqrt:
             log = np.sqrt(image)
         else:

@@ -151,8 +151,8 @@ beamline_quads = {
             'SATBD02-MQUA030',
             ],
         'Athos Pre-Undulator': [
-            'SATDI01-MQUA040',
-            'SATDI01-MQUA050',
+            'SATDI01-MQUA025',
+            'SATDI01-MQUA080',
             'SATDI01-MQUA220',
             'SATDI01-MQUA230',
             'SATDI01-MQUA250',
@@ -275,8 +275,14 @@ _aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.produc
 _aramis_pvs += ['SARBD01-DBPM040:%s1' % dim for dim in ('X', 'Y')]
 _aramis_pvs += ['SARBD02-DBPM010:%s1' % dim for dim in ('X', 'Y')]
 
+_pre_athos_pvs = ['SATDI01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([90, 210, 240, 270, 310], ['X', 'Y'])]
+_pre_athos_pvs += ['SATCB01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([220, 420], ['X', 'Y'])]
+_pre_athos_pvs += ['SATCL02-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([220, 420], ['X', 'Y'])]
+_pre_athos_pvs += ['SATMA01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([10, 20, 40], ['X', 'Y'])]
+
 beamline_bpm_pvs = {
         'Aramis': _aramis_pvs,
+        'Athos Pre-Undulator': _pre_athos_pvs,
         }
 
 beamline_charge_pvs_bsread = {

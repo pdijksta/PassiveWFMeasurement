@@ -653,17 +653,6 @@ class Image(LogMsgBase):
 
     def plot_img_and_proj(self, sp, x_factor=None, y_factor=None, plot_proj=True, log=False, loglog=False, revert_x=False, plot_gauss=True, slice_dict=None, xlim=None, ylim=None, cmapname='hot', slice_cutoff=0, gauss_color=('orange', 'orange'), proj_color=('green', 'green'), slice_color='deepskyblue', slice_method='cut', plot_gauss_x=False, plot_gauss_y=False, plot_proj_x=False, plot_proj_y=False, gauss_alpha=None, cut_intensity_quantile=None, hlines=None, hline_color='deepskyblue', vlines=None, vline_color='deepskyblue', sqrt=False, plot_slice_lims=False):
 
-        def unit_to_factor(unit):
-            if unit == 'm':
-                factor = 1e3
-            elif unit == 's':
-                factor = 1e15
-            elif unit == 'eV':
-                factor = 1e-6
-            else:
-                factor = 1
-            return factor
-
         if x_factor is None:
             x_factor = unit_to_factor(self.x_unit)
         if y_factor is None:
@@ -798,4 +787,15 @@ def _x_to_t_inner(image, indices, indices2, x_axis, wake_x, new_arr):
         weights[-1] = i1 - i01
         weights /= np.sum(weights)
         new_arr[:,i0:i1+1] += np.outer(image[:,nx], weights)
+
+def unit_to_factor(unit):
+    if unit == 'm':
+        factor = 1e3
+    elif unit == 's':
+        factor = 1e15
+    elif unit == 'eV':
+        factor = 1e-6
+    else:
+        factor = 1
+    return factor
 

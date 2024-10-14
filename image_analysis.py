@@ -754,6 +754,13 @@ class Image(LogMsgBase):
                 }
         return outp
 
+
+def arr2D_to_img(xarr, yarr, bins, **img_kwargs):
+    hist, x_edges, y_edges = np.histogram2d(xarr, yarr, bins)
+    x_axis = (x_edges[1:] + x_edges[:-1])/2
+    y_axis = (y_edges[1:] + y_edges[:-1])/2
+    return Image(hist.T, x_axis, y_axis, **img_kwargs)
+
 def calc_rms(xx, yy):
     s2 = np.sum(yy)
     if s2 == 0:

@@ -7,42 +7,47 @@ from . import beam_profile
 from . import config
 from . import data_loader
 from . import h5_storage
-from . import myplotstyle as ms
 
-def tilt_reconstruction(profile1, profile2, debug=False):
-    # see appendix of Schmidt et al., https://doi.org/10.1103/PhysRevAccelBeams.23.062801
-    profile1 = copy.deepcopy(profile1)
-    profile2 = copy.deepcopy(profile2)
+def tilt_reconstruction2(profile1, profile2, streaking_factor):
     assert profile1.total_charge == profile2.total_charge
     assert profile1.energy_eV == profile2.energy_eV
-    for profile in profile1, profile2:
-        profile.center('Mean')
-        profile.crop()
-    tmin = min(profile1.time[0], profile2.time[0])
-    tmax = max(profile1.time[-1], profile2.time[-1])
-    tlen = max(len(profile1), len(profile2))
-    new_time = np.linspace(tmin, tmax, tlen)
+    n_interp = max(len(profile1), len(profile2))
 
-    cumsum = np.zeros_like(new_time)
-    new_charges = []
-    for ctr, profile in enumerate([profile1, profile2]):
-        new_charge = np.interp(new_time, profile.time, profile.charge_dist, left=0, right=0)
-        new_charges.append(new_charge)
-        cumsum += np.cumsum(new_charge)
-    new_charge_dist = np.append(np.diff(cumsum/2), [0])
-    new_profile = beam_profile.BeamProfile(new_time, new_charge_dist, profile1.energy_eV, profile1.total_charge)
-    new_profile.center('Mean')
+    sd_plus_x = profile1.time*streaking_factor
+    sd_plus_intensity = profile1.charge_dist
+    sd_plus = beam_profile.ScreenDistribution(sd_plus_x, sd_plus_intensity, subtract_min=False, total_charge=profile1.total_charge)
+    sd_minus_x = profile2.time[::-1]*(-streaking_factor)
+    sd_minus_intensity = profile2.charge_dist[::-1]
+    sd_minus = beam_profile.ScreenDistribution(sd_minus_x, sd_minus_intensity, subtract_min=False, total_charge=profile1.total_charge)
 
-    if debug:
-        old_fignum = ms.plt.gcf()
-        sp = ms.plt.subplot(1, 1, 1)
-        sp.plot(new_time, new_charges[0], label='New charge 1')
-        sp.plot(new_time, new_charges[1], label='New charge 2')
-        sp.plot(new_time, new_charge_dist, label='Combined')
-        sp.legend()
-        ms.plt.figure(old_fignum)
+    q_plus = np.cumsum(sd_plus.intensity)*(sd_plus.x[1] - sd_plus.x[0])
+    q_minus = np.cumsum(sd_minus.intensity[::-1]) * (sd_minus.x[1] - sd_minus.x[0])
+    q_interp_min = min(np.min(q_plus), np.min(q_minus))
+    q_interp_max = max(np.max(q_plus), np.max(q_minus))
+    q_interp = np.linspace(q_interp_min, q_interp_max, n_interp)
 
-    return new_profile
+    x_interp_minus = np.interp(q_interp, q_minus, sd_minus.x[::-1])
+    x_interp_plus = np.interp(q_interp, q_plus, sd_plus.x)
+
+    x_mean = (x_interp_plus - x_interp_minus)/2
+    x_mean_evenly = np.linspace(x_mean.min(), x_mean.max(), len(x_mean))
+    q_interp_evenly = np.interp(x_mean_evenly, x_mean, q_interp)
+
+    charge_dist_mean = np.diff(q_interp_evenly)
+    corrected_profile = beam_profile.BeamProfile(x_mean_evenly[:-1]/streaking_factor, charge_dist_mean, profile1.energy_eV, profile1.total_charge)
+
+    outp = {
+            'corrected_profile': corrected_profile,
+            'sd_plus': sd_plus,
+            'sd_minus': sd_minus,
+            'q_plus': q_plus,
+            'q_minus': q_minus,
+            'q_interp': q_interp,
+            'x_mean': x_mean,
+            }
+
+    return outp
+
 
 def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
     """
@@ -532,7 +537,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             outp['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
 
     if len(zero_crossings) == 2:
-        outp['corrected_profile'] = tilt_reconstruction(outp[1]['representative_profile'], outp[2]['representative_profile'])
+        outp['corrected_profile'] = tilt_reconstruction2(outp[1]['representative_profile'], outp[2]['representative_profile'], weighted_calibration)['corrected_profile']
 
     return outp
 

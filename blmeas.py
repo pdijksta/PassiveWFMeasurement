@@ -8,17 +8,13 @@ from . import config
 from . import data_loader
 from . import h5_storage
 
-def tilt_reconstruction2(profile1, profile2, streaking_factor):
+def tilt_reconstruction2(profile1, profile2):
     assert profile1.total_charge == profile2.total_charge
     assert profile1.energy_eV == profile2.energy_eV
     n_interp = max(len(profile1), len(profile2))
 
-    sd_plus_x = profile1.time*streaking_factor
-    sd_plus_intensity = profile1.charge_dist
-    sd_plus = beam_profile.ScreenDistribution(sd_plus_x, sd_plus_intensity, subtract_min=False, total_charge=profile1.total_charge)
-    sd_minus_x = profile2.time[::-1]*(-streaking_factor)
-    sd_minus_intensity = profile2.charge_dist[::-1]
-    sd_minus = beam_profile.ScreenDistribution(sd_minus_x, sd_minus_intensity, subtract_min=False, total_charge=profile1.total_charge)
+    sd_plus = beam_profile.ScreenDistribution(profile1.time, profile1.charge_dist, subtract_min=False, total_charge=profile1.total_charge)
+    sd_minus = beam_profile.ScreenDistribution(-profile2.time[::-1], profile2.charge_dist[::-1], subtract_min=False, total_charge=profile1.total_charge)
 
     q_plus = np.cumsum(sd_plus.intensity)*(sd_plus.x[1] - sd_plus.x[0])
     q_minus = np.cumsum(sd_minus.intensity[::-1]) * (sd_minus.x[1] - sd_minus.x[0])
@@ -34,7 +30,7 @@ def tilt_reconstruction2(profile1, profile2, streaking_factor):
     q_interp_evenly = np.interp(x_mean_evenly, x_mean, q_interp)
 
     charge_dist_mean = np.diff(q_interp_evenly)
-    corrected_profile = beam_profile.BeamProfile(x_mean_evenly[:-1]/streaking_factor, charge_dist_mean, profile1.energy_eV, profile1.total_charge)
+    corrected_profile = beam_profile.BeamProfile(x_mean_evenly[:-1], charge_dist_mean, profile1.energy_eV, profile1.total_charge)
 
     outp = {
             'corrected_profile': corrected_profile,
@@ -537,7 +533,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             outp['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
 
     if len(zero_crossings) == 2:
-        outp['corrected_profile'] = tilt_reconstruction2(outp[1]['representative_profile'], outp[2]['representative_profile'], weighted_calibration)['corrected_profile']
+        outp['corrected_profile'] = tilt_reconstruction2(outp[1]['representative_profile'], outp[2]['representative_profile'])['corrected_profile']
 
     return outp
 

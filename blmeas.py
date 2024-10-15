@@ -9,6 +9,7 @@ from . import data_loader
 from . import h5_storage
 
 def tilt_reconstruction2(profile1, profile2):
+    # Algorithm by H. Loos, as described in Schmidt et al., Benchmarking coherent radiation spectroscopy as a tool for high-resolution bunch shape reconstruction at free-electron lasers,PRAB 23, 062801 (2020) https://doi.org/10.1103/PhysRevAccelBeams.23.062801
     assert profile1.total_charge == profile2.total_charge
     assert profile1.energy_eV == profile2.energy_eV
     n_interp = max(len(profile1), len(profile2))
@@ -31,6 +32,7 @@ def tilt_reconstruction2(profile1, profile2):
 
     charge_dist_mean = np.diff(q_interp_evenly)
     corrected_profile = beam_profile.BeamProfile(x_mean_evenly[:-1], charge_dist_mean, profile1.energy_eV, profile1.total_charge)
+    corrected_profile.center('Mean')
 
     outp = {
             'corrected_profile': corrected_profile,
@@ -41,9 +43,7 @@ def tilt_reconstruction2(profile1, profile2):
             'q_interp': q_interp,
             'x_mean': x_mean,
             }
-
     return outp
-
 
 def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
     """

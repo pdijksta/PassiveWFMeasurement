@@ -265,6 +265,19 @@ class Profile:
         self._xx = -self._xx[::-1]
         self._yy = self._yy[::-1]
 
+    def convolve_gauss(self, sigma):
+        diff = self._xx[1] - self._xx[0]
+        xx_res = np.arange(-3*sigma, 3*sigma, diff)
+        yy_res = np.exp(-xx_res**2/(2*sigma**2))
+        yy_res /= yy_res.sum()
+        new_yy = np.convolve(self._yy, yy_res, mode='full')
+        new_xx_min = self._xx.mean() - len(new_yy)/2 * diff
+        new_xx_max = self._xx.mean() + len(new_yy)/2 * diff
+        new_xx = np.linspace(new_xx_min, new_xx_max, len(new_yy))
+        self._xx = new_xx
+        self._yy = new_yy
+
+
 class ScreenDistribution(Profile):
     def __init__(self, x, intensity, real_x=None, subtract_min=True, total_charge=1, meta_data=None):
         Profile.__init__(self)

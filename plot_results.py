@@ -998,7 +998,6 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
     zero_crossings = result['zero_crossings']
     calibrations_err = result['calibrations_err']
     calibrations = result['calibrations']
-    all_phases_rad = result['all_phases_rad']
     all_phases_plot = result['all_phases_plot']
 
     for zc_ctr, (zero_crossing, sp_example_image, sp_zc) in enumerate(zip(zero_crossings, [sp_example_image1, sp_example_image2], [sp_zc1, sp_zc2])):
@@ -1078,11 +1077,10 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         else:
             weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
         if n_phases >= 2:
-            a1, b1 = result[1]['polyfit']
-            a2, b2 = result[2]['polyfit']
-            phase_cross = (b2 - b1)/(a1 - a2)
-            sp_calib.axvline(phase_cross*180/np.pi, color='black', ls='--')
-            textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % ((np.mean(all_phases_rad[0])+phase_cross)*180/np.pi, phase_cross*180/np.pi)
+            phase_cross_rel = result['phase_cross_rel']
+            phase_cross_abs = result['phase_cross_abs']
+            sp_calib.axvline(phase_cross_rel*180/np.pi, color='black', ls='--')
+            textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % (phase_cross_abs*180/np.pi, phase_cross_rel*180/np.pi)
             textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
             sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
 

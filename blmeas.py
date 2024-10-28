@@ -430,25 +430,27 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     if n_phases >= 2:
         calibrations = np.array(calibrations)
         calibrations_err = np.array(calibrations_err)
+    else:
+        calibrations = np.array([force_cal, -force_cal])
+        calibrations_err = None
+
+    if len(zero_crossings) == 2:
         a1, b1 = outp[1]['polyfit']
         a2, b2 = outp[2]['polyfit']
         phase_cross_rel = (b2 - b1)/(a1 - a2)
         phase_cross_abs = phase_cross_rel + outp[1]['fit_phase_delta']
         outp['phase_cross_rel'] = phase_cross_rel
         outp['phase_cross_abs'] = phase_cross_abs
-    else:
-        calibrations = np.array([force_cal, -force_cal])
-        calibrations_err = None
-        outp['phase_cross_rel'] = None
-        outp['phase_cross_abs'] = None
-
-    if len(zero_crossings) == 2:
         if calibrations_err is None:
             weighted_calibration = np.mean(np.abs(calibrations))
         else:
             weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
     else:
+        weighted_calibration = None
         separate_calibrations = True
+        outp['phase_cross_rel'] = None
+        outp['phase_cross_abs'] = None
+
     if force_cal:
         weighted_calibration = abs(force_cal)
     else:

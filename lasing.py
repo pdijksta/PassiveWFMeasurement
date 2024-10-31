@@ -126,9 +126,13 @@ def obtain_lasing(tracker, file_or_dict_off, file_or_dict_on, lasing_options, pu
             }
     return outp
 
-def tds_obtain_lasing(blmeas_file, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False, blmeas_kwargs={}, blmeas_cutoff=None, camera_res=20e-6):
-    blmeas_dict = blmeas.analyze_blmeas(blmeas_file, separate_calibrations=False, **blmeas_kwargs)
-    blmeas_profile = blmeas_dict['corrected_profile']
+def tds_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, backward=False, blmeas_kwargs={}, blmeas_cutoff=None, camera_res=20e-6):
+    if type(blmeas_file_or_profile) is str:
+        blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
+        blmeas_profile = blmeas_dict['corrected_profile']
+    elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
+        blmeas_dict = None
+        blmeas_profile = blmeas_file_or_profile
     if blmeas_cutoff:
         blmeas_profile.cutoff(blmeas_cutoff)
     blmeas_profile.center('Mean')

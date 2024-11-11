@@ -530,10 +530,10 @@ def plot_simple_daq(data_dict, dim, **plot_kwargs):
     reverse_y = y_axis[1] < y_axis[0]
     if reverse_x:
         x_axis = x_axis[::-1]
-        images = images[:,::-1]
+        images = images[:,:,::-1]
     if reverse_y:
         y_axis = y_axis[::-1]
-        images = images[::-1,:]
+        images = images[:,::-1,:]
     proj = images.sum(axis=-2, dtype=np.float64)
     median_index = data_loader.get_median(proj, 'mean', 'index')
     image = image_analysis.Image(images[median_index].astype(np.float64), x_axis, y_axis, 1)

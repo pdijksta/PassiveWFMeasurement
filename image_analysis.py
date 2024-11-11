@@ -202,6 +202,9 @@ class Image(LogMsgBase):
                 continue
 
             intensity = self.image[mask_Elim,n_slice]
+            if intensity.size == 0:
+                addzero()
+                continue
             intensity = intensity - intensity.min()
 
             if np.sum(intensity) == 0:
@@ -771,6 +774,8 @@ def calc_rms(xx, yy):
     return mean, rms
 
 def calc_fwhm(xx, yy):
+    if yy.size == 0:
+        return 0
     halfmax = np.max(yy)/2
     mask = yy >= halfmax
     x1 = xx[mask][0]

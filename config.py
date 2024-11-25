@@ -384,7 +384,6 @@ def get_default_lasing_options():
             'self_consistent_profile': False,
             'cut_extremes': None,
             'void_cutoff': [1e-3, 1e-3],
-            'slice_cutoff': 0.02,
             }.copy()
     return outp
 

@@ -603,7 +603,7 @@ class LasingReconstructionImagesBase:
             if slice_method in ('gauss', 'rms', 'cut'):
                 slice_dict = image.fit_slice(rms_sigma=self.lasing_options['rms_sigma'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], do_plot=do_plot, ref_t=self.lasing_options['ref_t'])
             elif slice_method in ('full', 'cutoff'):
-                slice_dict = image.fit_slice_simple(slice_cutoff=self.lasing_options['slice_cutoff'], current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], ref_t=self.lasing_options['ref_t'])
+                slice_dict = image.fit_slice_simple(current_cutoff=current_cutoff, E_lims=self.lasing_options['E_lims'], ref_t=self.lasing_options['ref_t'])
             else:
                 raise ValueError(slice_method)
             self.slice_dicts.append(slice_dict)

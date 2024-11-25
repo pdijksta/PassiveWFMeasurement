@@ -241,6 +241,9 @@ class Profile:
             self._xx = self._xx - self.gaussfit.mean
         elif type_ == 'Mean':
             self._xx = self._xx - self.mean()
+        elif type_ == 'Max':
+            index = np.argmax(self._yy).squeeze()
+            self._xx = self._xx - self._xx[index]
         else:
             raise ValueError(type_)
 

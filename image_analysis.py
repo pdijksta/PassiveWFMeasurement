@@ -162,7 +162,7 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
-    def fit_slice_simple(self, slice_cutoff=0.02, current_cutoff=None, E_lims=None, ref_t=None):
+    def fit_slice_simple(self, current_cutoff=None, E_lims=None, ref_t=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_full_mean = []

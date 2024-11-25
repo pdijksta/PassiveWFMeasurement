@@ -372,6 +372,8 @@ class PSISinglePositionData(DataLoaderSinglePosition):
         meta_dict = eval_psi_meta_data(raw_data['meta_data_begin'], structure)
 
         DataLoaderSinglePosition.__init__(self, structure, meta_dict['structure_gap'], meta_dict['structure_position'], images, x_axis_m, y_axis_m, meta_dict['lat'], meta_dict['charge'], meta_dict['energy_eV'], screen_name, data_loader_options)
+        self.meta_data_begin = raw_data['meta_data_begin']
+        self.meta_data_end = raw_data['meta_data_end']
 
 
 class PSILinearData(DataLoaderSinglePosition):

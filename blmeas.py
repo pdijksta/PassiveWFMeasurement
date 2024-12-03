@@ -435,7 +435,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         calibrations = np.array([force_cal, -force_cal])
         calibrations_err = None
 
-    if len(zero_crossings) == 2:
+    if len(zero_crossings) == 2 and n_phases >= 2:
         a1, b1 = outp[1]['polyfit']
         a2, b2 = outp[2]['polyfit']
         phase_cross_rel = (b2 - b1)/(a1 - a2)

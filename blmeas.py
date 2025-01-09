@@ -446,6 +446,8 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             weighted_calibration = np.mean(np.abs(calibrations))
         else:
             weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
+    elif len(zero_crossings) == 1 and n_phases >= 2:
+        weighted_calibration = calibrations[0]
     else:
         weighted_calibration = None
         separate_calibrations = True
@@ -454,8 +456,6 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
     if force_cal:
         weighted_calibration = abs(force_cal)
-    else:
-        weighted_calibration = np.mean(np.abs(calibrations))
 
     voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3)*np.nan, np.zeros(3)*np.nan
     outp['beamsizes'] = beamsizes

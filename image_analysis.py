@@ -66,6 +66,19 @@ class Image(LogMsgBase):
         ylabel = self.ylabel if ylabel is None else ylabel
         return Image(new_i, new_x, new_y, self.charge, self.energy_eV, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
 
+    def crop(self, quiet=False):
+        projx = np.sum(self.image, axis=0)
+        mask = projx != 0
+        if np.sum(mask) < 2:
+            if not quiet:
+                print('Cannot crop!')
+            raise ValueError
+        xx_nonzero = self.x_axis[mask]
+        mask2 = np.logical_and(self.x_axis >= xx_nonzero[0], self.x_axis <= xx_nonzero[-1])
+        new_x = self.x_axis[mask2]
+        new_img = self.image[:,mask2]
+        return self.child(new_img, new_x, self.y_axis)
+
     def noisecut(self, noiselevel):
         new_image = self.image.copy()
         new_image[new_image < noiselevel] = 0

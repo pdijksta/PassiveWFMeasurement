@@ -63,7 +63,7 @@ def beam_to_res(forward_dict, r12, energy_eV, camera_res, bins, dim, use_other_d
         beamsize_ysq = np.sum(hist*(y_axis2 - mean_y2)**2, axis=1) / current_t
         beamsize_y = np.sqrt(beamsize_ysq)
         x_axis2 = (xedges[1:] + xedges[:-1])/2
-        if np.any(np.diff(wf_x) < 0):
+        if np.mean(np.diff(wf_x) < 0):
             output['other_time2'] = np.interp(x_axis2, wf_x[::-1], wf_t[::-1])[::-1]
             output['other_beamsize2'] = beamsize_y[::-1]
         else:

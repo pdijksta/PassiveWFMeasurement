@@ -495,6 +495,7 @@ class Image(LogMsgBase):
         indicesT = np.arange(new_time_len)
         indices2 = np.interp(wake_time, new_t_axis, indicesT)
 
+        # Correct for image background
         uncorrected_proj = self.image.sum(axis=0)
         corrected_proj = uncorrected_proj - uncorrected_proj.min()
         overall_weight = corrected_proj/uncorrected_proj

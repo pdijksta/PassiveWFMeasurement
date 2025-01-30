@@ -495,6 +495,10 @@ class Image(LogMsgBase):
         indicesT = np.arange(new_time_len)
         indices2 = np.interp(wake_time, new_t_axis, indicesT)
 
+        uncorrected_proj = self.image.sum(axis=0)
+        corrected_proj = uncorrected_proj - uncorrected_proj.min()
+        overall_weight = corrected_proj/uncorrected_proj
+
         for op in operator.lt, operator.gt:
             mask = op(self.x_axis, 0)
             if mask.sum():
@@ -503,7 +507,23 @@ class Image(LogMsgBase):
                 if np.sign(np.mean(x_axis)) != sign_wake:
                     x_axis = -x_axis[::-1]
                     indices = indices[::-1]
-                _x_to_t_inner(self.image, indices, indices2, x_axis, wake_x, new_arr)
+                delta_x = (x_axis[1] - x_axis[0])/2
+                new_time_len = new_arr.shape[1]
+                for nx, x in zip(indices, x_axis):
+                    indices = np.interp([x-delta_x, x+delta_x], wake_x, indices2)
+                    i00, i01 = sorted(indices)
+                    i0, i1 = int(i00), int(i01)+1
+                    if i0 == new_time_len-1:
+                        continue
+                    if i1 == new_time_len:
+                        i1 -= 1
+                    len_new = i1-i0+1
+                    weights = np.ones(len_new)
+                    weights[0] = i00-i0
+                    weights[-1] = i1 - i01
+                    weights /= np.sum(weights)
+                    new_arr[:,i0:i1+1] += np.outer(self.image[:,nx], weights) * overall_weight[nx]
+
 
         _sum = new_arr[:,1:-1].sum()
         if _sum != 0:
@@ -794,24 +814,6 @@ def calc_fwhm(xx, yy):
     x1 = xx[mask][0]
     x2 = xx[mask][-1]
     return abs(x2-x1) + abs(xx[1]-xx[0])
-
-def _x_to_t_inner(image, indices, indices2, x_axis, wake_x, new_arr):
-    delta_x = (x_axis[1] - x_axis[0])/2
-    new_time_len = new_arr.shape[1]
-    for nx, x in zip(indices, x_axis):
-        indices = np.interp([x-delta_x, x+delta_x], wake_x, indices2)
-        i00, i01 = sorted(indices)
-        i0, i1 = int(i00), int(i01)+1
-        if i0 == new_time_len-1:
-            continue
-        if i1 == new_time_len:
-            i1 -= 1
-        len_new = i1-i0+1
-        weights = np.ones(len_new)
-        weights[0] = i00-i0
-        weights[-1] = i1 - i01
-        weights /= np.sum(weights)
-        new_arr[:,i0:i1+1] += np.outer(image[:,nx], weights)
 
 def unit_to_factor(unit):
     if unit == 'm':

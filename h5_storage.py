@@ -77,7 +77,7 @@ def saveH5Recursive(h5_filename, data_dict):
             elif (type(mydata) is list and type(mydata[0]) is str) or (hasattr(mydata, 'dtype') and mydata.dtype.type is np.str_):
                 # For list of strings, we need this procedure
                 try:
-                    if hasattr(mydata, 'dtype') and mydata.dtype.type is np.str and len(mydata.shape) == 2:
+                    if hasattr(mydata, 'dtype') and mydata.dtype.type is np.str_ and len(mydata.shape) == 2:
                         mydata = mydata.flatten()
                     if len(mydata.shape) == 2:
                         new_list = [[n.encode('ascii') for n in arr] for arr in mydata]
@@ -93,8 +93,9 @@ def saveH5Recursive(h5_filename, data_dict):
                     #print(np.array(dset))
                     dset.attrs.create('system', 'unknown', (1,), dtype=dt)
 
-                except:
+                except Exception as e:
                     print('Error for key', inner_key)
+                    print(e)
                     print(type(mydata))
                     if type(mydata) is list:
                         print('type(mydata[0])')

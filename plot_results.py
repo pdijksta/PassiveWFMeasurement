@@ -1050,7 +1050,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         else:
             phases_plot = phases_deg
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
-        cal = calibration if result['separate_calibrations'] else result['weighted_calibration']
+        cal = calibrations[zc_ctr]
         textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
         textstr += 'Bunch durations:'
         for label, label3, arr, color, factor in [

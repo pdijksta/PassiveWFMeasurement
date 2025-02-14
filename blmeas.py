@@ -447,7 +447,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         else:
             weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
     elif len(zero_crossings) == 1 and n_phases >= 2:
-        weighted_calibration = calibrations[0]
+        weighted_calibration = abs(calibrations[0])
     else:
         weighted_calibration = None
         separate_calibrations = True
@@ -471,10 +471,12 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:
             cal = abs(force_cal)*np.sign(calibrations[ctr])
+            #print(calibrations[ctr], cal)
         elif separate_calibrations:
             cal = calibrations[ctr]
         else:
             cal = weighted_calibration*np.sign(calibrations[ctr])
+        #print('Calibration for zero crossing %i: %.2f um/fs' % (zero_crossing, cal/1e9))
 
         calibrations[ctr] = cal
 

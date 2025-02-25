@@ -200,6 +200,16 @@ class Profile:
         self._yy = new_y / new_y.sum() * old_sum
         return True
 
+    def crop_without_resize(self, quiet=False):
+        mask = self._yy != 0
+        if np.sum(mask) < 2:
+            if not quiet:
+                print('Cannot crop!')
+            return False
+        self._xx = self._xx[mask]
+        self._yy = self._yy[mask]
+        return True
+
     def __len__(self):
         return len(self._xx)
 

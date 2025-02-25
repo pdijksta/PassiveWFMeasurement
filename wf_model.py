@@ -176,20 +176,16 @@ class CorrugatedStructure:
         t6 = exp(-sqr)
         return -1 * t1 * t2 * t3 * t4 * t6 / 2 * self.Ls
 
-    def generate_elegant_wf(self, filename, xx, semigap, beam_offset):
-        xx -= xx.min()
-        assert np.all(xx >= 0)
+    def generate_elegant_wf(self, filename, tt, semigap, beam_offset):
+        tt = tt-tt.min()
         if beam_offset == 0:
-            w_wxd = np.zeros_like(xx)
+            w_wxd = np.zeros_like(tt)
         else:
-            w_wxd = self.wxd(xx, semigap, beam_offset)
-        delta_offset = 1e-6
-        w_wxd2 = self.wxd(xx, semigap, beam_offset+delta_offset)
-        w_wxd_deriv = (w_wxd2 - w_wxd)/delta_offset
-        w_wld = self.wld(xx, semigap, beam_offset)
-        tt = xx/c
+            w_wxd = self.wxd(tt, semigap, beam_offset)
+        w_wld = self.wld(tt, semigap, beam_offset)
+        w_wxq = self.wxq(tt, semigap, beam_offset)
         comment_str = 'semigap %.5e m ; beam_offset %.5e m ; Length %.5e m' % (semigap, beam_offset, self.Ls)
-        return write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str)
+        return write_sdds(filename, tt, w_wld, w_wxd, w_wxq, comment_str)
 
 
 def wf2d(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3), 100)):
@@ -273,26 +269,26 @@ def wf2d_quad(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
             }
     return output
 
-def write_sdds(filename, tt, w_wld, w_wxd, w_wxd_deriv, comment_str=''):
+def write_sdds(filename, tt, w_wld, w_wxd, w_wxq, comment_str=''):
 
     with open(filename, 'w') as fid:
         fid.write('SDDS1\n')
         #fid.write('&column name=z,    units=m,    type=double,    &end\n')
         fid.write('&column name=t,    units=s,    type=double,    &end\n')
-        fid.write('&column name=W,    units=V/C,  type=double,    &end\n')
-        fid.write('&column name=WX,   units=V/C,    type=double,    &end\n') # V/C for X_DRIVE_EXPONENT=0, otherwise V/C/m
-        fid.write('&column name=DWX,   units=V/C/m,    type=double,    &end\n')
+        fid.write('&column name=WL,    units=V/C,  type=double,    &end\n')
+        fid.write('&column name=WXD,   units=V/C,    type=double,    &end\n') # V/C for X_DRIVE_EXPONENT=0, otherwise V/C/m
+        fid.write('&column name=WXQ,   units=V/C/m,    type=double,    &end\n')
         fid.write('&data mode=ascii, &end\n')
         fid.write('! page number 1\n')
         fid.write('! %s\n' % comment_str)
         fid.write('%i\n' % len(tt))
-        for t, wx, wl, dwx in zip(tt, w_wld, w_wxd, w_wxd_deriv):
-            fid.write('  %12.6e  %12.6e  %12.6e  %12.6e\n' % (t, wx, wl, dwx))
+        for t, wl, wxd, wxq in zip(tt, w_wld, w_wxd, w_wxq):
+            fid.write('  %12.6e  %12.6e  %12.6e  %12.6e\n' % (t, wl, wxd, wxq))
 
     return {
             't': tt,
             'W': w_wld,
             'WX': w_wxd,
-            'DWX': w_wxd_deriv,
+            'WQX': w_wxq,
             }
 

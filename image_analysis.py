@@ -481,6 +481,33 @@ class Image(LogMsgBase):
         new_image = scipy.ndimage.zoom(self.image, factor)
         return self.child(new_image, new_x, new_y)
 
+    def x_to_t_modelfree(self, ref_profile, scale_factor=5):
+        img = self.resample([1, scale_factor])
+        img.x_axis -= img.x_axis[0]
+
+        # Ensure correct orientation
+        prof_x = img.get_screen_dist('X')
+        max_int = prof_x.x[np.argmax(prof_x.intensity)]
+        if max_int > prof_x.mean():
+            img.x_axis = -img.x_axis[::-1]
+            img.image = img.image[:,::-1]
+            prof_x = img.get_screen_dist('X')
+
+        sd_xx = prof_x.x
+        sd_cumsum = np.cumsum(prof_x.intensity)
+        sd_cumsum /= sd_cumsum[-1]
+
+        bp_tt = ref_profile.time
+        bp_cumsum = np.cumsum(ref_profile.charge_dist)
+        bp_cumsum /= bp_cumsum[-1]
+
+        xx_interp = np.linspace(img.x_axis[0], img.x_axis[-1], 5000)
+        cumsums = np.interp(xx_interp, sd_xx, sd_cumsum, left=np.nan, right=np.nan)
+        tt = np.interp(cumsums, bp_cumsum, bp_tt)
+
+        img_out = img.x_to_t(xx_interp, tt, allow_negative=False, adjust_weight=True, time_smoothing=0.5e-15, size_factor=10)
+        return img_out
+
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=True, adjust_weight=True):
         if print_:
             t0 = time.time()

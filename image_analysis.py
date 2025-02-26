@@ -475,7 +475,13 @@ class Image(LogMsgBase):
             refx = 0
         return self.child(image, new_x_axis-refx, self.y_axis, x_unit='s', xlabel='t (fs)')
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10):
+    def resample(self, factor):
+        new_x = np.linspace(self.x_axis[0], self.x_axis[-1], factor[1]*len(self.x_axis))
+        new_y = np.linspace(self.y_axis[0], self.y_axis[-1], factor[0]*len(self.y_axis))
+        new_image = scipy.ndimage.zoom(self.image, factor)
+        return self.child(new_image, new_x, new_y)
+
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=True, adjust_weight=True):
         if print_:
             t0 = time.time()
 
@@ -496,16 +502,21 @@ class Image(LogMsgBase):
         indices2 = np.interp(wake_time, new_t_axis, indicesT)
 
         # Correct for image background
-        uncorrected_proj = self.image.sum(axis=0)
-        corrected_proj = uncorrected_proj - uncorrected_proj.min()
-        overall_weight = corrected_proj/uncorrected_proj
+        if adjust_weight:
+            uncorrected_proj = self.image.sum(axis=0)
+            corrected_proj = uncorrected_proj - uncorrected_proj.min()
+            overall_weight = corrected_proj/uncorrected_proj
+        else:
+            overall_weight = np.ones_like(self.x_axis)
 
         for op in operator.lt, operator.gt:
             mask = op(self.x_axis, 0)
-            if mask.sum():
+            if mask.sum() >= 2:
                 x_axis = self.x_axis[mask]
                 indices = indicesX[mask]
                 if np.sign(np.mean(x_axis)) != sign_wake:
+                    if not allow_negative:
+                        raise ValueError('Wrong part of zero!')
                     x_axis = -x_axis[::-1]
                     indices = indices[::-1]
                 delta_x = (x_axis[1] - x_axis[0])/2
@@ -524,7 +535,6 @@ class Image(LogMsgBase):
                     weights[-1] = i1 - i01
                     weights /= np.sum(weights)
                     new_arr[:,i0:i1+1] += np.outer(self.image[:,nx], weights) * overall_weight[nx]
-
 
         _sum = new_arr[:,1:-1].sum()
         if _sum != 0:

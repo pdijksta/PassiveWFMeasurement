@@ -307,6 +307,60 @@ def linear_obtain_lasing(file_or_dict_off, file_or_dict_on, lasing_options, puls
             }
     return outp
 
+def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, file_or_dict_on, lasing_options, pulse_energy, norm_factor=None, blmeas_kwargs={}, blmeas_cutoff=None):
+    if type(file_or_dict_off) is dict:
+        lasing_off_dict = file_or_dict_off
+    else:
+        lasing_off_dict = h5_storage.loadH5Recursive(file_or_dict_off)
+    if type(file_or_dict_on) is dict:
+        lasing_on_dict = file_or_dict_on
+    else:
+        lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
+
+    if type(blmeas_file_or_profile) is str:
+        blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
+        blmeas_profile = blmeas_dict['corrected_profile']
+    elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
+        blmeas_dict = None
+        blmeas_profile = blmeas_file_or_profile
+    if blmeas_cutoff:
+        blmeas_profile.cutoff(blmeas_cutoff)
+    blmeas_profile.center('Mean')
+
+    las_rec_images = {}
+    for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):
+        if main_ctr == 0:
+            ref_y = None
+        else:
+            ref_y = np.mean(las_rec_images['Lasing Off'].ref_y_list)
+        if main_ctr == 1:
+            profile = las_rec_images['Lasing Off'].profile
+            ref_slice_dict = las_rec_images['Lasing Off'].ref_slice_dict
+        else:
+            profile = None
+            ref_slice_dict = None
+
+        rec_obj = LasingReconstructionImages(title, tracker, lasing_options, profile=profile, ref_y=ref_y)
+        rec_obj.profile = blmeas_profile
+        if tracker.structure.dim == 'X':
+            screen_centerX, screen_centerY = tracker.calib.screen_center, 0
+        elif tracker.structure.dim == 'Y':
+            screen_centerX, screen_centerY = 0, tracker.calib.screen_center
+        rec_obj.add_dict(data_dict, screen_centerX=screen_centerX, screen_centerY=screen_centerY)
+        rec_obj.process_data(ref_slice_dict=ref_slice_dict)
+        las_rec_images[title] = rec_obj
+
+    las_rec = LasingReconstruction(las_rec_images['Lasing Off'], las_rec_images['Lasing On'], lasing_options, pulse_energy)
+    las_rec.lasing_analysis(norm_factor=norm_factor)
+    result_dict = las_rec.get_result_dict()
+    outp = {
+            'las_rec': las_rec,
+            'result_dict': result_dict,
+            'las_rec_images': las_rec_images,
+            'blmeas_profile': blmeas_profile
+            }
+    return outp
+
 
 class LasingReconstruction:
     def __init__(self, images_off, images_on, lasing_options, pulse_energy=None):
@@ -550,6 +604,12 @@ class LasingReconstructionImagesBase:
             self.images_tE.append(new_img)
             new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.energy_eV, self.total_charge)
             self.profiles.append(new_profile)
+
+    def convert_x_modelfree(self):
+        self.images_tE = []
+        for ctr, img in enumerate(self.images_E):
+            new_img = img.x_to_t_modelfree(self.profile)
+            self.images_tE.append(new_img)
 
     def generate_all_slice_dict(self, slice_method):
         all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)
@@ -863,6 +923,8 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
             self.convert_x_linear(self.lasing_options['x_linear_factor'])
             if self.profile is None:
                 self.set_profile()
+        elif x_conversion == 'modelfree':
+            self.convert_x_modelfree()
         else:
             raise ValueError(x_conversion)
 

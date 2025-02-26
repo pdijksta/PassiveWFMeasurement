@@ -478,20 +478,24 @@ class Image(LogMsgBase):
     def resample(self, factor):
         new_x = np.linspace(self.x_axis[0], self.x_axis[-1], factor[1]*len(self.x_axis))
         new_y = np.linspace(self.y_axis[0], self.y_axis[-1], factor[0]*len(self.y_axis))
-        new_image = scipy.ndimage.zoom(self.image, factor)
+        new_image = np.clip(scipy.ndimage.zoom(self.image, factor), 0, None)
         return self.child(new_image, new_x, new_y)
 
     def x_to_t_modelfree(self, ref_profile, scale_factor=5):
         img = self.resample([1, scale_factor])
-        img.x_axis -= img.x_axis[0]
 
         # Ensure correct orientation
-        prof_x = img.get_screen_dist('X')
-        max_int = prof_x.x[np.argmax(prof_x.intensity)]
-        if max_int > prof_x.mean():
+        prof_x0 = img.get_screen_dist('X')
+        if prof_x0.mean() < 0:
             img.x_axis = -img.x_axis[::-1]
             img.image = img.image[:,::-1]
-            prof_x = img.get_screen_dist('X')
+        img.x_axis -= img.x_axis[0]
+        prof_x = img.get_screen_dist('X')
+
+        #plt.figure()
+        #img.plot_img_and_proj(plt.subplot(1, 1, 1))
+        #plt.show()
+        #import pdb; pdb.set_trace()
 
         sd_xx = prof_x.x
         sd_cumsum = np.cumsum(prof_x.intensity)
@@ -505,10 +509,10 @@ class Image(LogMsgBase):
         cumsums = np.interp(xx_interp, sd_xx, sd_cumsum, left=np.nan, right=np.nan)
         tt = np.interp(cumsums, bp_cumsum, bp_tt)
 
-        img_out = img.x_to_t(xx_interp, tt, allow_negative=False, adjust_weight=True, time_smoothing=0.5e-15, size_factor=10)
+        img_out = img.x_to_t(xx_interp, tt, allow_negative=True, adjust_weight=True, time_smoothing=0.5e-15, size_factor=10)
         return img_out
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=True, adjust_weight=True):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=False, adjust_weight=True):
         if print_:
             t0 = time.time()
 
@@ -532,6 +536,7 @@ class Image(LogMsgBase):
         if adjust_weight:
             uncorrected_proj = self.image.sum(axis=0)
             corrected_proj = uncorrected_proj - uncorrected_proj.min()
+            uncorrected_proj[uncorrected_proj == 0] = 1
             overall_weight = corrected_proj/uncorrected_proj
         else:
             overall_weight = np.ones_like(self.x_axis)
@@ -849,6 +854,8 @@ def calc_fwhm(xx, yy):
         return 0
     halfmax = np.max(yy)/2
     mask = yy >= halfmax
+    if mask.sum() < 2:
+        return 0
     x1 = xx[mask][0]
     x2 = xx[mask][-1]
     return abs(x2-x1) + abs(xx[1]-xx[0])

@@ -6,6 +6,7 @@ matplotlib.use('Qt5Agg')
 import sys
 import os
 import socket
+import time
 from datetime import datetime
 #import time
 import numpy as np
@@ -835,6 +836,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         return self.obtainLasing(False)
 
     def reconstruct_all_lasing(self):
+        t0 = time.time()
         self.logMsg('Lasing reconstruction start')
         #print(time.time())
         self.clear_all_lasing_plots()
@@ -874,7 +876,7 @@ class StartMain(PyQt5.QtWidgets.QMainWindow, logMsg.LogMsgBase):
         elog_text += '\nraw data lasing OFF:  %s' % file_off
         self.setElogAutoText(elog_text)
 
-        self.logMsg('Lasing reconstruction end')
+        self.logMsg('Lasing reconstruction end after %.1f s' % (time.time()-t0))
         #print(time.time())
         #print(tracking.forward_ctr, tracking.backward_ctr, tracking.rec_ctr)
 

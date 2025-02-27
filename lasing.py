@@ -608,7 +608,7 @@ class LasingReconstructionImagesBase:
     def convert_x_modelfree(self):
         self.images_tE = []
         for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_modelfree(self.profile)
+            new_img = img.x_to_t_modelfree(self.profile, x_scale_factor=self.lasing_options['x_to_t_x_factor'], t_scale_factor=self.lasing_options['x_to_t_time_factor'])
             self.images_tE.append(new_img)
 
     def generate_all_slice_dict(self, slice_method):
@@ -896,7 +896,7 @@ class LasingReconstructionImages(LasingReconstructionImagesBase):
                     self.get_current_profiles()
                 wake_t, wake_x = self.calc_wake(profile=self.profiles[ctr])
                 #img_cut = img.cut(wake_x.min(), wake_x.max())
-                img_tE = img.x_to_t(wake_x, wake_t, debug=False)
+                img_tE = img.x_to_t(wake_x, wake_t, debug=False, size_factor=self.lasing_options['x_to_t_time_factor'])
             else:
                 if self.beam_positions is None:
                     #img_cut = img.cut(x_min, x_max)

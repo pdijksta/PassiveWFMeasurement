@@ -481,8 +481,8 @@ class Image(LogMsgBase):
         new_image = np.clip(scipy.ndimage.zoom(self.image, factor), 0, None)
         return self.child(new_image, new_x, new_y)
 
-    def x_to_t_modelfree(self, ref_profile, scale_factor=5):
-        img = self.resample([1, scale_factor])
+    def x_to_t_modelfree(self, ref_profile, x_scale_factor=5, t_scale_factor=10):
+        img = self.resample([1, x_scale_factor])
 
         # Ensure correct orientation
         prof_x0 = img.get_screen_dist('X')
@@ -509,7 +509,7 @@ class Image(LogMsgBase):
         cumsums = np.interp(xx_interp, sd_xx, sd_cumsum, left=np.nan, right=np.nan)
         tt = np.interp(cumsums, bp_cumsum, bp_tt)
 
-        img_out = img.x_to_t(xx_interp, tt, allow_negative=True, adjust_weight=True, time_smoothing=0.5e-15, size_factor=10)
+        img_out = img.x_to_t(xx_interp, tt, allow_negative=True, adjust_weight=True, time_smoothing=0.5e-15, size_factor=t_scale_factor)
         return img_out
 
     def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=False, adjust_weight=True):

@@ -486,10 +486,12 @@ class Image(LogMsgBase):
 
         # Ensure correct orientation
         prof_x0 = img.get_screen_dist('X')
-        if prof_x0.mean() < 0:
+        revert = prof_x0.mean() < prof_x0.x[np.argmax(prof_x0.intensity)]
+        if revert:
             img.x_axis = -img.x_axis[::-1]
             img.image = img.image[:,::-1]
-        img.x_axis -= img.x_axis[0]
+        delta_x = -img.x_axis[0]
+        img.x_axis += delta_x
         prof_x = img.get_screen_dist('X')
 
         #plt.figure()
@@ -509,10 +511,10 @@ class Image(LogMsgBase):
         cumsums = np.interp(xx_interp, sd_xx, sd_cumsum, left=np.nan, right=np.nan)
         tt = np.interp(cumsums, bp_cumsum, bp_tt)
 
-        img_out = img.x_to_t(xx_interp, tt, allow_negative=True, adjust_weight=True, time_smoothing=0.5e-15, size_factor=t_scale_factor)
-        return img_out
+        img_out = img.x_to_t(xx_interp, tt, allow_negative=False, adjust_weight=True, time_smoothing=0.5e-15, size_factor=t_scale_factor)
+        return img_out, revert, xx_interp-delta_x, tt
 
-    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=False, adjust_weight=True):
+    def x_to_t(self, wake_x, wake_time, debug=False, print_=False, current_profile=None, time_smoothing=1e-15, size_factor=10, allow_negative=True, adjust_weight=True):
         if print_:
             t0 = time.time()
 

@@ -607,9 +607,12 @@ class LasingReconstructionImagesBase:
 
     def convert_x_modelfree(self):
         self.images_tE = []
+        all_revert = []
         for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_modelfree(self.profile, x_scale_factor=self.lasing_options['x_to_t_x_factor'], t_scale_factor=self.lasing_options['x_to_t_time_factor'])
+            new_img, revert, _, _ = img.x_to_t_modelfree(self.profile, x_scale_factor=self.lasing_options['x_to_t_x_factor'], t_scale_factor=self.lasing_options['x_to_t_time_factor'])
             self.images_tE.append(new_img)
+            all_revert.append(revert)
+        assert all(all_revert) or not any(all_revert)
 
     def generate_all_slice_dict(self, slice_method):
         all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)

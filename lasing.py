@@ -323,6 +323,8 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
     elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
         blmeas_dict = None
         blmeas_profile = blmeas_file_or_profile
+    else:
+        raise ValueError(type(blmeas_file_or_profile))
     if blmeas_cutoff:
         blmeas_profile.cutoff(blmeas_cutoff)
     blmeas_profile.center('Mean')

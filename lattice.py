@@ -136,8 +136,9 @@ class Lattice:
             ('delta', 5),
             ))
 
-    def __init__(self, math5_file, dims=6, allow_inverse=True):
+    def __init__(self, math5_file, dims=6, allow_inverse=True, time_factor=c):
         self.dims = dims
+        self.time_factor = time_factor
         self.allow_inverse = allow_inverse
         self.math5_file = math5_file
         mat = self.mat = h5_storage.loadH5Recursive(math5_file)['page1']
@@ -187,9 +188,9 @@ class Lattice:
                     # elegant uses s for the 5th coordinate (S5). Here we transform the matrix to time.
                     factor = 1
                     if n_row == 5:
-                        factor /= c
+                        factor /= self.time_factor
                     if n_col == 5:
-                        factor *= c
+                        factor *= self.time_factor
                     ele_matrix[n_row-1,n_col-1] = columns['R%i%i' % (n_row, n_col)][n_element] * factor
                 single_matrices.append(ele_matrix)
             element_status.append(_element_status)

@@ -317,7 +317,7 @@ class ScreenDistribution(Profile):
             norm = abs(self.total_charge)
         self._yy = self._yy / self.integral * norm
 
-    def plot_standard(self, sp, show_mean=False, y_factor=1e9, **kwargs):
+    def plot_standard(self, sp, show_mean=False, y_factor=1e9, x_factor=1e3, **kwargs):
         if self._yy[0] != 0:
             diff = self._xx[1] - self._xx[0]
             x = np.concatenate([[self._xx[0] - diff], self._xx])
@@ -336,10 +336,10 @@ class ScreenDistribution(Profile):
         #    print('total_charge', self.total_charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
         #except:
         #    pass
-        outp = sp.plot(x*1e3, y*y_factor*factor, **kwargs)
+        outp = sp.plot(x*x_factor, y*y_factor*factor, **kwargs)
         if show_mean:
             color = outp[0].get_color()
-            sp.axvline(self.mean()*1e3, ls='--', color=color)
+            sp.axvline(self.mean()*x_factor, ls='--', color=color)
         return outp
 
     def to_dict_custom(self):

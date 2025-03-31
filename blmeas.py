@@ -64,8 +64,8 @@ def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
         for n_col in range(n_row):
             bp1 = profile_list[n_row]
             bp2 = profile_list[n_col]
-            tt = np.linspace(min(bp1.time[0], bp2.time[0]), max(bp1.time[-1], bp2.time[-1]), size)
-            minus = np.interp(tt, bp1.time, bp1.charge_dist, left=0, right=0) - np.interp(tt, bp2.time, bp2.charge_dist, left=0, right=0)
+            tt = np.linspace(min(bp1._xx[0], bp2._xx[0]), max(bp1._xx[-1], bp2._xx[-1]), size)
+            minus = np.interp(tt, bp1._xx, bp1._yy, left=0, right=0) - np.interp(tt, bp2._yy, bp2._xx, left=0, right=0)
             squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.sum(minus**2)
 
     squares = squares_mat.sum(axis=1)

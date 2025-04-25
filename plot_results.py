@@ -1112,5 +1112,9 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()
     if len(zero_crossings) == 2:
-        sp_average_profile.legend()
+        sp_average_profile.legend(loc='upper right')
+
+    textstr = 'Charge from file: %.0f pC' % (result['charge0']*1e12)
+    textstr += '\nCharge used: %.0f pC' % (result['charge']*1e12)
+    sp_average_profile.text(0.05, 0.05, textstr, transform=sp_average_profile.transAxes, verticalalignment='bottom', bbox=textbbox)
 

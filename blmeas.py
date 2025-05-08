@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from . import beam_profile
+from . import plot_results
 from . import config
 from . import data_loader
 from . import h5_storage
@@ -226,7 +227,7 @@ streaking_dict = {
         }
 
 
-def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None):
+def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None, aggressive_cutoff=True):
 
     outp = {}
     if type(file_or_dict) is dict:
@@ -502,7 +503,11 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             profile = beam_profile.BeamProfile(time, proj, energy_eV, charge)
             cutoff_factor = current_cutoff*(time[1]-time[0])/profile.charge_dist.max()
             gauss[n_phase, n_image] = profile.gaussfit.sigma
-            profile.aggressive_cutoff(cutoff_factor)
+            if aggressive_cutoff:
+                profile.aggressive_cutoff(cutoff_factor)
+            else:
+                profile.cutoff(cutoff_factor)
+            profile.cutoff(cutoff_factor)
             profile.crop()
             all_profiles.append(profile)
             fwhm[n_phase, n_image] = profile.fwhm()
@@ -552,5 +557,26 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     if len(zero_crossings) == 2:
         outp['corrected_profile'] = tilt_reconstruction2(outp[1]['representative_profile'], outp[2]['representative_profile'])['corrected_profile']
 
+    return outp
+
+def analyze_separate_measurements(file_or_dict1, file_or_dict2, force_cal1, force_cal2, do_plot=False, **blmeas_kwargs):
+    assert force_cal1 == -force_cal2
+    outp = {}
+
+    result1 = outp['result1'] = analyze_blmeas(file_or_dict1, force_cal=force_cal1, **blmeas_kwargs)
+    result2 = outp['result2'] = analyze_blmeas(file_or_dict2, force_cal=force_cal2, **blmeas_kwargs)
+
+    if do_plot:
+        plot_results.plot_blmeas_analysis(result1)
+        plot_results.plot_blmeas_analysis(result2)
+
+    representative_profiles = [result1[1]['representative_profile'], result2[1]['representative_profile']]
+    mean_charge = np.mean([x.total_charge for x in representative_profiles])
+
+    for profile in representative_profiles:
+        profile.total_charge = mean_charge
+        profile.center('Mean')
+
+    outp['corrected_profile'] = tilt_reconstruction2(*representative_profiles)['corrected_profile']
     return outp
 

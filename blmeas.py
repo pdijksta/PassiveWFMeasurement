@@ -60,11 +60,13 @@ def get_mean_profile(profile_list0, outp='profile', size=5000, cutoff=0.02):
 
     squares_mat = np.zeros([len(profile_list)]*2, float)
 
+    min_t = min(bp._xx[0] for bp in profile_list)
+    max_t = max(bp._xx[-1] for bp in profile_list)
+    tt = np.linspace(min_t, max_t, size)
     for n_row in range(len(squares_mat)):
         for n_col in range(n_row):
             bp1 = profile_list[n_row]
             bp2 = profile_list[n_col]
-            tt = np.linspace(min(bp1._xx[0], bp2._xx[0]), max(bp1._xx[-1], bp2._xx[-1]), size)
             minus = np.interp(tt, bp1._xx, bp1._yy, left=0, right=0) - np.interp(tt, bp2._yy, bp2._xx, left=0, right=0)
             squares_mat[n_row,n_col] = squares_mat[n_col,n_row] = np.sum(minus**2)
 

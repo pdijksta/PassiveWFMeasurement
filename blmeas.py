@@ -254,6 +254,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
                 })
 
     energy_eV = data['Input data']['beamEnergy']*1e6
+    outp['energy_eV'] = energy_eV
     _ii = processed_data['Current profile_image_0']
     _tt = processed_data['Good region time axis_image_0']
     charge0 = np.abs(np.trapz(_ii, _tt*1e-15))

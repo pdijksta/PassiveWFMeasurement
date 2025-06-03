@@ -226,6 +226,120 @@ streaking_dict = {
         'SATBD02-DSCR050': 'X',
         }
 
+def straighten_out_phase(phases):
+    phases = phases.copy()
+    phase_old = phases[0]
+    for n_phase, phase in enumerate(phases[1:], 1):
+        if abs(phase - phase_old) > 180:
+            phases[n_phase] += 360
+        phase_old = phases[n_phase]
+    return phases
+
+def analyze_zero_crossing(phases_deg0, images, x_axis, y_axis, streaking_direction, charge, energy_eV, data_loader_options, tds_freq, plot_all_images=False, force_cal=False):
+    phases_deg = straighten_out_phase(phases_deg0)
+    inp = {
+            'x_axis': x_axis,
+            'y_axis': y_axis,
+            'images': images,
+            'phases0': phases_deg0,
+            'phases': phases_deg,
+            'charge': charge,
+            'energy_eV': energy_eV,
+            'data_loader_options': data_loader_options,
+            'tds_freq': tds_freq,
+            }
+    outp = {'input': inp}
+
+    n_phases, n_images, leny, lenx = images.shape
+    outp['n_images'] = n_images
+    outp['n_phases'] = n_phases
+    if x_axis[0] > x_axis[1]:
+        x_axis = x_axis[::-1]
+        images = images[:,:,:,::-1]
+    if y_axis[0] > y_axis[1]:
+        y_axis = y_axis[::-1]
+        images = images[:,:,::-1]
+
+    all_centroids = np.zeros([n_phases, n_images], float)
+    data_objs = []
+
+    if streaking_direction == 'Y':
+        axis = y_axis
+    elif streaking_direction == 'X':
+        axis = x_axis
+
+    projections = np.zeros([n_phases, n_images, len(axis)])
+
+    for n_phase, phase_deg in enumerate(phases_deg):
+        charge2 = np.ones(n_images)*charge
+        energy_eV2 = np.ones(n_images)*energy_eV
+        single_phase_data = data_loader.DataLoaderSimple(images[n_phase], x_axis, y_axis, charge2, energy_eV2, data_loader_options)
+        data_objs.append(single_phase_data)
+        single_phase_data.prepare_data()
+        single_phase_data.init_images()
+        single_phase_data.init_screen_distributions(streaking_direction)
+        all_centroids[n_phase] = single_phase_data.sd_dict[streaking_direction]['mean']
+        if streaking_direction == 'Y':
+            projections[n_phase] = single_phase_data.image_data.sum(axis=2)
+        elif streaking_direction == 'X':
+            projections[n_phase] = single_phase_data.image_data.sum(axis=1)
+
+        if n_phase == len(phases_deg)//2:
+            outp['example_image'] = single_phase_data.images[n_images//2]
+
+    if n_phases >= 2:
+        centroids = np.nanmean(all_centroids, axis=1)
+        centroids_err = np.nanstd(all_centroids, axis=1)
+        if n_images > 1:
+            centroids_err /= np.sqrt(n_images-1)
+
+        outp['centroids'] = centroids
+        outp['centroids_err'] = centroids_err
+
+        phases_rad = phases_deg * np.pi / 180
+
+        weights0 = 1/centroids_err
+        weights = np.clip(weights0, 0, np.mean(weights0))
+
+        notnan = ~np.isnan(centroids)
+        p, cov = np.polyfit(phases_rad[notnan], centroids[notnan], 1, w=weights[notnan], cov='unscaled')
+        poly = np.poly1d(p)
+        outp['polyfit'] = p
+        outp['polyfit_cov'] = cov
+        centroids_fit = poly(phases_rad)
+        outp['centroids_fit'] = centroids_fit
+        residuals = centroids - centroids_fit
+        chi_square = np.sum(residuals**2/centroids_err**2)
+        nu = len(phases_deg) - 2
+        chi_square_red = chi_square/nu
+        outp['residuals'] = residuals
+        outp['chi_square_red'] = chi_square_red
+
+        calibration = p[0] * 2*np.pi*tds_freq
+        outp['calibration_fit'] = calibration
+        outp['calibration_error'] = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
+
+        for n_phase, phase_deg in enumerate(phases_deg):
+            if plot_all_images:
+                figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Phase %.3f' % phase_deg, plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
+                all_sps2 = []
+                for sps in all_sps:
+                    all_sps2.extend(sps)
+                for n_image, centroid in enumerate(all_centroids[n_phase]):
+                    if streaking_direction == 'X':
+                        all_sps2[n_image].axvline(centroid*1e3, color='cyan')
+                    if streaking_direction == 'Y':
+                        all_sps2[n_image].axhline(centroid*1e3, color='cyan')
+    elif force_cal:
+        outp['calibration_fit'] = 0
+        outp['chi_square_red'] = 0
+        outp['residuals'] = 0
+    elif not force_cal:
+        raise ValueError('Not enough phase set points and calibration not provided')
+
+    return outp
+
+
 
 def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None, aggressive_cutoff=True):
 
@@ -269,7 +383,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     tds = screen_tds_dict[profile_monitor]
     tds_freq = tds_freq_dict[tds]
     if streaking_direction is None:
-        streaking_direction = streaking_dict[data['Input data']['profileMonitor']]
+        streaking_direction = streaking_dict[profile_monitor]
     outp['tds'] = tds
     outp['tds_freq'] = tds_freq
     outp['streaking_direction'] = streaking_direction

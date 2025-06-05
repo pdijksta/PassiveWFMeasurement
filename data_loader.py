@@ -254,8 +254,8 @@ class DataLoaderSimple(DataLoaderBase):
         self.image_data = image_data
         self.x_axis_m = x_axis_m
         self.y_axis_m = y_axis_m
-        self.charge = charge
-        self.energy_eV = energy_eV
+        self.charge = charge if hasattr(charge, '__len__') else np.ones(len(image_data))*charge
+        self.energy_eV = energy_eV if hasattr(energy_eV, '__len__') else np.ones(len(image_data))*energy_eV
         self.data_loader_options = data_loader_options
 
 

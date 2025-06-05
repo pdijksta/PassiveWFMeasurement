@@ -998,14 +998,9 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
     zero_crossings = result['zero_crossings']
     calibrations_err = result['calibrations_err']
     calibrations = result['calibrations']
-    all_phases_plot = result['all_phases_plot']
 
     for zc_ctr, (zero_crossing, sp_example_image, sp_zc) in enumerate(zip(zero_crossings, [sp_example_image1, sp_example_image2], [sp_zc1, sp_zc2])):
         phases_deg = result[zero_crossing]['phases_deg']
-        if 'phases_plot' in result[zero_crossing]:
-            phases_plot = result[zero_crossing]['phases_plot']
-        else:
-            phases_plot = None
         example_image = result[zero_crossing]['example_image']
         x_axis = result[zero_crossing]['x_axis']
         y_axis = result[zero_crossing]['y_axis']
@@ -1024,20 +1019,29 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         textstr += 'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
         sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
 
-        if phases_plot is not None:
-            centroids = result[zero_crossing]['centroids']
-            centroids_err = result[zero_crossing]['centroids_err']
-            centroids_fit = result[zero_crossing]['centroids_fit']
-            calibration_error = calibrations_err[zc_ctr]
-            residuals = result[zero_crossing]['residuals']
+        centroids = result[zero_crossing]['centroids']
+        centroids_err = result[zero_crossing]['centroids_err'] if 'centroids_err' in result[zero_crossing] else None
+        centroids_fit = result[zero_crossing]['centroids_fit']
+        calibration_error = calibrations_err[zc_ctr]
+        residuals = result[zero_crossing]['residuals']
 
+        phases_plot = phases_deg - phases_deg.mean()
+
+        if centroids_err is None:
+            color = sp_calib.scatter(phases_plot, centroids*1e6, marker='.').get_facecolors()
+            #import pdb; pdb.set_trace()
+        else:
             color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
-            label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
-            sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
+        label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
+        sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
 
-            sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6, color=color, ls='None', capsize=5)
+        sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6 if centroids_err is not None else None, color=color, ls='None', capsize=5)
+        if 'chi_square_red' in result[zero_crossing]:
             chi_square_red = result[zero_crossing]['chi_square_red']
-            sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label='%i: %.2f' % (zero_crossing, chi_square_red))
+            label = '%i: %.2f' % (zero_crossing, chi_square_red)
+        else:
+            label = chi_square_red = None
+        sp_residual.scatter(phases_plot, residuals*1e6, marker='x', label=label)
 
         sp_zc.set_title('Zero crossing %i, %i profiles' % (zero_crossing, fwhm.size))
 
@@ -1045,10 +1049,6 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             profile.plot_standard(sp_zc, center=profile_center_plot)
         result[zero_crossing]['representative_profile'].plot_standard(sp_average_profile, label='Zc %i' % zero_crossing, center=profile_center_plot)
 
-        if all_phases_plot.size:
-            phases_plot = all_phases_plot[zc_ctr]
-        else:
-            phases_plot = phases_deg
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
         cal = calibrations[zc_ctr]
         textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
@@ -1064,7 +1064,10 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             elif zero_crossing == 2:
                 ls = 'dashed'
                 label2 = None
-            sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
+            if len(arr.shape) == 2:
+                sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
+            else:
+                sp_bunch_duration.scatter(phases_plot, arr*1e15*factor, label=label2, color=color)
             textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
 
@@ -1109,7 +1112,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
 
     if n_phases >= 2:
         sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
-        sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
+        if chi_square_red is not None:
+            sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()
     if len(zero_crossings) == 2:
         sp_average_profile.legend(loc='upper right')

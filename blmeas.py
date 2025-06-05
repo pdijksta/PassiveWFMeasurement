@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from . import beam_profile
+from . import image_analysis
 from . import plot_results
 from . import config
 from . import data_loader
@@ -226,6 +227,14 @@ streaking_dict = {
         'SATBD02-DSCR050': 'X',
         }
 
+def straighten_out_phase(phases):
+    phases = phases.copy()
+    phase_old = phases[0]
+    for n_phase, phase in enumerate(phases[1:], 1):
+        if abs(phase - phase_old) > 180:
+            phases[n_phase] += 360
+        phase_old = phases[n_phase]
+    return phases
 
 def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None, aggressive_cutoff=True):
 
@@ -240,19 +249,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     processed_data = data['Processed data']
 
     if data_loader_options is None:
-        data_loader_options = config.get_default_data_loader_options()
-        data_loader_options.update({
-                'subtract_quantile': 0.5,
-                'subtract_absolute': None,
-                'void_cutoff': [None, None],
-                'cutX': None,
-                'cutY': None,
-                'screen_cutoff': 0,
-                'screen_cutoff_relative': True,
-                'screen_cutoff_edge_points': 10,
-                'screen_cutoff_relative_factor': 2,
-                })
-
+        data_loader_options = config.get_blmeas_data_loader_options()
     energy_eV = data['Input data']['beamEnergy']*1e6
     outp['energy_eV'] = energy_eV
     _ii = processed_data['Current profile_image_0']
@@ -284,7 +281,6 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     calibrations_err = []
     all_projections = []
     all_streaked_axes = []
-    all_phases_plot = []
     all_phases_rad = []
     all_fits = []
 
@@ -301,15 +297,9 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         else:
             phases_deg = _phases_deg.astype(float).copy()
         outp[zero_crossing]['phases_raw'] = phases_deg.copy()
-        #phases_deg0 = phases_deg.copy()
-        phase_old = phases_deg[0]
-        for n_phase, phase in enumerate(phases_deg[1:], 1):
-            if abs(phase - phase_old) > 180:
-                phases_deg[n_phase] += 360
-            phase_old = phases_deg[n_phase]
+
+        phases_deg = straighten_out_phase(phases_deg)
         outp[zero_crossing]['phases_deg'] = phases_deg
-        #print(phases_deg0)
-        #print(phases_deg)
 
         images = processed_data['Beam images'+zc_str].astype(float)
         x_axis = processed_data['x axis'+zc_str].astype(float)*1e-6
@@ -406,14 +396,6 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
             calibrations.append(calibration)
             calibrations_err.append(calibration_error)
 
-            if zero_crossing == 2:
-                phases_plot = phases_deg - 180
-            else:
-                phases_plot = phases_deg.copy()
-            phases_plot -= phases_plot.mean()
-            outp[zero_crossing]['phases_plot'] = phases_plot
-            all_phases_plot.append(phases_plot)
-
             for n_phase, phase_deg in enumerate(phases_deg):
                 if plot_all_images:
                     figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Phase %.3f' % phase_deg, plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
@@ -469,7 +451,6 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     outp['calibrations_err'] = calibrations_err
     outp['weighted_calibration'] = weighted_calibration
     outp['all_phases_rad'] = np.array(all_phases_rad)
-    outp['all_phases_plot'] = np.array(all_phases_plot)
     outp['separate_calibrations'] = separate_calibrations
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
@@ -580,4 +561,110 @@ def analyze_separate_measurements(file_or_dict1, file_or_dict2, force_cal1, forc
 
     outp['corrected_profile'] = tilt_reconstruction2(*representative_profiles)['corrected_profile']
     return outp
+
+def analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, energy_eV, streaking_direction, tds_freq):
+    outp = {}
+
+    data_loader_options = config.get_blmeas_data_loader_options()
+    n_phases, n_images, len_y, len_x = images.shape
+    images_reshaped = images.reshape(n_phases*n_images, len_y, len_x)
+    phases_deg = np.ravel(phases_deg)
+
+    zc_data = data_loader.DataLoaderSimple(images_reshaped, x_axis, y_axis, charge, energy_eV, data_loader_options)
+    zc_data.prepare_data()
+    zc_data.init_images()
+    zc_data.init_screen_distributions(streaking_direction)
+
+    centroids = outp['centroids'] = zc_data.sd_dict[streaking_direction]['mean']
+    if streaking_direction == 'Y':
+        projections = zc_data.image_data.sum(axis=2)
+    elif streaking_direction == 'X':
+        projections = zc_data.image_data.sum(axis=1)
+    outp['projections'] = projections
+
+    phases_deg = straighten_out_phase(phases_deg)
+    phases_rad = phases_deg * np.pi / 180
+    phases_rad_fit = phases_rad
+    fit_phase_delta = np.mean(phases_rad_fit)
+    phases_rad_fit = phases_rad_fit - fit_phase_delta
+
+    notnan = ~np.isnan(centroids)
+    p, cov = np.polyfit(phases_rad_fit[notnan], centroids[notnan], 1, cov=True)
+    outp['polyfit'] = p
+    calibration = p[0] * 2*np.pi*tds_freq
+    calibration_err = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
+    print('Calibration: %.3f+/-%.3f um/fs' % (calibration/1e9, calibration_err/1e9))
+
+    poly = np.poly1d(p)
+    centroids_fit = poly(phases_rad_fit)
+    outp['centroids_fit'] = centroids_fit
+
+    outp['calibration_fit'] = calibration
+    outp['calibration_fit_err'] = calibration_err
+    residuals = centroids - centroids_fit
+    outp['residuals'] = residuals
+
+
+    outp['phases_deg'] = phases_deg
+    outp['example_image'] = image_analysis.Image(images_reshaped[len(images_reshaped)//2], x_axis, y_axis, charge, energy_eV)
+    outp['x_axis'] = x_axis
+    outp['y_axis'] = y_axis
+    outp['n_images'] = len(images_reshaped)
+    outp['n_phases'] = len(phases_deg)
+    outp['charge'] = zc_data.charge
+    outp['energy_eV'] = zc_data.energy_eV
+    return outp
+
+def current_profile_analysis(result, streaking_direction, force_calibration, current_cutoff, forced_calibration=None, aggressive_cutoff=True):
+    for zero_crossing in result['zero_crossings']:
+        has_cal = 'calibration_fit' in result[zero_crossing]
+        if force_calibration:
+            cal = forced_calibration
+            if has_cal:
+                cal = abs(forced_calibration) * np.sign(result[zero_crossing]['calibration_fit'])
+        elif has_cal:
+            cal = result[zero_crossing]['calibration_fit']
+        else:
+            raise ValueError('Calibration must be specified!')
+
+        result[zero_crossing]['applied_calibration'] = cal
+
+        axis = result[zero_crossing]['%s_axis' % streaking_direction.lower()] / cal
+        projections = result[zero_crossing]['projections']
+
+        if axis[1] < axis[0]:
+            axis = axis[::-1]
+            projections = projections[:,::-1]
+
+        fwhm = result[zero_crossing]['fwhm'] = np.zeros(len(projections), float)
+        rms = result[zero_crossing]['rms'] = fwhm.copy()
+        gauss = result[zero_crossing]['gauss'] = fwhm.copy()
+
+        all_profiles = []
+        result[zero_crossing]['profiles'] = all_profiles
+
+        for ctr, (proj, energy_eV, charge) in enumerate(zip(projections, result[zero_crossing]['energy_eV'], result[zero_crossing]['charge'])):
+            profile = beam_profile.BeamProfile(axis, proj, energy_eV, charge)
+            cutoff_factor = current_cutoff*(axis[1]-axis[0])/profile.charge_dist.max()
+            gauss[ctr] = profile.gaussfit.sigma
+            if aggressive_cutoff:
+                profile.aggressive_cutoff(cutoff_factor)
+            else:
+                profile.cutoff(cutoff_factor)
+            profile.cutoff(cutoff_factor)
+            profile.crop()
+            all_profiles.append(profile)
+            fwhm[ctr] = profile.fwhm()
+            rms[ctr] = profile.rms()
+
+        mean_profile = get_mean_profile(all_profiles)
+        result[zero_crossing]['representative_profile'] = mean_profile
+        result['beamsizes'][(zero_crossing-1)*2] = np.nanmean(rms) * abs(cal)
+        result['beamsizes_err'][(zero_crossing-1)*2] = np.nanstd(rms) * abs(cal)
+
+    if len(result['zero_crossings']) == 2:
+        result['corrected_profile'] = tilt_reconstruction2(result[1]['representative_profile'], result[2]['representative_profile'])['corrected_profile']
+    else:
+        result['corrected_profile'] = None
+    return result
 

@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from . import beam_profile
+from . import gaussfit
 from . import image_analysis
 from . import plot_results
 from . import config
@@ -562,6 +563,7 @@ def analyze_separate_measurements(file_or_dict1, file_or_dict2, force_cal1, forc
     outp['corrected_profile'] = tilt_reconstruction2(*representative_profiles)['corrected_profile']
     return outp
 
+
 def analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, energy_eV, streaking_direction, tds_freq):
     outp = {}
 
@@ -615,56 +617,173 @@ def analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, energy_eV,
     outp['energy_eV'] = zc_data.energy_eV
     return outp
 
-def current_profile_analysis(result, streaking_direction, force_calibration, current_cutoff, forced_calibration=None, aggressive_cutoff=True):
-    for zero_crossing in result['zero_crossings']:
-        has_cal = 'calibration_fit' in result[zero_crossing]
-        if force_calibration:
-            cal = forced_calibration
-            if has_cal:
-                cal = abs(forced_calibration) * np.sign(result[zero_crossing]['calibration_fit'])
-        elif has_cal:
-            cal = result[zero_crossing]['calibration_fit']
+class LongitudinalBeamMeasurement:
+    def __init__(self, data_file_or_dict, **kwargs):
+        self.analysis_config = {
+                'force_calibration': False,
+                'forced_calibration': 0,
+                'current_cutoff': 5,
+                'aggressive_cutoff': True,
+                'force_charge': False,
+                'forced_charge': 200e-12,
+                }
+        self.analysis_config.update(kwargs)
+        if type(data_file_or_dict) is dict:
+            self.data = data_file_or_dict
         else:
-            raise ValueError('Calibration must be specified!')
+            self.data = h5_storage.loadH5Recursive(data_file_or_dict)
 
-        result[zero_crossing]['applied_calibration'] = cal
+    def analyze_current_measurement(self):
+        data = self.data
+        self.scans = sorted(data['raw_data'].keys())
+        self.tds_name = data['input']['tds']
+        self.tds_freq = tds_freq_dict[self.tds_name]
+        self.phase_pv = self.tds_name+'-RLLE-DSP'
+        self.zero_crossings = [1, 2] if data['input']['measure_both_zc'] else [1, ]
+        self.unstreaked_measured = len(self.scans) > len(self.zero_crossings)
+        self.voltage = data['snapshot'][self.scans[0]][self.tds_name+'-RSYS']['SET-ACC-VOLT']
 
-        axis = result[zero_crossing]['%s_axis' % streaking_direction.lower()] / cal
-        projections = result[zero_crossing]['projections']
+        all_charge = []
+        charge_bpm_name = data['input']['charge_bpm_name']
+        for scan in self.scans:
+            charge_dict = data['raw_data'][scan][charge_bpm_name]
+            charge_list = list((charge_dict['Q1']['data'] + charge_dict['Q2']['data'])*1e-12)
+            all_charge.extend(charge_list)
+        charge0 = np.median(all_charge)
+        charge = self.analysis_config['forced_charge'] if self.analysis_config['force_charge'] else charge0
 
-        if axis[1] < axis[0]:
-            axis = axis[::-1]
-            projections = projections[:,::-1]
+        result = {
+                'charge0': charge0,
+                'charge': charge,
+                'zero_crossings': self.zero_crossings,
+                'calibrations': np.zeros(2, float),
+                'calibrations_err': np.zeros(2, float),
+                'voltages': np.array([0, 0, 0], float),
+                'beamsizes': np.array([0, 0, 0], float),
+                'beamsizes_err': np.array([0, 0, 0], float),
+                }
 
-        fwhm = result[zero_crossing]['fwhm'] = np.zeros(len(projections), float)
-        rms = result[zero_crossing]['rms'] = fwhm.copy()
-        gauss = result[zero_crossing]['gauss'] = fwhm.copy()
+        self.data['analysis_result'] = result
+        self.data['analysis_config'] = self.analysis_config
 
-        all_profiles = []
-        result[zero_crossing]['profiles'] = all_profiles
+        for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
+            phases_deg = data['raw_data'][scan][self.phase_pv]['PHASE-VS']['data']
+            images = data['raw_data'][scan]['image']['data'].astype(float)
+            x_axis = data['raw_data'][scan]['x_axis']['data'][0, 0].astype(float)*1e-6
+            y_axis = data['raw_data'][scan]['y_axis']['data'][0, 0].astype(float)*1e-6
 
-        for ctr, (proj, energy_eV, charge) in enumerate(zip(projections, result[zero_crossing]['energy_eV'], result[zero_crossing]['charge'])):
-            profile = beam_profile.BeamProfile(axis, proj, energy_eV, charge)
-            cutoff_factor = current_cutoff*(axis[1]-axis[0])/profile.charge_dist.max()
-            gauss[ctr] = profile.gaussfit.sigma
-            if aggressive_cutoff:
-                profile.aggressive_cutoff(cutoff_factor)
+            result[zero_crossing] = analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, 1, self.data['input']['streaking_direction'], self.tds_freq)
+            result['calibrations'][ctr] = result[zero_crossing]['calibration_fit']
+            result['calibrations_err'][ctr] = result[zero_crossing]['calibration_fit_err']
+            result['voltages'][(zero_crossing-1)*2] = self.voltage*(-1)**zero_crossing
+
+        self.calc_current_profiles()
+
+    def calc_current_profiles(self):
+        result = self.data['analysis_result']
+        streaking_direction = self.data['input']['streaking_direction'] if 'streaking_direction' in self.data['input'] else 'Y'
+        for zero_crossing in result['zero_crossings']:
+            has_cal = 'calibration_fit' in result[zero_crossing]
+            if self.analysis_config['force_calibration']:
+                cal = self.analysis_config['forced_calibration']
+                if has_cal:
+                    cal = abs(cal) * np.sign(result[zero_crossing]['calibration_fit'])
+            elif has_cal:
+                cal = result[zero_crossing]['calibration_fit']
             else:
+                raise ValueError('Calibration must be specified!')
+
+            result[zero_crossing]['applied_calibration'] = cal
+
+            axis = result[zero_crossing]['%s_axis' % streaking_direction.lower()] / cal
+            projections = result[zero_crossing]['projections']
+
+            if axis[1] < axis[0]:
+                axis = axis[::-1]
+                projections = projections[:,::-1]
+
+            fwhm = result[zero_crossing]['fwhm'] = np.zeros(len(projections), float)
+            rms = result[zero_crossing]['rms'] = fwhm.copy()
+            gauss = result[zero_crossing]['gauss'] = fwhm.copy()
+
+            all_profiles = []
+            result[zero_crossing]['profiles'] = all_profiles
+
+            for ctr, (proj, energy_eV, charge) in enumerate(zip(projections, result[zero_crossing]['energy_eV'], result[zero_crossing]['charge'])):
+                profile = beam_profile.BeamProfile(axis, proj, energy_eV, charge)
+                cutoff_factor = self.analysis_config['current_cutoff']*(axis[1]-axis[0])/profile.charge_dist.max()
+                gauss[ctr] = profile.gaussfit.sigma
+                if self.analysis_config['aggressive_cutoff']:
+                    profile.aggressive_cutoff(cutoff_factor)
+                else:
+                    profile.cutoff(cutoff_factor)
                 profile.cutoff(cutoff_factor)
-            profile.cutoff(cutoff_factor)
-            profile.crop()
-            all_profiles.append(profile)
-            fwhm[ctr] = profile.fwhm()
-            rms[ctr] = profile.rms()
+                profile.crop()
+                all_profiles.append(profile)
+                fwhm[ctr] = profile.fwhm()
+                rms[ctr] = profile.rms()
 
-        mean_profile = get_mean_profile(all_profiles)
-        result[zero_crossing]['representative_profile'] = mean_profile
-        result['beamsizes'][(zero_crossing-1)*2] = np.nanmean(rms) * abs(cal)
-        result['beamsizes_err'][(zero_crossing-1)*2] = np.nanstd(rms) * abs(cal)
+            mean_profile = get_mean_profile(all_profiles)
+            result[zero_crossing]['representative_profile'] = mean_profile
+            result['beamsizes'][(zero_crossing-1)*2] = np.nanmean(rms) * abs(cal)
+            result['beamsizes_err'][(zero_crossing-1)*2] = np.nanstd(rms) * abs(cal)
 
-    if len(result['zero_crossings']) == 2:
-        result['corrected_profile'] = tilt_reconstruction2(result[1]['representative_profile'], result[2]['representative_profile'])['corrected_profile']
-    else:
-        result['corrected_profile'] = None
-    return result
+        if len(result['zero_crossings']) == 2:
+            result['corrected_profile'] = tilt_reconstruction2(result[1]['representative_profile'], result[2]['representative_profile'])['corrected_profile']
+        else:
+            result['corrected_profile'] = None
+
+        if len(result['zero_crossings']) == 2:
+            a1, b1 = result[1]['polyfit']
+            a2, b2 = result[2]['polyfit']
+            phase_cross_rel = (b2 - b1)/(a1 - a2)
+            phase_cross_abs = phase_cross_rel + result[1]['phases_deg'].mean()
+            result['phase_cross_rel'] = phase_cross_rel
+            result['phase_cross_abs'] = phase_cross_abs
+
+
+        cals_applied = []
+        for zero_crossing in result['zero_crossings']:
+            cals_applied.append(result[zero_crossing]['applied_calibration'])
+        cal_applied = np.mean(np.abs(cals_applied))
+
+        if self.unstreaked_measured:
+            scan = self.scans[-1]
+            data = self.data
+            images = data['raw_data'][scan]['image']['data'].astype(float)
+            x_axis = data['raw_data'][scan]['x_axis']['data'][0].astype(float)*1e-6
+            y_axis = data['raw_data'][scan]['y_axis']['data'][0].astype(float)*1e-6
+
+            axis = x_axis if streaking_direction == 'X' else y_axis
+            projections = images.sum(axis=(1 if streaking_direction == 'X' else 2))
+            sizes = [gaussfit.GaussFit(axis, projection).sigma for projection in projections]
+            median_size = np.nanmedian(sizes)
+            result['beamsizes'][1] = median_size
+            result['beamsizes_err'][1] = np.nanstd(sizes)
+            result['resolution'] = median_size / cal_applied
+
+        if len(result['zero_crossings']) == 2:
+            beamsizes = result['beamsizes']
+            beamsizes_err = result['beamsizes_err']
+            voltages = result['voltages']
+            if beamsizes[1] != 0:
+                beamsizes_sq_err = 2*beamsizes*beamsizes_err
+                popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
+                result['parabola_popt'] = popt
+
+                par_fit = np.poly1d(popt)
+                xx = np.linspace(voltages[0], voltages[2], 100)
+                yy = par_fit(xx)
+                result['parabola_x'] = xx
+                result['parabola_y'] = yy
+
+                corr_rms_blen = np.sqrt(popt[0])*self.voltage/cal_applied
+                corr_rms_blen_err = corr_rms_blen/(2*popt[0])*np.sqrt(pcov[0,0])
+                resolution = beamsizes[1] / cal_applied
+                result['resolution'] = resolution
+                result['corr_rms_blen'] = corr_rms_blen
+                result['corr_rms_blen_err'] = corr_rms_blen_err
+                result['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
+
+        return result
 

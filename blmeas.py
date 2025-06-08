@@ -575,7 +575,7 @@ def get_projections(images, x_axis, y_axis, charge, streaking_direction):
 
     zc_data = data_loader.DataLoaderSimple(images_reshaped, x_axis, y_axis, charge, 1, data_loader_options)
     zc_data.prepare_data()
-    zc_data.init_images()
+    #zc_data.init_images()
     zc_data.init_screen_distributions(streaking_direction)
 
     if streaking_direction == 'Y':

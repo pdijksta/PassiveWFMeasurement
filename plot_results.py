@@ -1096,8 +1096,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             corr_rms_blen_err = result['corr_rms_blen_err']
             sp_parabola.plot(result['parabola_x']/1e6, result['parabola_y']*1e6, ls='--')
             textstr = 'First zero crossing to the right.\n'
-            textstr += r'$\sigma^2$ ($\mu$m$^2$) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m$^2$' % (par_fit[2]*1e24, par_fit[1]*1e18, par_fit[0]*1e12)
-            textstr += '\nCorrected rms bunch duration: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
+            #textstr += r'$\sigma^2$ ($\mu$m$^2$) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m$^2$' % (par_fit[2]*1e24, par_fit[1]*1e18, par_fit[0]*1e12)
+            textstr += '\nCorrected rms: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
             min_volt = -par_fit[1]/(2*par_fit[2])
             sp_parabola.axvline(min_volt*1e-6, color='black', ls='--')
             textstr += '\nMin. rms beamsize at %.2f MV' % (min_volt*1e-6)

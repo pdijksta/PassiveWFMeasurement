@@ -564,38 +564,44 @@ def analyze_separate_measurements(file_or_dict1, file_or_dict2, force_cal1, forc
     return outp
 
 
-def analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, energy_eV, streaking_direction, tds_freq):
-    outp = {}
+def get_projections(images, x_axis, y_axis, charge, streaking_direction):
 
     data_loader_options = config.get_blmeas_data_loader_options()
     n_phases, n_images, len_y, len_x = images.shape
     images_reshaped = images.reshape(n_phases*n_images, len_y, len_x)
-    phases_deg = np.ravel(phases_deg)
 
-    zc_data = data_loader.DataLoaderSimple(images_reshaped, x_axis, y_axis, charge, energy_eV, data_loader_options)
+    zc_data = data_loader.DataLoaderSimple(images_reshaped, x_axis, y_axis, charge, 1, data_loader_options)
     zc_data.prepare_data()
     zc_data.init_images()
     zc_data.init_screen_distributions(streaking_direction)
 
-    centroids = outp['centroids'] = zc_data.sd_dict[streaking_direction]['mean']
     if streaking_direction == 'Y':
         projections = zc_data.image_data.sum(axis=2)
     elif streaking_direction == 'X':
         projections = zc_data.image_data.sum(axis=1)
-    outp['projections'] = projections
+    example_image = image_analysis.Image(images_reshaped[len(images_reshaped)//2], x_axis, y_axis, charge=charge)
+    centroids = zc_data.sd_dict[streaking_direction]['mean']
+    return projections, centroids, example_image
 
+def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_image):
+    outp = {
+            'centroids': centroids,
+            'projections': projections,
+            'example_image': example_image,
+            }
+
+    phases_deg = np.ravel(phases_deg)
     phases_deg = straighten_out_phase(phases_deg)
     phases_rad = phases_deg * np.pi / 180
-    phases_rad_fit = phases_rad
-    fit_phase_delta = np.mean(phases_rad_fit)
-    phases_rad_fit = phases_rad_fit - fit_phase_delta
+    fit_phase_delta = np.mean(phases_rad)
+    phases_rad_fit = phases_rad - fit_phase_delta
 
     notnan = ~np.isnan(centroids)
     p, cov = np.polyfit(phases_rad_fit[notnan], centroids[notnan], 1, cov=True)
     outp['polyfit'] = p
     calibration = p[0] * 2*np.pi*tds_freq
     calibration_err = np.sqrt(cov[0,0]) * 2*np.pi*tds_freq
-    print('Calibration: %.3f+/-%.3f um/fs' % (calibration/1e9, calibration_err/1e9))
+    #print('Calibration: %.3f+/-%.3f um/fs' % (calibration/1e9, calibration_err/1e9))
 
     poly = np.poly1d(p)
     centroids_fit = poly(phases_rad_fit)
@@ -608,13 +614,11 @@ def analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, energy_eV,
 
 
     outp['phases_deg'] = phases_deg
-    outp['example_image'] = image_analysis.Image(images_reshaped[len(images_reshaped)//2], x_axis, y_axis, charge, energy_eV)
-    outp['x_axis'] = x_axis
-    outp['y_axis'] = y_axis
-    outp['n_images'] = len(images_reshaped)
+    outp['x_axis'] = example_image.x_axis
+    outp['y_axis'] = example_image.y_axis
+    outp['n_images'] = len(projections)
     outp['n_phases'] = len(phases_deg)
-    outp['charge'] = zc_data.charge
-    outp['energy_eV'] = zc_data.energy_eV
+    outp['charge'] = example_image.charge
     return outp
 
 class LongitudinalBeamMeasurement:
@@ -626,6 +630,7 @@ class LongitudinalBeamMeasurement:
                 'aggressive_cutoff': True,
                 'force_charge': False,
                 'forced_charge': 200e-12,
+                'n_repeat': 2,
                 }
         self.analysis_config.update(kwargs)
         if type(data_file_or_dict) is dict:
@@ -675,17 +680,39 @@ class LongitudinalBeamMeasurement:
             x_axis = data['raw_data'][scan]['x_axis']['data'][0, 0].astype(float)*1e-6
             y_axis = data['raw_data'][scan]['y_axis']['data'][0, 0].astype(float)*1e-6
 
-            result[zero_crossing] = analyze_zero_crossing(phases_deg, images, x_axis, y_axis, charge, 1, self.data['input']['streaking_direction'], self.tds_freq)
+            if x_axis[1] < x_axis[0]:
+                x_axis = x_axis[::-1]
+                images = images[...,::-1]
+            if y_axis[1] < y_axis[0]:
+                y_axis = y_axis[::-1]
+                images = images[...,::-1,:]
+
+            projections, centroids, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'])
+            result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
+
+        print('Calibrations in um/fs:', np.array([result[zero_crossing]['calibration_fit'] for zero_crossing in self.zero_crossings])/1e9)
+        self.calc_current_profiles()
+
+        for _ in range(self.analysis_config['n_repeat']):
+            for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
+                phases_deg = data['raw_data'][scan][self.phase_pv]['PHASE-VS']['data']
+                projections = result[zero_crossing]['projections']
+                centroids = np.array([p.mean() for p in result[zero_crossing]['profiles']]) * result[zero_crossing]['calibration_fit']
+                example_image = result[zero_crossing]['example_image']
+                result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
+
+            print('Calibrations in um/fs:', np.array([result[zero_crossing]['calibration_fit'] for zero_crossing in self.zero_crossings])/1e9)
+            self.calc_current_profiles()
+
+        for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
             result['calibrations'][ctr] = result[zero_crossing]['calibration_fit']
             result['calibrations_err'][ctr] = result[zero_crossing]['calibration_fit_err']
             result['voltages'][(zero_crossing-1)*2] = self.voltage*(-1)**zero_crossing
-
-        self.calc_current_profiles()
         return result
 
     def calc_current_profiles(self):
         result = self.data['analysis_result']
-        streaking_direction = self.data['input']['streaking_direction'] if 'streaking_direction' in self.data['input'] else 'Y'
+        streaking_direction = self.data['input']['streaking_direction']
         for zero_crossing in result['zero_crossings']:
             has_cal = 'calibration_fit' in result[zero_crossing]
             if self.analysis_config['force_calibration']:
@@ -713,15 +740,17 @@ class LongitudinalBeamMeasurement:
             all_profiles = []
             result[zero_crossing]['profiles'] = all_profiles
 
-            for ctr, (proj, energy_eV, charge) in enumerate(zip(projections, result[zero_crossing]['energy_eV'], result[zero_crossing]['charge'])):
-                profile = beam_profile.BeamProfile(axis, proj, energy_eV, charge)
+            for ctr, proj in enumerate(projections):
+                profile = beam_profile.BeamProfile(axis, proj, 1, result[zero_crossing]['charge'])
                 cutoff_factor = self.analysis_config['current_cutoff']*(axis[1]-axis[0])/profile.charge_dist.max()
                 gauss[ctr] = profile.gaussfit.sigma
-                if self.analysis_config['aggressive_cutoff']:
-                    profile.aggressive_cutoff(cutoff_factor)
+                if cutoff_factor <= 1:
+                    if self.analysis_config['aggressive_cutoff']:
+                        profile.aggressive_cutoff(cutoff_factor)
+                    else:
+                        profile.cutoff(cutoff_factor)
                 else:
-                    profile.cutoff(cutoff_factor)
-                profile.cutoff(cutoff_factor)
+                    print('Cutoff factor too large. No cutoff!')
                 profile.crop()
                 all_profiles.append(profile)
                 fwhm[ctr] = profile.fwhm()
@@ -741,7 +770,7 @@ class LongitudinalBeamMeasurement:
             a1, b1 = result[1]['polyfit']
             a2, b2 = result[2]['polyfit']
             phase_cross_rel = (b2 - b1)/(a1 - a2)
-            phase_cross_abs = phase_cross_rel + result[1]['phases_deg'].mean()
+            phase_cross_abs = phase_cross_rel + result[1]['phases_deg'].mean()/180*np.pi
             result['phase_cross_rel'] = phase_cross_rel
             result['phase_cross_abs'] = phase_cross_abs
 
@@ -766,12 +795,12 @@ class LongitudinalBeamMeasurement:
             result['beamsizes_err'][1] = np.nanstd(sizes)
             result['resolution'] = median_size / cal_applied
 
+        beamsizes = result['beamsizes']
+        beamsizes_err = result['beamsizes_err']
+        result['beamsizes_sq_err'] = beamsizes_sq_err = 2*beamsizes*beamsizes_err
         if len(result['zero_crossings']) == 2:
-            beamsizes = result['beamsizes']
-            beamsizes_err = result['beamsizes_err']
             voltages = result['voltages']
             if beamsizes[1] != 0:
-                beamsizes_sq_err = 2*beamsizes*beamsizes_err
                 popt, pcov = np.polyfit(voltages, beamsizes**2, 2, w=1/beamsizes_sq_err, cov='unscaled')
                 result['parabola_popt'] = popt
 
@@ -787,7 +816,6 @@ class LongitudinalBeamMeasurement:
                 result['resolution'] = resolution
                 result['corr_rms_blen'] = corr_rms_blen
                 result['corr_rms_blen_err'] = corr_rms_blen_err
-                result['beamsizes_sq_err'] = 2*beamsizes*beamsizes_err
 
         return result
 

@@ -251,6 +251,8 @@ class DataLoaderBase:
 class DataLoaderSimple(DataLoaderBase):
     def __init__(self, image_data, x_axis_m, y_axis_m, charge, energy_eV, data_loader_options):
         DataLoaderBase.__init__(self)
+        assert x_axis_m[1] > x_axis_m[0]
+        assert y_axis_m[1] > y_axis_m[0]
         self.image_data = image_data
         self.x_axis_m = x_axis_m
         self.y_axis_m = y_axis_m

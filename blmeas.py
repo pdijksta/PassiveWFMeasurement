@@ -588,18 +588,19 @@ def get_projections(images, x_axis, y_axis, charge, streaking_direction):
 
 def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_image):
 
+    phases_deg0 = phases_deg.copy()
     phases_deg = np.ravel(phases_deg)
-    mask = np.ones_like(phases_deg, bool)
-    for ctr, phase in enumerate(phases_deg[:-1]):
-        if abs(phases_deg[ctr+1] - phases_deg[ctr]) > 10:
-            mask[:ctr+1] = 0
-    if np.any(mask == 0):
-        print('Removed %i images due to wrong phase' % (mask==0).sum())
+    #mask = np.ones_like(phases_deg, bool)
+    #for ctr, phase in enumerate(phases_deg[:-1]):
+    #    if abs(phases_deg[ctr+1] - phases_deg[ctr]) > 10:
+    #        mask[:ctr+1] = 0
+    #if np.any(mask == 0):
+    #    print('Removed %i images due to wrong phase' % (mask==0).sum())
 
 
-    phases_deg = phases_deg[mask]
-    projections = projections[mask]
-    centroids = centroids[mask]
+    #phases_deg = phases_deg[mask]
+    #projections = projections[mask]
+    #centroids = centroids[mask]
 
     phases_deg = straighten_out_phase(phases_deg)
 
@@ -626,6 +627,7 @@ def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_
             'calibration_fit': calibration,
             'calibration_fit_err': calibration_err,
             'phases_deg': phases_deg,
+            'phases_deg0': phases_deg0,
             'x_axis': example_image.x_axis,
             'y_axis': example_image.y_axis,
             'n_images': len(projections),
@@ -717,7 +719,7 @@ class LongitudinalBeamMeasurement:
 
         for _ in range(self.analysis_config['n_repeat']):
             for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
-                phases_deg = result[zero_crossing]['phases_deg']
+                phases_deg = result[zero_crossing]['phases_deg0']
                 projections = result[zero_crossing]['projections']
                 centroids = np.array([p.mean() for p in result[zero_crossing]['profiles']]) * result[zero_crossing]['calibration_fit']
                 example_image = result[zero_crossing]['example_image']
@@ -791,7 +793,7 @@ class LongitudinalBeamMeasurement:
             a1, b1 = result[1]['polyfit']
             a2, b2 = result[2]['polyfit']
             phase_cross_rel = (b2 - b1)/(a1 - a2)
-            phase_cross_abs = phase_cross_rel + result[1]['phases_deg'].mean()/180*np.pi
+            phase_cross_abs = phase_cross_rel + result[1]['phases_deg0'].mean()/180*np.pi
             result['phase_cross_rel'] = phase_cross_rel
             result['phase_cross_abs'] = phase_cross_abs
 

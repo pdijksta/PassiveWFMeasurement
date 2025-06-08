@@ -1081,9 +1081,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             weighted_calibration = np.sum(np.abs(calibrations)*calibrations_err**-1)/np.sum(calibrations_err**-1)
         if n_phases >= 2:
             phase_cross_rel = result['phase_cross_rel']
-            phase_cross_abs = result['phase_cross_abs']
             sp_calib.axvline(phase_cross_rel*180/np.pi, color='black', ls='--')
-            textstr = 'Fits cross at %.3f ($\Delta$ %0.3f) deg' % (phase_cross_abs*180/np.pi, phase_cross_rel*180/np.pi)
+            textstr = 'Fits cross at $\Delta\Phi$ of %0.3f deg' % (phase_cross_rel*180/np.pi)
             textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
             sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
 

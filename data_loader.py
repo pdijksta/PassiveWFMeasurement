@@ -206,8 +206,13 @@ class DataLoaderBase:
 
     def init_screen_distributions(self, dimension):
         self.sd_dict[dimension] = {'sd': [], 'mean': [], 'rms': []}
-        for img in self.images:
-            sd = img.get_screen_dist(dimension)
+        for n_img in range(len(self.image_data)):
+            if self.images:
+                sd = self.images[n_img].get_screen_dist(dimension)
+            else:
+                axis = self.x_axis_m if dimension == 'X' else self.y_axis_m
+                proj = self.image_data[n_img].sum(axis=(0 if dimension == 'X' else 1))
+                sd = beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge[n_img])
             if self.data_loader_options['screen_cutoff_relative']:
                 nn = self.data_loader_options['screen_cutoff_edge_points']
                 edge1 = np.max(sd.intensity[:nn])

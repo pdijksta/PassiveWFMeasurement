@@ -237,7 +237,7 @@ def straighten_out_phase(phases):
         phase_old = phases[n_phase]
     return phases
 
-def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None, aggressive_cutoff=True):
+def analyze_blmeas(file_or_dict, force_charge=False, force_cal=False, title=None, plot_all_images=False, error_of_the_average=True, separate_calibrations=False, current_cutoff=0.1e3, data_loader_options=None, streaking_direction=None, aggressive_cutoff=True, forced_charge=None, forced_cal=None):
 
     outp = {}
     if type(file_or_dict) is dict:
@@ -258,7 +258,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
     charge0 = np.abs(np.trapz(_ii, _tt*1e-15))
     outp['charge0'] = charge0
     if force_charge:
-        charge = force_charge
+        charge = forced_charge
     else:
         charge = charge0
     outp['charge'] = charge
@@ -419,7 +419,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         calibrations = np.array(calibrations)
         calibrations_err = np.array(calibrations_err)
     else:
-        calibrations = np.array([force_cal, -force_cal])
+        calibrations = np.array([forced_cal, -forced_cal])
         calibrations_err = None
 
     if len(zero_crossings) == 2 and n_phases >= 2:
@@ -442,7 +442,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
         outp['phase_cross_abs'] = None
 
     if force_cal:
-        weighted_calibration = abs(force_cal)
+        weighted_calibration = abs(forced_cal)
 
     voltages, beamsizes, beamsizes_err = np.zeros(3), np.zeros(3)*np.nan, np.zeros(3)*np.nan
     outp['beamsizes'] = beamsizes
@@ -456,7 +456,7 @@ def analyze_blmeas(file_or_dict, force_charge=None, force_cal=None, title=None, 
 
     for ctr, (zero_crossing, axis, projections) in enumerate(zip(zero_crossings, all_streaked_axes, all_projections)):
         if force_cal:
-            cal = abs(force_cal)*np.sign(calibrations[ctr])
+            cal = abs(forced_cal)*np.sign(calibrations[ctr])
             #print(calibrations[ctr], cal)
         elif separate_calibrations:
             cal = calibrations[ctr]
@@ -647,7 +647,10 @@ class LongitudinalBeamMeasurement:
         charge_bpm_name = data['input']['charge_bpm_name']
         for scan in self.scans:
             charge_dict = data['raw_data'][scan][charge_bpm_name]
-            charge_list = list((charge_dict['Q1']['data'] + charge_dict['Q2']['data'])*1e-12)
+            this_charge = np.ravel(charge_dict['Q1']['data'])
+            if 'SATMA02' not in charge_bpm_name:
+                this_charge += np.ravel(charge_dict['Q2']['data'])
+            charge_list = list(this_charge*1e-12)
             all_charge.extend(charge_list)
         charge0 = np.median(all_charge)
         charge = self.analysis_config['forced_charge'] if self.analysis_config['force_charge'] else charge0
@@ -678,6 +681,7 @@ class LongitudinalBeamMeasurement:
             result['voltages'][(zero_crossing-1)*2] = self.voltage*(-1)**zero_crossing
 
         self.calc_current_profiles()
+        return result
 
     def calc_current_profiles(self):
         result = self.data['analysis_result']

@@ -676,7 +676,7 @@ class LongitudinalBeamMeasurement:
         charge0 = np.median(all_charge)
         charge = self.analysis_config['forced_charge'] if self.analysis_config['force_charge'] else charge0
 
-        result = {
+        result = self.result = {
                 'charge0': charge0,
                 'charge': charge,
                 'zero_crossings': self.zero_crossings,
@@ -685,10 +685,9 @@ class LongitudinalBeamMeasurement:
                 'voltages': np.array([0, 0, 0], float),
                 'beamsizes': np.array([0, 0, 0], float),
                 'beamsizes_err': np.array([0, 0, 0], float),
+                'input': self.data['input'],
+                'analysis_config': self.analysis_config
                 }
-
-        self.data['analysis_result'] = result
-        self.data['analysis_config'] = self.analysis_config
 
         for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
             phases_deg = data['raw_data'][scan][self.phase_pv]['PHASE-VS']['data']
@@ -709,10 +708,7 @@ class LongitudinalBeamMeasurement:
                 images = images[...,::-1,:]
 
             projections, centroids, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'])
-            try:
-                result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
-            except:
-                import pdb; pdb.set_trace()
+            result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
 
         print('Calibrations in um/fs:', np.array([result[zero_crossing]['calibration_fit'] for zero_crossing in self.zero_crossings])/1e9)
         self.calc_current_profiles()
@@ -731,7 +727,7 @@ class LongitudinalBeamMeasurement:
         return result
 
     def calc_current_profiles(self):
-        result = self.data['analysis_result']
+        result = self.result
         streaking_direction = self.data['input']['streaking_direction']
         for zero_crossing in result['zero_crossings']:
             result['calibrations'][zero_crossing-1] = result[zero_crossing]['calibration_fit']

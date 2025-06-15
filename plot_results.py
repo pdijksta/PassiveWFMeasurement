@@ -1071,9 +1071,6 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
 
-    if result['corrected_profile']:
-        result['corrected_profile'].plot_standard(sp_average_profile, label='Corrected')
-
     if len(zero_crossings) == 2:
         if calibrations_err is None:
             weighted_calibration = np.mean(np.abs(calibrations))
@@ -1114,10 +1111,19 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         if chi_square_red is not None:
             sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()
-    if len(zero_crossings) == 2:
-        sp_average_profile.legend(loc='upper right')
 
     textstr = 'Charge from file: %.0f pC' % (result['charge0']*1e12)
     textstr += '\nCharge used: %.0f pC' % (result['charge']*1e12)
+    if result['corrected_profile']:
+        profile = result['corrected_profile']
+        profile.plot_standard(sp_average_profile, label='Corrected')
+        text = 'Corrected'
+    else:
+        profile = result[1]['representative_profile']
+        text = 'Representative'
+    textstr += '\n%s profile duration (fs)' % text
+    textstr += '\nrms: %.1f, rms*2.355: %.1f, fwhm: %.1f' % (profile.rms()*1e15, profile.rms()*2.355*1e15, profile.fwhm()*1e15)
     sp_average_profile.text(0.05, 0.05, textstr, transform=sp_average_profile.transAxes, verticalalignment='bottom', bbox=textbbox)
+    if len(zero_crossings) == 2:
+        sp_average_profile.legend(loc='upper right')
 

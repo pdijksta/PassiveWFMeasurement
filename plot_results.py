@@ -1060,14 +1060,13 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
                 ]:
             label2 = 'Zc %i: %s' % (zero_crossing, label)
             if zero_crossing == 1:
-                ls = 'solid'
+                ls, marker = 'solid', '.'
             elif zero_crossing == 2:
-                ls = 'dashed'
-                label2 = None
+                ls, marker = 'dashed', 'x'
             if len(arr.shape) == 2:
                 sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
             else:
-                sp_bunch_duration.scatter(phases_plot, arr*1e15*factor, label=label2, color=color)
+                sp_bunch_duration.scatter(phases_plot, arr*1e15*factor, label=label2, color=color, marker=marker)
             textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
 

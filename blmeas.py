@@ -399,7 +399,7 @@ def analyze_blmeas(file_or_dict, force_charge=False, force_cal=False, title=None
 
             for n_phase, phase_deg in enumerate(phases_deg):
                 if plot_all_images:
-                    figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Phase %.3f' % phase_deg, plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
+                    figs, all_sps = data_objs[n_phase].plot_all(2, 3, title='Zc %i Phase %.3f (number %i)' % (zero_crossing, phase_deg, n_phase), plot_kwargs={'sqrt': True}, subplots_adjust_kwargs={'wspace': 0.35})
                     all_sps2 = []
                     for sps in all_sps:
                         all_sps2.extend(sps)

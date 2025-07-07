@@ -317,17 +317,20 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
     else:
         lasing_on_dict = h5_storage.loadH5Recursive(file_or_dict_on)
 
-    if type(blmeas_file_or_profile) is str:
-        blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
-        blmeas_profile = blmeas_dict['corrected_profile']
-    elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
-        blmeas_dict = None
-        blmeas_profile = blmeas_file_or_profile
+    if blmeas_file_or_profile is None:
+        blmeas_profile = None
     else:
-        raise ValueError(type(blmeas_file_or_profile))
-    if blmeas_cutoff:
-        blmeas_profile.cutoff(blmeas_cutoff)
-    blmeas_profile.center('Mean')
+        if type(blmeas_file_or_profile) is str:
+            blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
+            blmeas_profile = blmeas_dict['corrected_profile']
+        elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
+            blmeas_dict = None
+            blmeas_profile = blmeas_file_or_profile
+        else:
+            raise ValueError(type(blmeas_file_or_profile))
+        if blmeas_cutoff:
+            blmeas_profile.cutoff(blmeas_cutoff)
+        blmeas_profile.center('Mean')
 
     las_rec_images = {}
     for main_ctr, (data_dict, title) in enumerate([(lasing_off_dict, 'Lasing Off'), (lasing_on_dict, 'Lasing On')]):

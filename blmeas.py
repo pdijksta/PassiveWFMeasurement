@@ -544,10 +544,15 @@ def analyze_blmeas(file_or_dict, force_charge=False, force_cal=False, title=None
 
 def analyze_separate_measurements(file_or_dict1, file_or_dict2, force_cal1, force_cal2, do_plot=False, **blmeas_kwargs):
     assert force_cal1 == -force_cal2
-    outp = {}
 
-    result1 = outp['result1'] = analyze_blmeas(file_or_dict1, force_cal=force_cal1, **blmeas_kwargs)
-    result2 = outp['result2'] = analyze_blmeas(file_or_dict2, force_cal=force_cal2, **blmeas_kwargs)
+    result1 = analyze_blmeas(file_or_dict1, force_cal=force_cal1, **blmeas_kwargs)
+    result2 = analyze_blmeas(file_or_dict2, force_cal=force_cal2, **blmeas_kwargs)
+    return analyze_separate_results(result1, result2, do_plot=do_plot)
+
+def analyze_separate_results(result1, result2, do_plot=False):
+    outp = {}
+    outp['result1'] = result1
+    outp['result2'] = result2
 
     if do_plot:
         plot_results.plot_blmeas_analysis(result1)

@@ -682,7 +682,7 @@ class LongitudinalBeamMeasurement:
         self.phase_pv = self.tds_name+'-RLLE-DSP'
         self.zero_crossings = [1, 2] if data['input']['measure_both_zc'] else [1, ]
         self.unstreaked_measured = len(self.scans) > len(self.zero_crossings)
-        self.voltage = data['snapshot'][self.scans[0]][self.tds_name+'-RSYS']['SET-ACC-VOLT']
+        self.voltage = data['snapshot'][self.scans[0]][self.tds_name+'-RSYS']['SET-ACC-VOLT']*1e6
 
         all_charge = []
         charge_bpm_name = data['input']['charge_bpm_name']

@@ -643,7 +643,7 @@ def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_
     return outp
 
 class LongitudinalBeamMeasurement:
-    def __init__(self, data_file_or_dict, **kwargs):
+    def __init__(self, data_files_or_dict, **kwargs):
         self.analysis_config = {
                 'force_calibration': False,
                 'forced_calibration': 0,
@@ -654,10 +654,25 @@ class LongitudinalBeamMeasurement:
                 'n_repeat': 2,
                 }
         self.analysis_config.update(kwargs)
-        if type(data_file_or_dict) is dict:
-            self.data = data_file_or_dict
+        if type(data_files_or_dict) is dict:
+            self.data = data_files_or_dict
+        elif type(data_files_or_dict) is str:
+            self.data = h5_storage.loadH5Recursive(data_files_or_dict)
+        elif type(data_files_or_dict) in (list, tuple) and len(data_files_or_dict) == 2:
+            self.data = h5_storage.loadH5Recursive(data_files_or_dict[0])
+            self.data['input']['measure_both_zc'] = True
+            data2 = h5_storage.loadH5Recursive(data_files_or_dict[1])
+            scans1 = sorted(self.data['raw_data'].keys())
+            scans2 = sorted(data2['raw_data'].keys())
+            raw_data0 = self.data['raw_data']
+            self.data['raw_data'] = {
+                    'scan0000': raw_data0[scans1[0]],
+                    'scan0001': data2['raw_data'][scans2[0]],
+                    }
+            if len(scans1) > 1:
+                self.data['raw_data']['scan0002'] = raw_data0[scans1[1]]
         else:
-            self.data = h5_storage.loadH5Recursive(data_file_or_dict)
+            raise ValueError('Cannot deal with data_filesor_dict', data_files_or_dict)
 
     def analyze_current_measurement(self):
         data = self.data

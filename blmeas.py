@@ -743,7 +743,6 @@ class LongitudinalBeamMeasurement:
 
             print('Calibrations in um/fs:', np.array([result[zero_crossing]['calibration_fit'] for zero_crossing in self.zero_crossings])/1e9)
             self.calc_current_profiles()
-
         return result
 
     def calc_current_profiles(self):
@@ -762,7 +761,6 @@ class LongitudinalBeamMeasurement:
                 cal = result[zero_crossing]['calibration_fit']
             else:
                 raise ValueError('Calibration must be specified!')
-
             result[zero_crossing]['applied_calibration'] = cal
 
             axis = result[zero_crossing]['%s_axis' % streaking_direction.lower()] / cal
@@ -813,7 +811,6 @@ class LongitudinalBeamMeasurement:
             result['phase_cross_rel'] = phase_cross_rel
             result['phase_cross_abs'] = phase_cross_abs
 
-
         cals_applied = []
         for zero_crossing in result['zero_crossings']:
             cals_applied.append(result[zero_crossing]['applied_calibration'])
@@ -860,6 +857,5 @@ class LongitudinalBeamMeasurement:
                 result['resolution'] = resolution
                 result['corr_rms_blen'] = corr_rms_blen
                 result['corr_rms_blen_err'] = corr_rms_blen_err
-
         return result
 

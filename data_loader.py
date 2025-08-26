@@ -11,6 +11,15 @@ from . import myplotstyle as ms
 
 default_cutoff = config.get_default_forward_options()['screen_cutoff']
 
+def sort_axes(images, x_axis, y_axis):
+    if x_axis[1] < x_axis[0]:
+        x_axis = x_axis[::-1]
+        images = images[:,::-1]
+    if y_axis[1] < y_axis[0]:
+        y_axis = y_axis[::-1]
+        images = images[::-1]
+    return images, x_axis, y_axis
+
 def get_median(projx, method, output):
     """
     From list of projections, return the median one
@@ -145,6 +154,7 @@ class DataLoaderBase:
         subtract_absolute = self.data_loader_options['subtract_absolute']
         void_cutoff = self.data_loader_options['void_cutoff']
         max_intensity = self.data_loader_options['max_intensity']
+        center_com = self.data_loader_options['center_com']
 
         if max_intensity is not None:
             images = np.clip(images, None, max_intensity)
@@ -174,6 +184,31 @@ class DataLoaderBase:
         if subtract_quantile:
             for image in images:
                 np.clip(image - np.quantile(image, subtract_quantile), 0, None, out=image)
+
+        if center_com:
+            len_x = len(x_axis_m)
+            indices_x = np.arange(len_x)
+            mean_x = int(indices_x.mean())
+            for ctr, image in enumerate(images):
+                projx = image.sum(axis=0)
+                com_x = int(round(np.sum(indices_x*projx)/np.sum(projx)))
+                shift_x = mean_x - com_x
+                if shift_x > 0:
+                    image[:,shift_x:] = image[:,:-shift_x]
+                elif shift_x < 0:
+                    image[:,:-shift_x] = image[:,shift_x:]
+
+            len_y = len(y_axis_m)
+            indices_y = np.arange(len_y)
+            mean_y = int(indices_y.mean())
+            for ctr, image in enumerate(images):
+                projy = image.sum(axis=1)
+                com_y = int(round(np.sum(indices_y*projy)/np.sum(projy)))
+                shift_y = mean_y - com_y
+                if shift_y > 0:
+                    image[shift_y:] = image[:-shift_y]
+                elif shift_y < 0:
+                    image[:-shift_y] = image[shift_y:]
 
         if void_cutoff is not None and any(void_cutoff):
             image_sum = images.sum(axis=0)

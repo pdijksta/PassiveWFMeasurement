@@ -412,6 +412,7 @@ def get_default_data_loader_options():
             'screen_cutoff_relative': False,
             'screen_cutoff_edge_points': 10,
             'screen_cutoff_relative_factor': 2,
+            'center_com': False,
             }.copy()
     return outp
 

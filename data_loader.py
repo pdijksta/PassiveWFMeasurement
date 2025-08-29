@@ -189,26 +189,34 @@ class DataLoaderBase:
             len_x = len(x_axis_m)
             indices_x = np.arange(len_x)
             mean_x = int(indices_x.mean())
-            for ctr, image in enumerate(images):
+            new_images = np.zeros_like(images)
+            for ctr, (image, new_image) in enumerate(zip(images, new_images)):
                 projx = image.sum(axis=0)
                 com_x = int(round(np.sum(indices_x*projx)/np.sum(projx)))
                 shift_x = mean_x - com_x
                 if shift_x > 0:
-                    image[:,shift_x:] = image[:,:-shift_x]
+                    new_image[:,shift_x:] = image[:,:-shift_x]
                 elif shift_x < 0:
-                    image[:,:-shift_x] = image[:,shift_x:]
+                    new_image[:,:-shift_x] = image[:,shift_x:]
+                else:
+                    new_image[:] = image[:]
+            images = new_images
+            new_images = np.zeros_like(images)
 
             len_y = len(y_axis_m)
             indices_y = np.arange(len_y)
             mean_y = int(indices_y.mean())
-            for ctr, image in enumerate(images):
+            for ctr, (image, new_image) in enumerate(zip(images, new_images)):
                 projy = image.sum(axis=1)
                 com_y = int(round(np.sum(indices_y*projy)/np.sum(projy)))
                 shift_y = mean_y - com_y
                 if shift_y > 0:
-                    image[shift_y:] = image[:-shift_y]
+                    new_image[shift_y:] = image[:-shift_y]
                 elif shift_y < 0:
-                    image[:-shift_y] = image[shift_y:]
+                    new_image[:-shift_y] = image[shift_y:]
+                else:
+                    new_image[:] = image[:]
+            images = new_images
 
         if void_cutoff is not None and any(void_cutoff):
             image_sum = images.sum(axis=0)

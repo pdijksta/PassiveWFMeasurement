@@ -74,7 +74,7 @@ def change_lasing_script(beamline, dry_run, mode):
     beamline_str = {'Aramis': 'AR', 'Athos Post-Undulator': 'AT'}[beamline]
     mode_str = {'destroy': 'lasing_off', 'restore': 'taper'}[mode]
     pv = 'SF-PSHELL_OP:CMD'
-    cmd = 'SF-PSHELL_OP:CMD run(\'Undulators/K_%s_%s\')' % (beamline_str, mode_str)
+    cmd = 'run(\'Undulators/K_%s_%s\')' % (beamline_str, mode_str)
     if dry_run:
         print('I would caput %s %s' % (pv, cmd))
     else:

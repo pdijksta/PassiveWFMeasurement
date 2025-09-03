@@ -70,6 +70,16 @@ def destroy_lasing(beamline, dry_run, max_deltaK=0.2):
             caput(pv, new_val)
     return pvs, old_vals, new_vals
 
+def change_lasing_script(beamline, dry_run, mode):
+    beamline_str = {'Aramis': 'AR', 'Athos Post-Undulator': 'AT'}[beamline]
+    mode_str = {'destroy': 'lasing_off', 'restore': 'taper'}[mode]
+    pv = 'SF-PSHELL_OP:CMD'
+    cmd = 'SF-PSHELL_OP:CMD run(\'Undulators/K_%s_%s\')' % (beamline_str, mode_str)
+    if dry_run:
+        print('I would caput %s %s' % (pv, cmd))
+    else:
+        caput(pv, cmd)
+
 def restore_lasing(pvs, vals, dry_run):
     for pv, val in zip(pvs, vals):
         if dry_run:

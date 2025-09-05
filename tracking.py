@@ -4,6 +4,7 @@ import numpy as np
 import bisect
 
 from . import config
+from . import calibration
 from . import lattice
 from . import wf_model
 from . import beam_profile
@@ -46,6 +47,8 @@ class Tracker(LogMsgBase):
         self.find_beam_position_options = find_beam_position_options
 
         self.structure_name = structure_name
+        if calib is None:
+            calib = calibration.StructureCalibration(structure_name, 0, 0, 0)
         self.update_calib(calib)
         self.beamline = beamline
         self.screen_name = screen_name

@@ -49,7 +49,6 @@ class Tracker(LogMsgBase):
         self.structure_name = structure_name
         if calib is None:
             calib = calibration.StructureCalibration(structure_name, 0, 0, 0)
-        self.update_calib(calib)
         self.beamline = beamline
         self.screen_name = screen_name
         self.n_particles = forward_options['n_particles']

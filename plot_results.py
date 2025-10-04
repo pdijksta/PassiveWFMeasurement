@@ -1051,7 +1051,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         result[zero_crossing]['representative_profile'].plot_standard(sp_average_profile, label='Zc %i' % zero_crossing, center=profile_center_plot)
 
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
-        cal = calibrations[zc_ctr]
+        cal = result[zero_crossing]['applied_calibration']
         textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
         textstr += 'Bunch durations:'
         for label, label3, arr, color, factor in [

@@ -20,7 +20,7 @@ def transferMatrixDrift66(Ld):
 
 def transferMatrixQuad66(Lq, kini):
     # Using complex numbers, this method is valid for positive as well as negative k values
-    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+    sin, cos, sqrt = np.sin, np.cos, np.emath.sqrt # numpy sqrt function does not work
 
     kinix = kini
     kiniy = -kini
@@ -42,7 +42,7 @@ def transferMatrixQuad66(Lq, kini):
 
 def transferMatrixSkewQuad66(Lq, kini):
     # Wiedemann 4th edition p.671
-    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt # numpy trigonometric functions do not work
+    sin, cos, sqrt = np.sin, np.cos, np.emath.sqrt # numpy sqrt function does not work
     sinh, cosh = scipy.sinh, scipy.cosh
     if kini == 0:
         Mq10 = transferMatrixDrift66(Lq)

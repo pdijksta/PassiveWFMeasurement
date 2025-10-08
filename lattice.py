@@ -2,12 +2,14 @@ from collections import OrderedDict
 import os
 import itertools
 import warnings
-import scipy
 import numpy as np
 from scipy.constants import c
 
 from . import h5_storage
 from . import config
+
+sqrt = np.emath.sqrt
+sin, cos, sinh, cosh = np.sin, np.cos, np.sinh, np.cosh
 
 def transferMatrixDrift66(Ld):
     Md1 = [[1, Ld, 0, 0, 0, 0],
@@ -20,8 +22,6 @@ def transferMatrixDrift66(Ld):
 
 def transferMatrixQuad66(Lq, kini):
     # Using complex numbers, this method is valid for positive as well as negative k values
-    sin, cos, sqrt = np.sin, np.cos, np.emath.sqrt # numpy sqrt function does not work
-
     kinix = kini
     kiniy = -kini
     phi10x = Lq * sqrt(kinix)
@@ -42,8 +42,6 @@ def transferMatrixQuad66(Lq, kini):
 
 def transferMatrixSkewQuad66(Lq, kini):
     # Wiedemann 4th edition p.671
-    sin, cos, sqrt = np.sin, np.cos, np.emath.sqrt # numpy sqrt function does not work
-    sinh, cosh = scipy.sinh, scipy.cosh
     if kini == 0:
         Mq10 = transferMatrixDrift66(Lq)
     else:
@@ -101,8 +99,6 @@ def transferMatrixBend66(Lb, angle, orientation):
     return outp
 
 def transferMatrixQuad66_arr(Lq, kini):
-    sin, cos, sqrt = scipy.sin, scipy.cos, scipy.sqrt
-
     kinix = kini
     kiniy = -kini
     phi10x = Lq * sqrt(kinix)

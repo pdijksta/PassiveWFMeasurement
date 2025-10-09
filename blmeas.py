@@ -462,6 +462,7 @@ def analyze_blmeas(file_or_dict, force_charge=False, force_cal=False, title=None
             cal = calibrations[ctr]
         else:
             cal = weighted_calibration*np.sign(calibrations[ctr])
+        outp[zero_crossing]['applied_calibration'] = cal
         #print('Calibration for zero crossing %i: %.2f um/fs' % (zero_crossing, cal/1e9))
 
         calibrations[ctr] = cal

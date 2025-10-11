@@ -72,20 +72,20 @@ def saveall(basepath, hspace=None, wspace=None, trim=True, figs=None, ending='.p
             os.system(cmd)
         myprint('Saved fig %i with title %s in %s' % (num, title, path))
 
-def subplot_factory(ny, nx, grid=True):
+def subplot_factory(ny, nx, grid=True, title_fs=None, label_fs=None):
     _sciy = sciy
     _scix = scix
 
-    def subplot(x, grid=grid, title=None, xlabel=None, ylabel=None, sciy=False, scix=False, sharex=None, sharey=None, title_fs=None, **kwargs):
+    def subplot(x, grid=grid, title=None, xlabel=None, ylabel=None, sciy=False, scix=False, sharex=None, sharey=None, **kwargs):
         sp = plt.subplot(ny, nx, x, sharex=sharex, sharey=sharey, **kwargs)
         if grid:
             sp.grid(True)
         if title:
             sp.set_title(title, fontsize=title_fs)
         if xlabel:
-            sp.set_xlabel(xlabel)
+            sp.set_xlabel(xlabel, fontsize=label_fs)
         if ylabel:
-            sp.set_ylabel(ylabel)
+            sp.set_ylabel(ylabel, fontsize=label_fs)
         if sciy:
             _sciy(sp)
         if scix:

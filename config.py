@@ -19,6 +19,7 @@ beamlines = [
         'Athos Post-Undulator',
         'SASE2',
         'LCLS',
+        'PAL',
         ]
 
 swissfel_beamlines = [
@@ -98,6 +99,13 @@ lcls_structure_parameters = {
         'w': 40e-3,
         }
 
+pal_structure_parameters = {
+        'Ls': 1,
+        'p': 1e-3,
+        'g': 0.5e-3,
+        'w': 40e-3,
+        }
+
 structure_parameters = {
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
@@ -111,6 +119,7 @@ structure_parameters = {
         'SATCL02-UDCP400': aramis_structure_parameters,
         'SASE2': xfel_structure_parameters,
         'LCLS': lcls_structure_parameters,
+        'PAL': pal_structure_parameters,
         }
 
 structure_dimensions = {
@@ -126,6 +135,7 @@ structure_dimensions = {
         'SATCL02-UDCP400': 'X',
         'SASE2': 'Y',
         'LCLS': 'X',
+        'PAL': 'Y',
         }
 
 beamline_quads = {

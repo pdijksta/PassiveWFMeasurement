@@ -442,11 +442,20 @@ class Image(LogMsgBase):
         self.slice_dict = slice_dict
         return slice_dict
 
-    def y_to_eV(self, dispersion, energy_eV=None, ref_y=None):
+    def y_to_eV(self, dispersion, energy_eV=None, ref_y=None, ref_y_method='gauss'):
         if energy_eV is None:
             energy_eV = self.energy_eV
         if ref_y is None:
-            ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
+            if ref_y_method == 'gauss':
+                ref_y = GaussFit(self.y_axis, np.sum(self.image, axis=-1)).mean
+            elif ref_y_method == 'max':
+                proj = np.sum(self.image, axis=-1)
+                where_max = np.argmax(proj).squeeze()
+                ref_y = self.y_axis[where_max]
+            elif ref_y_method == 'mean':
+                proj = np.sum(self.image, axis=-1)
+                profile = beam_profile.AnyProfile(self.y_axis, proj)
+                ref_y = profile.mean()
         if dispersion == 0:
             raise ValueError
         E_axis = (self.y_axis-ref_y) / dispersion * energy_eV

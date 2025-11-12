@@ -12,7 +12,7 @@ from .logMsg import LogMsgBase
 
 
 class Image(LogMsgBase):
-    def __init__(self, image, x_axis, y_axis, charge=1, energy_eV=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None, slice_dict=None):
+    def __init__(self, image, x_axis, y_axis, charge=1, energy_eV=1, x_unit='m', y_unit='m', subtract_median=False, xlabel='x (mm)', ylabel='y (mm)', logger=None, slice_dict=None, x_points=None, y_points=None):
         self.logger = logger
         if x_axis.size <=1:
             raise ValueError('Size of x_axis is %i' % x_axis.size)
@@ -43,6 +43,8 @@ class Image(LogMsgBase):
         self.charge = charge
         self.energy_eV = energy_eV
         self.slice_dict = slice_dict
+        self.x_points = x_points
+        self.y_points = y_points
 
     def to_dict_custom(self):
         outp = {
@@ -64,7 +66,7 @@ class Image(LogMsgBase):
         y_unit = self.y_unit if y_unit is None else y_unit
         xlabel = self.xlabel if xlabel is None else xlabel
         ylabel = self.ylabel if ylabel is None else ylabel
-        return Image(new_i, new_x, new_y, self.charge, self.energy_eV, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel)
+        return Image(new_i, new_x, new_y, self.charge, self.energy_eV, x_unit, y_unit, xlabel=xlabel, ylabel=ylabel, x_points=self.x_points, y_points=self.y_points)
 
     def crop(self, quiet=False):
         projx = np.sum(self.image, axis=0)
@@ -849,7 +851,7 @@ def arr2D_to_img(xarr, yarr, bins, **img_kwargs):
     hist, x_edges, y_edges = np.histogram2d(xarr, yarr, bins)
     x_axis = (x_edges[1:] + x_edges[:-1])/2
     y_axis = (y_edges[1:] + y_edges[:-1])/2
-    return Image(hist.T, x_axis, y_axis, **img_kwargs)
+    return Image(hist.T, x_axis, y_axis, x_points=xarr, y_points=yarr, **img_kwargs)
 
 def calc_rms(xx, yy):
     s2 = np.sum(yy)

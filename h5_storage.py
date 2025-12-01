@@ -164,7 +164,7 @@ def loadH5Recursive(h5_file):
             #if not hasattr(group_or_val, 'value'):
             #    print('Could not store key %s with type %s in dict' % (key, dtype))
             #    return
-            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8'), np.dtype('uint64')):
+            if dtype in (np.dtype('int64'), np.dtype('int32'), np.dtype('int16'), np.dtype('int8'), np.dtype('uint32'), np.dtype('uint16'), np.dtype('uint8'), np.dtype('uint64'), np.dtype('complex128')):
                 saved_dict_curr[key] = np.array(group_or_val[()], dtype).squeeze()
                 if saved_dict_curr[key].size == 1:
                     saved_dict_curr[key] = int(saved_dict_curr[key])

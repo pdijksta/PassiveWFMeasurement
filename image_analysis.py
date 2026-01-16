@@ -461,7 +461,7 @@ class Image(LogMsgBase):
         if dispersion == 0:
             raise ValueError
         E_axis = (self.y_axis-ref_y) / dispersion * energy_eV
-        return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel='$\Delta$ E (MeV)'), ref_y
+        return self.child(self.image, self.x_axis, E_axis, y_unit='eV', ylabel=r'$\Delta$ E (MeV)'), ref_y
 
     def x_to_t_linear(self, factor, mean_to_zero=True, current_cutoff=None):
         new_x_axis = self.x_axis*factor

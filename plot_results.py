@@ -125,8 +125,8 @@ def clear_structure_fit(sp_center, sp_sizes, sp_proj, sp_center2, sp_sizes2, sp_
     for sp, title, xlabel, ylabel in [
             (sp_center, 'Centroid shift', 'Streaker center (mm)', 'Beam centroid (mm)'),
             (sp_sizes, 'Size increase', 'Streaker center (mm)', 'Beam rms (mm)'),
-            (sp_center2, 'Centroid shift', 'Distance from jaw ($\mu$m)', 'Beam centroid (mm)'),
-            (sp_sizes2, 'Size increase', 'Distance from jaw ($\mu$m)', 'Beam rms (mm)'),
+            (sp_center2, 'Centroid shift', r'Distance from jaw ($\mu$m)', 'Beam centroid (mm)'),
+            (sp_sizes2, 'Size increase', r'Distance from jaw ($\mu$m)', 'Beam rms (mm)'),
             (sp_proj, 'Screen projections', 'Streaked coordinate (mm)', 'Intensity (arb. units)'),
             (sp_current, 'Beam current', '$t$ (fs)', '$I$ (kA)'),
             ]:
@@ -149,7 +149,7 @@ def gap_recon_figure(figsize=None):
 
 def clear_gap_recon(sp_rms, sp_overview, sp_std, sp_fit, sp_distances):
     for sp, title, xlabel, ylabel in [
-            (sp_rms, 'Rms bunch duration', '$\Delta$d ($\mu$m)', 'I rms (fs)'),
+            (sp_rms, 'Rms bunch duration', r'$\Delta$d ($\mu$m)', 'I rms (fs)'),
             (sp_overview, 'Rms bunch duration', 'Gap (mm)', 'rms (fs)'),
             (sp_std, 'Relative beamsized error', 'Gap (mm)', r'$\Delta \tau / \tau$'),
             (sp_fit, 'Fit coefficient', 'Gap (mm)', r'$\Delta \tau / \Delta$Gap (fs/$\mu$m)'),
@@ -238,7 +238,7 @@ def plot_structure_position0_fit(fit_dicts, plot_handles=None, figsize=None, blm
             sp2.plot(xx_plot_sim*1e6, yy_plot_sim*1e3, label='Simulated', ls='None', marker='o')
 
         title = sp2.get_title()
-        sp2.set_title('%s; Center=%i $\mu$m' % (title, round(fit_dict['structure_position0']*1e6)), fontsize=config.fontsize)
+        sp2.set_title(r'%s; Center=%i $\mu$m' % (title, round(fit_dict['structure_position0']*1e6)), fontsize=config.fontsize)
         sp1.legend()
         sp2.legend()
 
@@ -257,12 +257,12 @@ def calib_figure(figsize=None):
 
 def clear_calib(sp_raw, sp_heat, sp_heat_rms, sp_heat_diff, sp_comb, sp_final):
     for sp, title, xlabel, ylabel in [
-            (sp_raw, 'Raw data', '$\Delta$ g ($\mu$m)', 'rms duration (fs)'),
-            (sp_heat, 'Fit', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
-            (sp_heat_rms, 'Rms duration', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
-            (sp_heat_diff, 'Rms duration difference', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
-            (sp_comb, 'Target', '$\Delta$ g ($\mu$m)', '$\Delta$ center ($\mu$m)'),
-            (sp_final, 'New fits', 'distances ($\mu$m)', 'rms duration (fs)'),
+            (sp_raw, 'Raw data', r'$\Delta$ g ($\mu$m)', 'rms duration (fs)'),
+            (sp_heat, 'Fit', r'$\Delta$ g ($\mu$m)', r'$\Delta$ center ($\mu$m)'),
+            (sp_heat_rms, 'Rms duration', r'$\Delta$ g ($\mu$m)', r'$\Delta$ center ($\mu$m)'),
+            (sp_heat_diff, 'Rms duration difference', r'$\Delta$ g ($\mu$m)', r'$\Delta$ center ($\mu$m)'),
+            (sp_comb, 'Target', r'$\Delta$ g ($\mu$m)', r'$\Delta$ center ($\mu$m)'),
+            (sp_final, 'New fits', r'distances ($\mu$m)', 'rms duration (fs)'),
             ]:
         sp.clear()
         sp.set_title(title, fontsize=config.fontsize)
@@ -340,7 +340,7 @@ def plot_calib(calib_dict, fig=None, plot_handles=None, show_colorbars=True):
         sp_final.plot(xx_fit*1e6, yy_fit*1e15, color=None)
 
     sp_raw.legend(title='Beam position (mm)')
-    sp_final.legend(title='$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')
+    sp_final.legend(title=r'$\Delta p_0$ ($\mu$m) / $\Delta$g ($\mu$m) / rms (fs)')
 
 def resolution_figure():
     fig = plt.figure()
@@ -398,7 +398,7 @@ def clear_reconstruction(sp_screen, sp_profile, sp_moments):
     for sp, title, xlabel, ylabel in [
             (sp_screen, 'Screen', 'x (mm)', config.rho_label),
             (sp_profile, 'Profile', 't (fs)', 'Current (kA)'),
-            (sp_moments, 'Moments', 'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
+            (sp_moments, 'Moments', r'Gaussian $\sigma$ (fs)', r'$\left|\langle x \rangle\right|$, $\sqrt{\langle x^2\rangle}$ (mm)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -416,7 +416,7 @@ def plot_slice_dict(slice_dict):
         if sp_ctr > 9:
             ms.figure('Investigate slice')
             sp_ctr = 1
-        sp = subplot(sp_ctr, title='Slice %i, $\sigma$=%.1e, rms=%.1e, cut=%.1e' % (n_slice, slice_sigma, slice_rms, slice_cut))
+        sp = subplot(sp_ctr, title=r'Slice %i, $\sigma$=%.1e, rms=%.1e, cut=%.1e' % (n_slice, slice_sigma, slice_rms, slice_cut))
         sp_ctr += 1
         slice_gf.plot_data_and_fit(sp)
         sp.legend()
@@ -440,14 +440,14 @@ def clear_lasing_figure(sp_image_on, sp_image_on2, sp_image_off, sp_slice_mean, 
 
     for sp, title, xlabel, ylabel in [
             (sp_image_on, 'a) Lasing On', '$x$ (mm)', '$y$ (mm)'),
-            (sp_image_on2, 'b) Lasing On', '$t$ (fs)', '$\Delta E$ (MeV)'),
-            (sp_image_off, 'c) Lasing Off', '$t$ (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_mean, 'd) Energy loss', '$t$ (fs)', '$\Delta E$ (MeV)'),
-            (sp_slice_sigma, 'e) Energy spread', '$t$ (fs)', '$\sigma_E$ (MeV)'),
+            (sp_image_on2, 'b) Lasing On', '$t$ (fs)', r'$\Delta E$ (MeV)'),
+            (sp_image_off, 'c) Lasing Off', '$t$ (fs)', r'$\Delta E$ (MeV)'),
+            (sp_slice_mean, 'd) Energy loss', '$t$ (fs)', r'$\Delta E$ (MeV)'),
+            (sp_slice_sigma, 'e) Energy spread', '$t$ (fs)', r'$\sigma_E$ (MeV)'),
             (sp_current, 'f) $I(t)$ and $r_t(t)$', '$t$ (fs)', '$I$ (kA), $r_t$ (fs)'),
-            (sp_lasing_loss, 'g) Power from $\Delta E$', '$t$ (fs)', '$P_\Delta$ (GW)'),
-            (sp_lasing_spread, 'h) Power from $\sigma_E$', '$t$ (fs)', '$P_\sigma$ (GW)'),
-            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', '$d$ ($\mu$m)'),
+            (sp_lasing_loss, r'g) Power from $\Delta E$', '$t$ (fs)', r'$P_\Delta$ (GW)'),
+            (sp_lasing_spread, r'h) Power from $\sigma_E$', '$t$ (fs)', r'$P_\sigma$ (GW)'),
+            (sp_orbit, 'i) Orbit jitter', r'Screen $\left|\langle x \rangle\right|$ (mm)', r'$d$ ($\mu$m)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -507,7 +507,7 @@ def plot_rec_gauss(gauss_dict, plot_handles=None, blmeas_profiles=None, do_plot=
     sp_moments.axhline(gauss_dict['rms_meas']*1e3, label='Measured rms', color=color, ls='--')
 
     sp_moments.legend()
-    sp_screen.legend(title='Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
+    sp_screen.legend(title=r'Gaussian $\sigma$ (fs)', fontsize=config.fontsize)
     sp_profile.legend(title='rms (fs)', fontsize=config.fontsize)
 
     sp_moments.axvline(gauss_sigma*1e15, color='black')
@@ -676,9 +676,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         textstrs = []
         for info in ('rms', 'fwhm'):
             arr = lasing_dict['%s_%s' % (info, method)]
-            textstrs.append('%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
+            textstrs.append(r'%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
             if info == 'rms':
-                textstrs.append('%s*2.355 (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15*2.355, np.nanstd(arr)*1e15*2.355))
+                textstrs.append(r'%s*2.355 (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15*2.355, np.nanstd(arr)*1e15*2.355))
         textstr = '\n'.join(textstrs)
         if text:
             sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)
@@ -690,7 +690,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             sp.plot(lasing_dict['time']*1e15, y_arr/1e9, color='tab:green', alpha=0.35)
 
     for key, label, sp in [
-            ('Eloss', '$\Delta E$', sp_lasing_loss),
+            ('Eloss', r'$\Delta E$', sp_lasing_loss),
             ('Espread', r'$\Delta \langle E^2 \rangle$', sp_lasing_spread)]:
         xx_plot = lasing_dict[key]['time']*1e15
         #yy_plot = np.nanmean(lasing_dict['all_'+key], axis=0)/1e9
@@ -723,7 +723,7 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
                 ]:
             sp_orbit.set_title('Linear calibration')
             sp_orbit.set_xlabel('Image index')
-            sp_orbit.set_ylabel('Calibration ($\mu$m/fs)')
+            sp_orbit.set_ylabel(r'Calibration ($\mu$m/fs)')
             if 'linear_factors' in result_dict[key] and result_dict[key]['linear_factors'] is not None:
                 factors = (1/result_dict[key]['linear_factors'])
 
@@ -805,9 +805,9 @@ def all_slice_dict_figure(figsize=None):
 def clear_slice_dict_figure(sp_current, sp_loss, sp_chirp, sp_spread):
     for sp, title, xlabel, ylabel in [
             (sp_current, 'Current profile', 't (fs)', 'I (kA)'),
-            (sp_loss, 'Energy profile', 't (fs)', '$\Delta$E (MeV)'),
+            (sp_loss, 'Energy profile', 't (fs)', r'$\Delta$E (MeV)'),
             (sp_chirp, 'Energy chirp', 't (fs)', 'C (MeV/fs)'),
-            (sp_spread, 'Energy spread', 't (fs)', '$\sigma_E$ (MeV)'),
+            (sp_spread, 'Energy spread', 't (fs)', r'$\sigma_E$ (MeV)'),
             ]:
         sp.clear()
         sp.set_title(title)
@@ -890,7 +890,7 @@ def plot_single_sided_calib(calib_dict):
     sp_rms = subplot(sp_ctr, title='Rms durations with %.1f%% charge cut' % (rms_chargecut*100), xlabel='Orbit reading (mm)', ylabel=r'$\tau$ (fs)')
     sp_ctr += 1
 
-    sp_fit = subplot(sp_ctr, title='Fit slopes', xlabel='$\Delta$d ($\mu$m)', ylabel='Fit slope (fs/mm)')
+    sp_fit = subplot(sp_ctr, title='Fit slopes', xlabel=r'$\Delta$d ($\mu$m)', ylabel='Fit slope (fs/mm)')
     sp_ctr += 1
 
     delta_positions = plate_positions-final_pos
@@ -903,7 +903,7 @@ def plot_single_sided_calib(calib_dict):
 
     sp_fit.legend()
 
-    sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel='$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
+    sp_avg_dur = subplot(sp_ctr, title='Average rms durations', xlabel=r'$\Delta$ d ($\mu$m)', ylabel=r'$\tau$ (fs)')
     sp_ctr += 1
     sp_err = sp_avg_dur.twinx()
     sp_err.set_ylabel(r'$\delta\tau/\tau$')
@@ -911,7 +911,7 @@ def plot_single_sided_calib(calib_dict):
     sp_peak = subplot(sp_ctr, title='Peak currents', xlabel='Orbit reading (mm)', ylabel='Rec. peak current (kA)')
     sp_ctr += 1
 
-    sp_avg_peak = subplot(sp_ctr, title='Average peak currents', xlabel='$\Delta$d ($\mu$m)', ylabel='Rec. peak current (kA)')
+    sp_avg_peak = subplot(sp_ctr, title='Average peak currents', xlabel=r'$\Delta$d ($\mu$m)', ylabel='Rec. peak current (kA)')
     sp_ctr += 1
     sp_peak_err = sp_avg_peak.twinx()
     sp_peak_err.set_ylabel(r'$\delta$I (kA)')
@@ -929,7 +929,7 @@ def plot_single_sided_calib(calib_dict):
     sp_peak_err.plot(delta_positions*1e6, peak_rms/peak_mean, color='tab:orange', label=r'$\delta$I/I', marker='.')
     ms.comb_legend(sp_avg_peak, sp_peak_err)
 
-    sp_distances = subplot(sp_ctr, title='Distances', xlabel='Orbit reading (mm)', ylabel='d ($\mu$m)')
+    sp_distances = subplot(sp_ctr, title='Distances', xlabel='Orbit reading (mm)', ylabel=r'd ($\mu$m)')
     sp_ctr += 1
 
     for plate_pos, durations, params, ds, pc in zip(plate_positions, rms_durations, fit_params, distances, peak_currents):
@@ -971,10 +971,10 @@ def blmeas_figure(figsize=None):
 
 def clear_blmeas_figure(sp_calib, sp_residual, sp_parabola, sp_bunch_duration, sp_example_image1, sp_example_image2, sp_average_profile, sp_zc1, sp_zc2, title_example1=None, title_example2=None):
     for sp, title, xlabel, ylabel in [
-            (sp_calib, 'Calibration phase scan', '$\Delta$Phase (deg)', 'Screen centroid ($\mu$m)'),
-            (sp_residual, 'Calibration fit residuals', '$\Delta$Phase (deg)', 'Fit residuals ($\mu$m)'),
+            (sp_calib, 'Calibration phase scan', r'$\Delta$Phase (deg)', r'Screen centroid ($\mu$m)'),
+            (sp_residual, 'Calibration fit residuals', r'$\Delta$Phase (deg)', r'Fit residuals ($\mu$m)'),
             (sp_parabola, 'Rms beam size parabola', 'Voltage (MV)', 'Beam size (mm$^2$)'),
-            (sp_bunch_duration, 'Bunch durations', '$\Delta$Phase (deg)', 'Bunch duration (fs)'),
+            (sp_bunch_duration, 'Bunch durations', r'$\Delta$Phase (deg)', 'Bunch duration (fs)'),
             (sp_example_image1, title_example1, '$x$ (mm)', '$y$ (mm)'),
             (sp_example_image2, title_example2, '$x$ (mm)', '$y$ (mm)'),
             (sp_average_profile, 'Representative profiles', '$t$ (fs)', '$I$ (kA)'),
@@ -1016,8 +1016,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         gf_dict = example_image.plot_img_and_proj(sp_example_image, sqrt=sqrt, log=log)
         sp_example_image.set_title('Phase %.2f deg, image %i' % (phases_deg[len(phases_deg)//2], n_images//2), fontsize=None)
         textstr = 'Dim x/y: %i/%i\n' % (len(x_axis), len(y_axis))
-        textstr += 'gf $\sigma_x$: %.0f $\mu$m\n' % (gf_dict['gf_x'].sigma*1e6)
-        textstr += 'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
+        textstr += r'gf $\sigma_x$: %.0f $\mu$m' % (gf_dict['gf_x'].sigma*1e6) + '\n'
+        textstr += r'gf $\sigma_y$: %.0f $\mu$m' % (gf_dict['gf_y'].sigma*1e6)
         sp_example_image.text(0.05, 0.05, textstr, transform=sp_example_image.transAxes, verticalalignment='bottom', bbox=textbbox)
 
         if 'centroids' in result[zero_crossing]:
@@ -1033,7 +1033,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
                 #import pdb; pdb.set_trace()
             else:
                 color = sp_calib.errorbar(phases_plot, centroids*1e6, yerr=centroids_err*1e6, ls='--')[0].get_color()
-            label = '%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
+            label = r'%i: %.3f $\pm$ %.3f' % (zero_crossing, calibration*1e-9, calibration_error*1e-9)
             sp_calib.plot(phases_plot, centroids_fit*1e6, color=color, label=label)
 
             sp_residual.errorbar(phases_plot, np.zeros_like(phases_plot), yerr=centroids_err*1e6 if centroids_err is not None else None, color=color, ls='None', capsize=5)
@@ -1052,12 +1052,12 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
 
         textstr = 'Head to the left.\nPlot center: %s\n' % profile_center_plot
         cal = result[zero_crossing]['applied_calibration']
-        textstr += 'Calibration: %.2f $\mu$m/fs\n' % (cal*1e-9)
+        textstr += r'Calibration: %.2f $\mu$m/fs' % (cal*1e-9) + '\n'
         textstr += 'Bunch durations:'
         for label, label3, arr, color, factor in [
                 ('rms', 'rms', rms, 'tab:blue', 1),
                 ('fwhm/2.355', 'fwhm', fwhm, 'tab:orange', 1/np.sqrt(8*np.log(2))),
-                ('gauss $\sigma$', 'gauss', gauss, 'tab:green', 1),
+                (r'gauss $\sigma$', 'gauss', gauss, 'tab:green', 1),
                 ]:
             label2 = 'Zc %i: %s' % (zero_crossing, label)
             if zero_crossing == 1:
@@ -1068,7 +1068,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
                 sp_bunch_duration.errorbar(phases_plot, np.nanmean(arr, axis=1)*1e15*factor, yerr=np.nanstd(arr, axis=1)*1e15*factor, label=label2, color=color, ls=ls, capsize=5)
             else:
                 sp_bunch_duration.scatter(phases_plot, arr*1e15*factor, label=label2, color=color, marker=marker)
-            textstr += '\n%s:\t%.2f $\pm$ %.2f fs' % (label3, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
+            textstr += '\n%s\t' % label3 + r'%.2f $\pm$ %.2f fs' % (np.nanmean(arr)*1e15, np.nanstd(arr)*1e15)
         sp_zc.text(0.05, 0.95, textstr, transform=sp_zc.transAxes, verticalalignment='top', bbox=textbbox)
 
     if len(zero_crossings) == 2:
@@ -1079,8 +1079,8 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         if n_phases >= 2:
             phase_cross_rel = result['phase_cross_rel']
             sp_calib.axvline(phase_cross_rel*180/np.pi, color='black', ls='--')
-            textstr = 'Fits cross at $\Delta\Phi$ of %0.3f deg' % (phase_cross_rel*180/np.pi)
-            textstr += '\nWeighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
+            textstr = r'Fits cross at $\Delta\Phi$ of %0.3f deg' % (phase_cross_rel*180/np.pi)
+            textstr += '\n'+r'Weighted avg cal.: $\pm$%.2f $\mu$m/fs' % (weighted_calibration/1e9)
             sp_calib.text(0.05, 0.05, textstr, transform=sp_calib.transAxes, verticalalignment='bottom', bbox=textbbox)
 
         beamsizes = result['beamsizes']
@@ -1094,7 +1094,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
             sp_parabola.plot(result['parabola_x']/1e6, result['parabola_y']*1e6, ls='--')
             textstr = 'First zero crossing to the right.\n'
             #textstr += r'$\sigma^2$ ($\mu$m$^2$) = $%.2f \cdot E^2 (\mathrm{MV}^2) %+.2f \cdot E (\mathrm{MV}) %+.2f$ $\mu$m$^2$' % (par_fit[2]*1e24, par_fit[1]*1e18, par_fit[0]*1e12)
-            textstr += '\nCorrected rms: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
+            textstr += '\n'+r'Corrected rms: %.2f$\pm$%.2f fs' % (corr_rms_blen*1e15, corr_rms_blen_err*1e15)
             min_volt = -par_fit[1]/(2*par_fit[2])
             sp_parabola.axvline(min_volt*1e-6, color='black', ls='--')
             textstr += '\nMin. rms beamsize at %.2f MV' % (min_volt*1e-6)
@@ -1107,7 +1107,7 @@ def plot_blmeas_analysis(result, plot_handles=None, figsize=(11,19), profile_cen
         sp_parabola.errorbar(voltages/1e6, beamsizes**2*1e6, yerr=beamsizes_sq_err*1e6, ls='None', capsize=5)
 
     if n_phases >= 2:
-        sp_calib.legend(loc='upper right', title='Zero crossing: cal. ($\mu$m/fs)')
+        sp_calib.legend(loc='upper right', title=r'Zero crossing: cal. ($\mu$m/fs)')
         if chi_square_red is not None:
             sp_residual.legend(loc='upper right', title=r'Zero crossing: $\chi^2_\nu$')
     sp_bunch_duration.legend()

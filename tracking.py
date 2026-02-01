@@ -491,7 +491,7 @@ class Tracker(LogMsgBase):
             ms.figure('')
             #self.set_bs_at_streaker()
             subplot = ms.subplot_factory(2,2)
-            sp = subplot(1, title='Wake', xlabel='t', ylabel='$\Delta$ x')
+            sp = subplot(1, title='Wake', xlabel='t', ylabel=r'$\Delta$ x')
             sp.plot(wake_time, wake_x, label='Dipole')
             #sp.plot(wake_time, q_wake_x*self.bs_at_streaker[n_streaker], label='Quad')
             sp.legend()
@@ -506,7 +506,7 @@ class Tracker(LogMsgBase):
         if plot_details:
             ms.figure('track_backward')
             subplot = ms.subplot_factory(2,2)
-            sp_wake = subplot(1, title='Wake effect', xlabel='t [fs]', ylabel='$\Delta$ x [mm]')
+            sp_wake = subplot(1, title='Wake effect', xlabel='t [fs]', ylabel=r'$\Delta$ x [mm]')
             sp_wake.plot(wake_time*1e15, wake_x*1e3)
 
             sp_screen = subplot(2, title='Screen dist', xlabel='x [mm]', ylabel='Intensity (arb. units)')

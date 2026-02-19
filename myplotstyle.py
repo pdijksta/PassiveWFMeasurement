@@ -95,7 +95,7 @@ def subplot_factory(ny, nx, grid=True, title_fs=None, label_fs=None):
     return subplot
 
 pdijksta_dir = os.path.expanduser('~/plots/')
-re_script = re.compile('^(\d{3}[a-z]?_.{4})')
+re_script = re.compile(r'^(\d{3}[a-z]?_.{4})')
 
 def get_file_title(fig, title=None):
     if title is None:

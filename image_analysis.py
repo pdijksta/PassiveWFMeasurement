@@ -177,6 +177,28 @@ class Image(LogMsgBase):
         output = self.child(new_image, x_axis_reshaped, y_axis)
         return output
 
+    def slice_x_quantile(self, n_slices, cutoff=0.05):
+        proj = self.get_screen_dist('X')
+        proj.cutoff(cutoff)
+        cumsum = np.cumsum(proj.intensity)
+        cumsum /= cumsum[-1]
+
+        yy_interp = np.linspace(cumsum.min(), cumsum.max(), n_slices+1+2)
+        xx_interp = np.interp(yy_interp, cumsum, proj.x)
+        xx_interp[0] = proj.x[0]
+        indices = np.array([np.argmin((_x - proj.x)**2).squeeze() for _x in xx_interp])
+        new_img_arr = np.zeros([self.image.shape[0], n_slices])
+        new_img_x = np.zeros(n_slices)
+
+        for n_slice, index_start in enumerate(indices[1:-2]):
+            index_end = indices[2+n_slice]
+            new_img_arr[:,n_slice] = np.sum(self.image[:,index_start:index_end], axis=1)
+            this_proj = np.sum(self.image[:,index_start:index_end], axis=0)
+            this_x = self.x_axis[index_start:index_end]
+            new_img_x[n_slice] = np.sum(this_proj*this_x)/np.sum(this_proj)
+
+        return self.child(new_img_arr, new_img_x, self.y_axis) # Beware, x_axis unevenly spaced!
+
     def fit_slice_simple(self, current_cutoff=None, E_lims=None, ref_t=None):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)

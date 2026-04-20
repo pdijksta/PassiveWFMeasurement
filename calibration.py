@@ -25,8 +25,18 @@ class StructureCalibration:
     __repr__ = __str__
 
     def gap_and_beam_position_from_meta(self, meta_data):
-        gap0 = meta_data[self.structure_name+':GAP']*1e-3
-        structure_position = meta_data[self.structure_name+':CENTER']*1e-3
+        gap_pv = self.structure_name+':GAP'
+        center_pv = self.structure_name+':CENTER'
+        try:
+            gap0 = meta_data[gap_pv]*1e-3
+        except:
+            print('WARNING Gap not saved. Set to 10 mm!')
+            gap0 = 10e-3
+        try:
+            structure_position = meta_data[center_pv]*1e-3
+        except:
+            print('WARNING Structure center not saved. Set to 4.7 mm!')
+            structure_position = 4.7e-3
         return self.gap_and_beam_position_from_gap0(gap0, structure_position)
 
     def gap_and_beam_position_from_gap0(self, gap0, structure_position):

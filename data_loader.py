@@ -271,7 +271,7 @@ class DataLoaderBase:
         self.sd_dict[dimension]['mean'] = np.array(self.sd_dict[dimension]['mean'])
         self.sd_dict[dimension]['rms'] = np.array(self.sd_dict[dimension]['rms'])
 
-    def plot_all(self, ny, nx, title=None, only_one_fig=False, figsize=(12,10), plot_kwargs={}, subplots_adjust_kwargs={}):
+    def plot_all(self, ny, nx, title=None, only_one_fig=False, figsize=(12,10), plot_kwargs={}, subplots_adjust_kwargs={}, xlabel='$x$ (mm)', ylabel='$y$ (mm)'):
         fig_ctr = 0
         sp_ctr = np.inf
         figs = []
@@ -281,6 +281,7 @@ class DataLoaderBase:
                 if fig_ctr > 0 and only_one_fig:
                     break
                 fig = ms.figure(title, figsize=figsize)
+                fig.set_constrained_layout(True)
                 if subplots_adjust_kwargs:
                     fig.subplots_adjust(**subplots_adjust_kwargs)
                 figs.append(fig)
@@ -288,7 +289,7 @@ class DataLoaderBase:
                 subplot = ms.subplot_factory(ny, nx, False)
                 sp_ctr = 1
                 all_sps.append([])
-            sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel='x (mm)', ylabel='y (mm)')
+            sp = subplot(sp_ctr, title='Image %i' % n_image, xlabel=xlabel, ylabel=ylabel)
             sp_ctr += 1
             image.plot_img_and_proj(sp, **plot_kwargs)
             all_sps[fig_ctr-1].append(sp)

@@ -99,6 +99,17 @@ class Image(LogMsgBase):
             proj = self.image.sum(axis=1)
         return beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge, **kwargs)
 
+    def center(self, dimension):
+        dist = self.get_screen_dist(dimension)
+        shift = dist.mean()
+        if dimension == 'X':
+            x_axis = self.x_axis - shift
+            y_axis = self.y_axis
+        if dimension == 'Y':
+            x_axis = self.x_axis
+            y_axis = self.y_axis - shift
+        return self.child(self.image, x_axis, y_axis)
+
     def get_profile(self, dimension='X'):
         if dimension == 'X':
             axis = self.x_axis

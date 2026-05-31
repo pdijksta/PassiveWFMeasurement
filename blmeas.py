@@ -570,7 +570,7 @@ def analyze_separate_results(result1, result2, do_plot=False):
     return outp
 
 
-def get_projections(images, x_axis, y_axis, charge, streaking_direction):
+def get_projections(images, x_axis, y_axis, charge, streaking_direction, type_):
 
     data_loader_options = config.get_blmeas_data_loader_options()
     if len(images.shape) == 4:
@@ -589,7 +589,10 @@ def get_projections(images, x_axis, y_axis, charge, streaking_direction):
     elif streaking_direction == 'X':
         projections = zc_data.image_data.sum(axis=1)
     example_image = image_analysis.Image(images_reshaped[len(images_reshaped)//2], x_axis, y_axis, charge=charge)
-    centroids = zc_data.sd_dict[streaking_direction]['mean']
+    if type_ == 'com':
+        centroids = zc_data.sd_dict[streaking_direction]['mean']
+    elif type_ == 'gauss':
+        centroids = np.array([sd.gaussfit.mean for sd in zc_data.sd_dict[streaking_direction]['sd']])
     return projections, centroids, example_image
 
 def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_image):
@@ -653,6 +656,7 @@ class LongitudinalBeamMeasurement:
                 'force_charge': False,
                 'forced_charge': 200e-12,
                 'n_repeat': 2,
+                'centroid_type': 'com',
                 }
         self.analysis_config.update(kwargs)
         if type(data_files_or_dict) is dict:
@@ -732,7 +736,7 @@ class LongitudinalBeamMeasurement:
                 y_axis = y_axis[::-1]
                 images = images[...,::-1,:]
 
-            projections, centroids, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'])
+            projections, centroids, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'], self.analysis_config['centroid_type'])
             result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
 
         print('Calibrations in um/fs:', np.array([result[zero_crossing]['calibration_fit'] for zero_crossing in self.zero_crossings])/1e9)
@@ -742,7 +746,10 @@ class LongitudinalBeamMeasurement:
             for ctr, (zero_crossing, scan) in enumerate(zip(self.zero_crossings, self.scans)):
                 phases_deg = result[zero_crossing]['phases_deg0']
                 projections = result[zero_crossing]['projections']
-                centroids = np.array([p.mean() for p in result[zero_crossing]['profiles']]) * result[zero_crossing]['calibration_fit']
+                if self.analysis_config['centroid_type'] == 'com':
+                    centroids = np.array([p.mean() for p in result[zero_crossing]['profiles']]) * result[zero_crossing]['calibration_fit']
+                elif self.analysis_config['centroid_type'] == 'gauss':
+                    centroids = np.array([p.gaussfit.mean for p in result[zero_crossing]['profiles']]) * result[zero_crossing]['calibration_fit']
                 example_image = result[zero_crossing]['example_image']
                 result[zero_crossing] = analyze_zero_crossing(phases_deg, projections, centroids, self.tds_freq, example_image)
 

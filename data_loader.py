@@ -183,7 +183,8 @@ class DataLoaderBase:
             np.clip(images-subtract_absolute, 0, None, out=images)
         if subtract_quantile:
             for image in images:
-                np.clip(image - np.quantile(image, subtract_quantile), 0, None, out=image)
+                cutoff = np.quantile(image, subtract_quantile)
+                np.clip(image - cutoff, 0, None, out=image)
 
         if center_com:
             len_x = len(x_axis_m)

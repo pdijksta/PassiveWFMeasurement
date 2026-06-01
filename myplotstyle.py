@@ -14,11 +14,13 @@ def myprint(*args, **kwargs):
 def set_fontsizes(fontsize):
     plt.rc('font', size=fontsize)
 
-def figure(title='', figsize=(12, 10), **kwargs):
+def figure(title='', figsize=(12, 10), constrained_layout=False, **kwargs):
     fig = plt.figure(figsize=figsize, **kwargs)
     fig.canvas.manager.set_window_title(title)
     fig.patch.set_facecolor('w')
     plt.suptitle(title, fontsize=16)
+    if constrained_layout:
+        fig.set_constrained_layout(True)
     #fig.subplots_adjust(left=0.07, right=0.80, wspace=0.5)
     return fig
 

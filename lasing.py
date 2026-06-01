@@ -620,7 +620,7 @@ class LasingReconstructionImagesBase:
         assert all(all_revert) or not any(all_revert)
 
     def generate_all_slice_dict(self, slice_method):
-        all_mean = np.zeros([len(self.images_tE), self.n_slices], dtype=float)
+        all_mean = np.zeros([len(self.images_tE), len(self.slice_dicts[0]['slice_x'])], dtype=float)
         all_sigma = all_mean.copy()
         all_x = all_mean.copy()
         all_current = all_mean.copy()
@@ -840,7 +840,7 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
                 self.get_streaker_offsets()
             self.convert_x_wake()
         elif x_conversion  == 'linear':
-            self.convert_x_linear(self.lasing_options['x_linear_factor'])
+            self.convert_x_linear(enforce_median_rms=self.lasing_options['adjust_linear_factor'])
             if self.profile is None:
                 self.set_profile()
         elif x_conversion == 'modelfree':

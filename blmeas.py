@@ -30,6 +30,7 @@ def tilt_reconstruction2(profile1, profile2):
     x_interp_plus = np.interp(q_interp, q_plus, sd_plus.x)
 
     x_mean = (x_interp_plus - x_interp_minus)/2
+    x_initial = (x_interp_plus + x_interp_minus)/2
     x_mean_evenly = np.linspace(x_mean.min(), x_mean.max(), len(x_mean))
     q_interp_evenly = np.interp(x_mean_evenly, x_mean, q_interp)
 
@@ -44,7 +45,12 @@ def tilt_reconstruction2(profile1, profile2):
             'q_plus': q_plus,
             'q_minus': q_minus,
             'q_interp': q_interp,
+            'q_interp_evenly': q_interp_evenly,
             'x_mean': x_mean,
+            'x_mean_evenly': x_mean_evenly,
+            'x_interp_minus': x_interp_minus,
+            'x_interp_plus': x_interp_plus,
+            'x_initial': x_initial,
             }
     return outp
 

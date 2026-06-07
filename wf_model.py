@@ -269,7 +269,14 @@ def wf2d_quad(t_coords, x_coords, semigap, charge, wf_func, hist_bins=(int(1e3),
             }
     return output
 
-def write_sdds(filename, tt, w_wld, w_wxd, w_wxq, comment_str=''):
+def write_sdds(filename, tt, w_wld=None, w_wxd=None, w_wxq=None, comment_str=''):
+    zero = np.zeros_like(tt)
+    if w_wld is None:
+        w_wld = zero
+    if w_wxd is None:
+        w_wxd = zero
+    if w_wxq is None:
+        w_wxq = zero
 
     with open(filename, 'w') as fid:
         fid.write('SDDS1\n')
@@ -285,6 +292,7 @@ def write_sdds(filename, tt, w_wld, w_wxd, w_wxq, comment_str=''):
         for t, wl, wxd, wxq in zip(tt, w_wld, w_wxd, w_wxq):
             fid.write('  %12.6e  %12.6e  %12.6e  %12.6e\n' % (t, wl, wxd, wxq))
 
+    print('Wake sdds file: %s' % filename)
     return {
             't': tt,
             'W': w_wld,

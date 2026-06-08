@@ -289,6 +289,7 @@ def get_custom_optics(beamline):
 _aramis_pvs = ['SARUN%02i-DBPM070:%s1' % (i, dim) for i, dim in itertools.product(range(1, 21), ('X', 'Y'))]
 _aramis_pvs += ['SARBD01-DBPM040:%s1' % dim for dim in ('X', 'Y')]
 _aramis_pvs += ['SARBD02-DBPM010:%s1' % dim for dim in ('X', 'Y')]
+_aramis_pvs += ['SARCL02-DBPM%03i:%s1' % (i, dim) for i, dim in itertools.product([110, 220, 260, 330, 470], ('X', 'Y'))]
 
 _pre_athos_pvs = ['SATDI01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([90, 210, 240, 270, 310], ['X', 'Y'])]
 _pre_athos_pvs += ['SATCB01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools.product([220, 420], ['X', 'Y'])]

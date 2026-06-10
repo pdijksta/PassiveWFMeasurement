@@ -525,12 +525,13 @@ class Image(LogMsgBase):
         new_image = np.clip(scipy.ndimage.zoom(self.image, factor), 0, None)
         return self.child(new_image, new_x, new_y)
 
-    def x_to_t_modelfree(self, ref_profile, x_scale_factor=5, t_scale_factor=10):
+    def x_to_t_modelfree(self, ref_profile, x_scale_factor=5, t_scale_factor=10, revert='auto'):
         img = self.resample([1, x_scale_factor])
 
         # Ensure correct orientation
         prof_x0 = img.get_screen_dist('X')
-        revert = prof_x0.mean() < prof_x0.x[np.argmax(prof_x0.intensity)]
+        if revert == 'auto':
+            revert = prof_x0.mean() < prof_x0.x[np.argmax(prof_x0.intensity)]
         if revert:
             img.x_axis = -img.x_axis[::-1]
             img.image = img.image[:,::-1]

@@ -593,6 +593,10 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
         index_median = 0
         image_xy = result_dict[key]['raw_images'][index_median]
         image_tE = result_dict[key]['tE_images'][index_median]
+        if type(image_xy) is dict:
+            image_xy = image_analysis.Image(**image_xy)
+        if type(image_tE) is dict:
+            image_tE = image_analysis.Image(**image_tE)
         if sp_image_xy is not None:
             image_xy.plot_img_and_proj(sp_image_xy, plot_gauss=False, sqrt=sqrt)
 

@@ -157,6 +157,8 @@ def loadH5Recursive(h5_file):
             saved_dict_curr[key] = new_dict = {}
             for new_key, new_group_or_val in group_or_val.items():
                 recurse_load(new_group_or_val, new_key, new_dict)
+            if all(key.startswith('list_entry_') for key in new_dict):
+                saved_dict_curr[key] = [new_dict['list_entry_%i' % index] for index in range(len(new_dict))]
         elif type_ == np.dtype('O') and hasval and type(group_or_val[()]) is bytes:
             saved_dict_curr[key] = group_or_val[()].decode()
         elif type_ == h5py._hl.dataset.Dataset:

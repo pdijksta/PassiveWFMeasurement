@@ -159,8 +159,8 @@ class DataLoaderBase:
         if max_intensity is not None:
             images = np.clip(images, None, max_intensity)
 
-        if subtract_quantile and subtract_absolute:
-            raise ValueError('Cannot specify both absolute and quantile subtractions!')
+        #if subtract_quantile and subtract_absolute:
+        #    raise ValueError('Cannot specify both absolute and quantile subtractions!')
 
         def _cutX(lim1, lim2):
             mask = np.logical_and(x_axis_m >= lim1, x_axis_m <= lim2)

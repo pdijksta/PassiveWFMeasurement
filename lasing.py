@@ -768,6 +768,40 @@ class LasingReconstructionImagesBase:
         self.median_meas_screen_index = np.argsort(np.array(rms_arr))[len(self.meas_screens)//2]
         self.meas_screen_centroids = np.array([abs(x.mean()) for x in self.meas_screens])
 
+    def process_data(self, ref_slice_dict=None, slice_fit=True):
+        self.convert_y()
+        x_conversion = self.lasing_options['x_conversion']
+        if x_conversion == 'wake':
+            if self.profile is None:
+                self.get_current_profiles()
+                self.set_profile()
+            self.wake_t, self.wake_x = self.calc_wake()
+            if self.lasing_options['adjust_beam_position']:
+                self.get_streaker_offsets()
+            self.convert_x_wake()
+        elif x_conversion  == 'linear':
+            self.convert_x_linear(enforce_median_rms=self.lasing_options['adjust_linear_factor'])
+            if self.profile is None:
+                self.set_profile()
+        elif x_conversion == 'modelfree':
+            self.convert_x_modelfree()
+        else:
+            raise ValueError(x_conversion)
+
+        if slice_fit:
+            self.slice_x()
+            self.fit_slice()
+
+            if ref_slice_dict is not None:
+                self.ref_slice_dict = ref_slice_dict
+            elif self.ref_slice_dict is None:
+                self.ref_slice_dict = self.slice_dicts[0]
+
+            if self.ref_slice_dict is None:
+                raise ValueError('No ref_slice_dict defined!')
+            self.interpolate_slice(self.ref_slice_dict)
+
+
 class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
     def __init__(self, identifier, filename_or_data, lasing_options, ref_y=None, ref_slice_dict=None):
         if type(filename_or_data) is dict:
@@ -827,41 +861,6 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
         rms_vals = np.array([profile.rms() for profile in self.profiles])
         index_median = np.argsort(rms_vals)[len(rms_vals)//2]
         self.median_rms = rms_vals[index_median]
-
-    def process_data(self, ref_slice_dict=None, slice_fit=True):
-        self.convert_y()
-        x_conversion = self.lasing_options['x_conversion']
-        if x_conversion == 'wake':
-            if self.profile is None:
-                self.get_current_profiles()
-                self.set_profile()
-            self.wake_t, self.wake_x = self.calc_wake()
-            if self.lasing_options['adjust_beam_position']:
-                self.get_streaker_offsets()
-            self.convert_x_wake()
-        elif x_conversion  == 'linear':
-            self.convert_x_linear(enforce_median_rms=self.lasing_options['adjust_linear_factor'])
-            if self.profile is None:
-                self.set_profile()
-        elif x_conversion == 'modelfree':
-            self.convert_x_modelfree()
-        else:
-            raise ValueError(x_conversion)
-
-        if slice_fit:
-            self.slice_x()
-            self.fit_slice()
-
-            if ref_slice_dict is not None:
-                self.ref_slice_dict = ref_slice_dict
-            elif self.ref_slice_dict is None:
-                self.ref_slice_dict = self.slice_dicts[0]
-
-            if self.ref_slice_dict is None:
-                raise ValueError('No ref_slice_dict defined!')
-            self.interpolate_slice(self.ref_slice_dict)
-
-
 
 
 class LasingReconstructionImages(LasingReconstructionImagesBase):

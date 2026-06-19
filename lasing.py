@@ -601,14 +601,58 @@ class LasingReconstructionImagesBase:
     def convert_y_single(self, image):
         return image.y_to_eV(self.dispersion, self.energy_eV, ref_y=self.ref_y)
 
-    def convert_x_linear(self, factor):
-        self.images_tE = []
-        self.profiles = []
-        for ctr, img in enumerate(self.images_E):
-            new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
-            self.images_tE.append(new_img)
-            new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.energy_eV, self.total_charge)
-            self.profiles.append(new_profile)
+    #def convert_x_linear(self, factor):
+    #    self.images_tE = []
+    #    self.profiles = []
+    #    for ctr, img in enumerate(self.images_E):
+    #        new_img = img.x_to_t_linear(factor, mean_to_zero=True, current_cutoff=self.lasing_options['current_cutoff'])
+    #        self.images_tE.append(new_img)
+    #        new_profile = beam_profile.BeamProfile(new_img.x_axis, new_img.image.sum(axis=-2), self.energy_eV, self.total_charge)
+    #        self.profiles.append(new_profile)
+
+    def convert_x_linear(self, enforce_median_rms=None, enforce_rms=None, min_factor=None, max_factor=None):
+        factor = self.lasing_options['x_linear_factor']
+        current_cutoff = self.lasing_options['current_cutoff']
+        if enforce_rms and enforce_median_rms:
+            raise ValueError('Cannot enforce both rms and median rms!')
+
+        def convert(factors):
+            self.images_tE = []
+            self.profiles = []
+            linear_factors = []
+            for img, factor2 in zip(self.images_E, factors):
+                if min_factor and abs(factor2) < min_factor:
+                    continue
+                if max_factor and abs(factor2) > max_factor:
+                    continue
+                new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=current_cutoff)
+                new_profile = new_img.get_profile()
+                current = np.abs(new_profile.get_current())
+                new_profile.cutoff(current_cutoff/current.max())
+                new_profile.crop()
+                self.images_tE.append(new_img)
+                self.profiles.append(new_profile)
+                linear_factors.append(factor2)
+            self.linear_factors = np.array(linear_factors)
+
+        convert(np.array([factor]*len(self.images_E)))
+        rms_vals = np.array([profile.rms() for profile in self.profiles])
+        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
+        self.profile = self.profiles[index_median]
+        self.median_rms = rms_vals[index_median]
+
+        if enforce_median_rms:
+            factors = factor*self.median_rms/rms_vals
+            convert(factors)
+
+        if enforce_rms is not None:
+            factors = factor*enforce_rms/rms_vals
+            convert(factors)
+        rms_vals = np.array([profile.rms() for profile in self.profiles])
+        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
+        self.median_rms = rms_vals[index_median]
+
+
 
     def convert_x_modelfree(self):
         self.images_tE = []
@@ -819,48 +863,6 @@ class LasingReconstructionImagesLinear(LasingReconstructionImagesBase):
         matrix = lat.get_matrix(structure_name.replace('-', '.'), screen_name.replace('-', '.'))
         dispersion = {'X': matrix[2,5], 'Y': matrix[0,5]}[streaking_direction]
         LasingReconstructionImagesBase.__init__(self, identifier, energy_eV, dispersion, total_charge, ref_y, ref_slice_dict, lasing_options)
-
-    def convert_x_linear(self, enforce_median_rms=None, enforce_rms=None, min_factor=None, max_factor=None):
-        factor = self.lasing_options['x_linear_factor']
-        current_cutoff = self.lasing_options['current_cutoff']
-        if enforce_rms and enforce_median_rms:
-            raise ValueError('Cannot enforce both rms and median rms!')
-
-        def convert(factors):
-            self.images_tE = []
-            self.profiles = []
-            linear_factors = []
-            for img, factor2 in zip(self.images_E, factors):
-                if min_factor and abs(factor2) < min_factor:
-                    continue
-                if max_factor and abs(factor2) > max_factor:
-                    continue
-                new_img = img.x_to_t_linear(factor2, mean_to_zero=True, current_cutoff=current_cutoff)
-                new_profile = new_img.get_profile()
-                current = np.abs(new_profile.get_current())
-                new_profile.cutoff(current_cutoff/current.max())
-                new_profile.crop()
-                self.images_tE.append(new_img)
-                self.profiles.append(new_profile)
-                linear_factors.append(factor2)
-            self.linear_factors = np.array(linear_factors)
-
-        convert(np.array([factor]*len(self.images_E)))
-        rms_vals = np.array([profile.rms() for profile in self.profiles])
-        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
-        self.profile = self.profiles[index_median]
-        self.median_rms = rms_vals[index_median]
-
-        if enforce_median_rms:
-            factors = factor*self.median_rms/rms_vals
-            convert(factors)
-
-        if enforce_rms is not None:
-            factors = factor*enforce_rms/rms_vals
-            convert(factors)
-        rms_vals = np.array([profile.rms() for profile in self.profiles])
-        index_median = np.argsort(rms_vals)[len(rms_vals)//2]
-        self.median_rms = rms_vals[index_median]
 
 
 class LasingReconstructionImages(LasingReconstructionImagesBase):

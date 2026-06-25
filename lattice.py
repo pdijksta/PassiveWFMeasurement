@@ -268,3 +268,43 @@ def get_beamline_lattice(beamline, quad_k1l_dict):
     filename = config.beamline_lat_files[beamline]
     return generated_lattice(filename, quad_k1l_dict)
 
+def loadSnap(filename):
+    res={}
+    with open(filename,'r') as fid:
+        lines=fid.readlines()
+        for line in lines[1:]:
+            split = line.split(',')
+            pv = split[0].strip()
+            try:
+                val = split[1].split('"val":')[1].split('}')[0]
+            except:
+                print(split)
+                continue
+            if '.' in val:
+                res[pv]=float(val)
+            else:
+                res[pv]= val
+    return res
+
+def matrix_from_snap(beamline, snapshotfile, from_, to):
+    snapshot = loadSnap(snapshotfile)
+    filename = config.beamline_lat_files[beamline]
+    filename = os.path.join(os.path.dirname(__file__), filename)
+    lat = Lattice(filename, dims=6)
+
+    quad_names = lat.quad_names
+    quad_k1l_dict = {}
+    for quad_name0 in quad_names:
+        if 'MQUP' in quad_name0:
+            k1l = 0
+        else:
+            quad_name = quad_name0.replace('.Q', '')
+            ch = quad_name.replace('.', '-')+':K1L-SET'
+            k1l = snapshot[ch]
+        quad_k1l_dict[quad_name0] = k1l
+
+    lat.generate(quad_k1l_dict, assert0=True)
+
+    mat = lat.get_matrix(from_, to)
+    return lat, mat
+

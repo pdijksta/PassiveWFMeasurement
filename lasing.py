@@ -29,7 +29,7 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
     power_err = np.sqrt(err_sq_1+err_sq_2+err_sq_3)
     power[mask0] = 0
     power_err[mask0] = 0
-    energy = np.trapz(power, slice_time)
+    energy = np.trapezoid(power, slice_time)
     return {
             'time': slice_time,
             'power': power,
@@ -41,7 +41,7 @@ def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total=No
     power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * photon_energy_factors
     if norm_factor is None:
         mask = np.ones_like(slice_t, dtype=bool)
-        integral = np.trapz(power0[mask], slice_t[mask])
+        integral = np.trapezoid(power0[mask], slice_t[mask])
         power = power0/integral*E_total
     else:
         power = power0*norm_factor
@@ -56,7 +56,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
     power1 = power0.copy()
     power1[power0 < 0] = 0
-    integral = np.trapz(power1, slice_t)
+    integral = np.trapezoid(power1, slice_t)
 
     if norm_factor is None:
         norm_factor = E_total/integral
@@ -66,7 +66,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0_err_3 = slice_current**(2/3) * photon_energy_factors * slice_Espread_on_sq_err
     power0_err = np.sqrt(power0_err_1**2+power0_err_2**2+power0_err_3**2)
     power_err = power0_err*norm_factor
-    energy = np.trapz(power, slice_t)
+    energy = np.trapezoid(power, slice_t)
 
     return {
             'time': slice_t,

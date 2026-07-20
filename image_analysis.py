@@ -99,6 +99,15 @@ class Image(LogMsgBase):
             proj = self.image.sum(axis=1)
         return beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge, **kwargs)
 
+    def get_anyprofile(self, dimension):
+        if dimension == 'X':
+            axis = self.x_axis
+            proj = self.image.sum(axis=0)
+        elif dimension == 'Y':
+            axis = self.y_axis
+            proj = self.image.sum(axis=1)
+        return beam_profile.AnyProfile(axis, proj)
+
     def center(self, dimension):
         dist = self.get_screen_dist(dimension)
         shift = dist.mean()
@@ -306,7 +315,7 @@ class Image(LogMsgBase):
         self.slice_dict = slice_dict
         return slice_dict
 
-    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None):
+    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None, fit_const=True):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -377,7 +386,7 @@ class Image(LogMsgBase):
                 continue
 
             try:
-                gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
+                gf = GaussFit(y_axis, intensity, fit_const=fit_const, raise_=True)
             except (RuntimeError, OptimizeWarning):
                 gf = None
                 addzero()
@@ -407,6 +416,8 @@ class Image(LogMsgBase):
 
                 prof_y = intensity.copy()
                 lim1, lim2 = mean_rms-(rms_sigma/2)*rms, mean_rms+(rms_sigma/2)*rms
+                lim1 = min(max(lim1, y_axis[0]), y_axis[-1])
+                lim2 = min(max(lim2, y_axis[0]), y_axis[-1])
                 slice_cut_lim1.append(lim1)
                 slice_cut_lim2.append(lim2)
                 mask_cut = np.logical_and(y_axis >= lim1, y_axis <= lim2)

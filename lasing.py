@@ -321,10 +321,15 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
         blmeas_profile = None
     else:
         if type(blmeas_file_or_profile) is str:
-            blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
-            blmeas_profile = blmeas_dict['corrected_profile']
+            data_blmeas = h5_storage.loadH5Recursive(blmeas_file_or_profile)
+            if 'Input data' in data_blmeas or 'data' in data_blmeas:
+                blmeas_profile = blmeas.analyze_blmeas(data_blmeas, **blmeas_kwargs)['corrected_profile']
+            elif 'raw_data' in data_blmeas:
+                lbm = blmeas.LongitudinalBeamMeasurement(data_blmeas, **blmeas_kwargs)
+                blmeas_profile = lbm.analyze_current_measurement()['corrected_profile']
+            elif 'corrected_profile' in data_blmeas:
+                blmeas_profile = beam_profile.BeamProfile(**data_blmeas['corrected_profile'])
         elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
-            blmeas_dict = None
             blmeas_profile = blmeas_file_or_profile
         else:
             raise ValueError(type(blmeas_file_or_profile))
@@ -365,7 +370,6 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
             'blmeas_profile': blmeas_profile
             }
     return outp
-
 
 class LasingReconstruction:
     def __init__(self, images_off, images_on, lasing_options, pulse_energy=None):

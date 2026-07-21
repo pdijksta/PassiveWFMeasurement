@@ -29,7 +29,7 @@ def power_Eloss_err(slice_time, slice_current, slice_E_on, slice_E_off, slice_cu
     power_err = np.sqrt(err_sq_1+err_sq_2+err_sq_3)
     power[mask0] = 0
     power_err[mask0] = 0
-    energy = np.trapz(power, slice_time)
+    energy = np.trapezoid(power, slice_time)
     return {
             'time': slice_time,
             'power': power,
@@ -41,7 +41,7 @@ def power_Espread(slice_t, slice_current, slice_Espread_sqr_increase, E_total=No
     power0 = slice_current**espread_current_exponent * slice_Espread_sqr_increase * photon_energy_factors
     if norm_factor is None:
         mask = np.ones_like(slice_t, dtype=bool)
-        integral = np.trapz(power0[mask], slice_t[mask])
+        integral = np.trapezoid(power0[mask], slice_t[mask])
         power = power0/integral*E_total
     else:
         power = power0*norm_factor
@@ -56,7 +56,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0 = slice_current**exp * slice_Espread_sqr_increase * photon_energy_factors
     power1 = power0.copy()
     power1[power0 < 0] = 0
-    integral = np.trapz(power1, slice_t)
+    integral = np.trapezoid(power1, slice_t)
 
     if norm_factor is None:
         norm_factor = E_total/integral
@@ -66,7 +66,7 @@ def power_Espread_err(slice_t, slice_current, slice_Espread_on_sq, slice_Espread
     power0_err_3 = slice_current**(2/3) * photon_energy_factors * slice_Espread_on_sq_err
     power0_err = np.sqrt(power0_err_1**2+power0_err_2**2+power0_err_3**2)
     power_err = power0_err*norm_factor
-    energy = np.trapz(power, slice_t)
+    energy = np.trapezoid(power, slice_t)
 
     return {
             'time': slice_t,
@@ -321,10 +321,15 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
         blmeas_profile = None
     else:
         if type(blmeas_file_or_profile) is str:
-            blmeas_dict = blmeas.analyze_blmeas(blmeas_file_or_profile, separate_calibrations=False, **blmeas_kwargs)
-            blmeas_profile = blmeas_dict['corrected_profile']
+            data_blmeas = h5_storage.loadH5Recursive(blmeas_file_or_profile)
+            if 'Input data' in data_blmeas or 'data' in data_blmeas:
+                blmeas_profile = blmeas.analyze_blmeas(data_blmeas, **blmeas_kwargs)['corrected_profile']
+            elif 'raw_data' in data_blmeas:
+                lbm = blmeas.LongitudinalBeamMeasurement(data_blmeas, **blmeas_kwargs)
+                blmeas_profile = lbm.analyze_current_measurement()['corrected_profile']
+            elif 'corrected_profile' in data_blmeas:
+                blmeas_profile = beam_profile.BeamProfile(**data_blmeas['corrected_profile'])
         elif type(blmeas_file_or_profile) is beam_profile.BeamProfile:
-            blmeas_dict = None
             blmeas_profile = blmeas_file_or_profile
         else:
             raise ValueError(type(blmeas_file_or_profile))
@@ -365,7 +370,6 @@ def modelfree_obtain_lasing(blmeas_file_or_profile, tracker, file_or_dict_off, f
             'blmeas_profile': blmeas_profile
             }
     return outp
-
 
 class LasingReconstruction:
     def __init__(self, images_off, images_on, lasing_options, pulse_energy=None):

@@ -627,6 +627,9 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
             sp.fill_between(xx_plot[0]*1e15, plot_min*1e-6, plot_max*1e-6, alpha=0.35, label=label, color=fill_color)
             for x, y in zip(xx_plot*1e15, all_plot/1e6):
                 sp.plot(x, y, color=fill_color, alpha=0.35)
+            if result_dict['lasing_options']['t_lims'] is not None:
+                for _lim in result_dict['lasing_options']['t_lims']:
+                    sp.axvline(_lim*1e15, color='black', ls='--')
 
         mean_mean = mean_slice_dict['loss']['mean'][mask]
         mean_std = mean_slice_dict['loss']['std'][mask] / np.sqrt(n_shots2)
@@ -677,12 +680,12 @@ def plot_lasing(result_dict, plot_handles=None, figsize=None, title_label_dict={
 
     for method, sp in [('Eloss', sp_lasing_loss), ('Espread', sp_lasing_spread)]:
         key = 'all_'+method
-        textstrs = []
+        textstrs = ['Pulse energy (uJ): %.0f' % (lasing_dict[method]['energy']*1e6)]
         for info in ('rms', 'fwhm'):
             arr = lasing_dict['%s_%s' % (info, method)]
-            textstrs.append(r'%s (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
+            textstrs.append(r'%s (fs): %.1f$\pm$%.1f' % (info, np.nanmean(arr)*1e15, np.nanstd(arr)*1e15))
             if info == 'rms':
-                textstrs.append(r'%s*2.355 (fs): %.1f$\pm$%.1f fs' % (info, np.nanmean(arr)*1e15*2.355, np.nanstd(arr)*1e15*2.355))
+                textstrs.append(r'%s*2.355 (fs): %.1f$\pm$%.1f' % (info, np.nanmean(arr)*1e15*2.355, np.nanstd(arr)*1e15*2.355))
         textstr = '\n'.join(textstrs)
         if text:
             sp.text(0.05, 0.05, textstr, transform=sp.transAxes, verticalalignment='bottom', bbox=textbbox)

@@ -203,7 +203,7 @@ class Image(LogMsgBase):
 
         for n_slice, index_start in enumerate(indices[1:-2]):
             index_end = indices[2+n_slice]
-            new_img_arr[:,n_slice] = np.sum(self.image[:,index_start:index_end], axis=1)
+            new_img_arr[:,n_slice] = np.mean(self.image[:,index_start:index_end], axis=1)
             this_proj = np.sum(self.image[:,index_start:index_end], axis=0)
             this_x = self.x_axis[index_start:index_end]
             new_img_x[n_slice] = np.sum(this_proj*this_x)/np.sum(this_proj)
@@ -306,7 +306,7 @@ class Image(LogMsgBase):
         self.slice_dict = slice_dict
         return slice_dict
 
-    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None):
+    def fit_slice(self, rms_sigma=5, current_cutoff=None, E_lims=None, do_plot=False, ref_t=None, fit_const=True):
         y_axis = self.y_axis
         n_slices = len(self.x_axis)
         slice_mean = []
@@ -377,7 +377,7 @@ class Image(LogMsgBase):
                 continue
 
             try:
-                gf = GaussFit(y_axis, intensity, fit_const=True, raise_=True)
+                gf = GaussFit(y_axis, intensity, fit_const=fit_const, raise_=True)
             except (RuntimeError, OptimizeWarning):
                 gf = None
                 addzero()

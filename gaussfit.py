@@ -54,15 +54,15 @@ class GaussFit:
         with warnings.catch_warnings():
             warnings.simplefilter('error', category=OptimizeWarning)
             try:
-                self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
+                self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
+                self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=200)
             except (RuntimeError, OptimizeWarning):
                 try:
                     p0[2] *= 5
-                    self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=100)
+                    self.popt, self.pcov = curve_fit(self.fit_func, xx, yy, p0=p0, jac=self.jacobi, maxfev=200)
                 except (RuntimeError, OptimizeWarning) as e:
                     if raise_:
                         raise
-                    self.popt, self.pcov = p0, np.ones([len(p0), len(p0)], float)
                     if print_:
                         print(e)
                         print('Fit did not converge. Using p0 instead!')

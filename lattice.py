@@ -259,14 +259,14 @@ class Lattice:
                 'alphay': alphay,
                 }
 
-def generated_lattice(h5_file, quad_k1l_dict):
-    lat = Lattice(os.path.join(os.path.dirname(__file__), h5_file))
+def generated_lattice(h5_file, quad_k1l_dict, **kwargs):
+    lat = Lattice(os.path.join(os.path.dirname(__file__), h5_file), **kwargs)
     lat.generate(quad_k1l_dict)
     return lat
 
-def get_beamline_lattice(beamline, quad_k1l_dict):
+def get_beamline_lattice(beamline, quad_k1l_dict, **kwargs):
     filename = config.beamline_lat_files[beamline]
-    return generated_lattice(filename, quad_k1l_dict)
+    return generated_lattice(filename, quad_k1l_dict, **kwargs)
 
 def loadSnap(filename):
     res={}

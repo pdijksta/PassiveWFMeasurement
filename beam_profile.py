@@ -248,14 +248,16 @@ class Profile:
 
     def center(self, type_='Gauss'):
         if type_ == 'Gauss':
-            self._xx = self._xx - self.gaussfit.mean
+            delta = self.gaussfit.mean
         elif type_ == 'Mean':
-            self._xx = self._xx - self.mean()
+            delta = self.mean()
         elif type_ == 'Max':
             index = np.argmax(self._yy).squeeze()
-            self._xx = self._xx - self._xx[index]
+            delta = self._xx[index]
         else:
             raise ValueError(type_)
+        self._xx = self._xx - delta
+        return delta
 
     def scale_xx(self, scale_factor, keep_range=False):
         new_xx = self._xx * scale_factor

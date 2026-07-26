@@ -259,6 +259,16 @@ class Profile:
         self._xx = self._xx - delta
         return delta
 
+    def cross_correlate_shift(self, other, apply=True):
+        assert np.all(self._xx == other._xx)
+        corr = np.correlate(other._yy, self._yy, mode='full')
+        index_max = np.argmax(corr)
+        n_delta = len(corr)//2 - index_max
+        delta = (self._xx[1]-self._xx[0])*n_delta
+        if apply:
+            self._xx = self._xx - delta
+        return delta
+
     def scale_xx(self, scale_factor, keep_range=False):
         new_xx = self._xx * scale_factor
         if keep_range:

@@ -97,7 +97,7 @@ class Image(LogMsgBase):
         elif dimension == 'Y':
             axis = self.y_axis
             proj = self.image.sum(axis=1)
-        return beam_profile.ScreenDistribution(axis, proj, total_charge=self.charge, **kwargs)
+        return beam_profile.ScreenDistribution(axis.copy(), proj, total_charge=self.charge, **kwargs)
 
     def get_anyprofile(self, dimension):
         if dimension == 'X':
@@ -106,7 +106,17 @@ class Image(LogMsgBase):
         elif dimension == 'Y':
             axis = self.y_axis
             proj = self.image.sum(axis=1)
-        return beam_profile.AnyProfile(axis, proj)
+        return beam_profile.AnyProfile(axis.copy(), proj)
+
+    def cross_correlate_shift(self, other, dims=('X', 'Y')):
+        for dim in dims:
+            prof = self.get_anyprofile(dim)
+            prof_other = other.get_anyprofile(dim)
+            delta = prof.cross_correlate_shift(prof_other)
+            if dim == 'X':
+                self.x_axis = self.x_axis - delta
+            elif dim == 'Y':
+                self.y_axis = self.y_axis - delta
 
     def center(self, dimension):
         dist = self.get_screen_dist(dimension)

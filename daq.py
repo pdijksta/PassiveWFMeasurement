@@ -1,3 +1,4 @@
+import os
 import base64
 import itertools
 import time
@@ -71,14 +72,13 @@ def destroy_lasing(beamline, dry_run, max_deltaK=0.2):
     return pvs, old_vals, new_vals
 
 def change_lasing_script(beamline, dry_run, mode):
-    beamline_str = {'Aramis': 'AR', 'Athos Post-Undulator': 'AT'}[beamline]
-    mode_str = {'destroy': 'lasing_off', 'restore': 'taper'}[mode]
-    pv = 'SF-PSHELL_OP:CMD'
-    cmd = 'run(\'Undulators/K_%s_%s\')' % (beamline_str, mode_str)
+    beamline_str = {'Aramis': 'Aramis', 'Athos Post-Undulator': 'Athos'}[beamline]
+    mode_str = {'destroy': 'lasing_off', 'restore': 'set_taper'}[mode]
+    cmd = 'pshell_call %s %s' % (mode_str, beamline_str)
     if dry_run:
-        print('I would caput %s %s' % (pv, cmd))
+        print('I would os.system(%s)' % cmd)
     else:
-        caput(pv, cmd)
+        os.system(cmd)
 
 def restore_lasing(pvs, vals, dry_run):
     for pv, val in zip(pvs, vals):

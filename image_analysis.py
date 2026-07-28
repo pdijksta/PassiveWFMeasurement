@@ -109,18 +109,26 @@ class Image(LogMsgBase):
         return beam_profile.AnyProfile(axis.copy(), proj)
 
     def cross_correlate_shift(self, other, dims=('X', 'Y')):
+        x_axis = self.x_axis
+        y_axis = self.y_axis
         for dim in dims:
             prof = self.get_anyprofile(dim)
             prof_other = other.get_anyprofile(dim)
             delta = prof.cross_correlate_shift(prof_other)
             if dim == 'X':
-                self.x_axis = self.x_axis - delta
+                x_axis = self.x_axis - delta
             elif dim == 'Y':
-                self.y_axis = self.y_axis - delta
+                y_axis = self.y_axis - delta
+        return self.child(self.image, x_axis, y_axis)
 
-    def center(self, dimension):
+    def center(self, dimension, method='Mean', full_pixels_only=False):
         dist = self.get_screen_dist(dimension)
-        shift = dist.mean()
+        if method == 'Mean':
+            shift = dist.mean()
+            if full_pixels_only:
+                shift = dist.x[np.argmin((dist.x-shift)**2)]
+        elif method == 'Max':
+            shift = dist.x[np.argmax(dist.intensity)]
         if dimension == 'X':
             x_axis = self.x_axis - shift
             y_axis = self.y_axis

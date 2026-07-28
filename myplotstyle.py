@@ -60,7 +60,7 @@ def saveall(basepath, hspace=None, wspace=None, trim=True, figs=None, ending='.p
 
     for num in numbs:
         fig = plt.figure(num)
-        if subplot_adjust:
+        if not fig.get_constrained_layout() and subplot_adjust:
             fig.subplots_adjust(hspace=hspace, wspace=wspace, bottom=bottom, top=top, left=left, right=right)
 
         title = fig.canvas.manager.get_window_title()

@@ -15,6 +15,7 @@ logfile = '/tmp/passiveWFMeasurement.log'
 
 beamlines = [
         'Aramis',
+        'Aramis Pre-Undulator',
         'Athos Pre-Undulator',
         'Athos Post-Undulator',
         'SASE2',
@@ -24,6 +25,7 @@ beamlines = [
 
 swissfel_beamlines = [
         'Aramis',
+        'Aramis Pre-Undulator',
         'Athos Pre-Undulator',
         'Athos Post-Undulator',
         ]
@@ -32,6 +34,9 @@ structure_names = {
         'Aramis': [
              'SARUN18-UDCP020',
              'SARUN18-UDCP010',
+             ],
+        'Aramis Pre-Undulator': [
+             'S30CB15-UDCP200',
              ],
         'Athos Post-Undulator': [
             'SATMA02-UDCP045',
@@ -55,6 +60,12 @@ structure_names = {
 
 screen_names = {
         'Aramis': [
+            'SARBD02-DSCR050',
+            'SARBD01-DSCR050',
+            'simulation',
+            ],
+        'Aramis Pre-Undulator': [
+            'SARCL01-DSCR170',
             'SARBD02-DSCR050',
             'SARBD01-DSCR050',
             'simulation',
@@ -107,6 +118,7 @@ pal_structure_parameters = {
         }
 
 structure_parameters = {
+        'S30CB15-UDCP200': aramis_structure_parameters,
         'SARUN18-UDCP010': aramis_structure_parameters,
         'SARUN18-UDCP020': aramis_structure_parameters,
         'SATMA01-UDCP015': aramis_structure_parameters,
@@ -123,6 +135,7 @@ structure_parameters = {
         }
 
 structure_dimensions = {
+        'S30CB15-UDCP200': 'Y',
         'SARUN18-UDCP010': 'X',
         'SARUN18-UDCP020': 'X',
         'SATMA01-UDCP015': 'Y',
@@ -182,6 +195,7 @@ beamline_quads = {
         'SASE2': [],
         'LCLS': [],
         }
+beamline_quads['Aramis Pre-Undulator'] = beamline_quads['Aramis']
 
 beamline_undulators = {
         'Aramis': ['SARUN%02i-UIND030:K_SET' % x for x in range(3, 16)],
@@ -193,6 +207,7 @@ beamline_undulators = {
 
 beamline_chargepv = {
         'Aramis': 'SINEG01-DICT215:B1_CHARGE-OP',
+        'Aramis Pre-Undulator': 'SINEG01-DICT215:B1_CHARGE-OP',
         'Athos Post-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         'Athos Pre-Undulator': 'SINEG01-DICT215:B2_CHARGE-OP',
         'SASE2': 'SASE2:CHARGE',
@@ -201,6 +216,7 @@ beamline_chargepv = {
 
 beamline_energypv = {
         'Aramis': 'SARBD01-MBND100:ENERGY-OP',
+        'Aramis Pre-Undulator': 'SARCL02-MBND100:ENERGY-OP',
         'Athos Post-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         'Athos Pre-Undulator': 'SATBD01-MBND200:ENERGY-OP',
         'SASE2': 'SASE2:ENERGY',
@@ -209,6 +225,7 @@ beamline_energypv = {
 
 gas_monitor_pvs = {
         'Aramis': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
+        'Aramis Pre-Undulator': 'SARFE10-PBPG050:PHOTON-ENERGY-PER-PULSE-AVG',
         'Athos Post-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         'Athos Pre-Undulator': 'SATFE10-PEPG046:PHOTON-ENERGY-PER-PULSE-AVG',
         'SASE2': 'SASE2:FEL-ENERGY',
@@ -217,6 +234,12 @@ gas_monitor_pvs = {
 
 default_optics = {
         'Aramis': {
+            'betax': 4.968,
+            'alphax': -0.563,
+            'betay': 16.807,
+            'alphay': 1.782,
+            },
+        'Aramis Pre-Undulator': {
             'betax': 4.968,
             'alphax': -0.563,
             'betay': 16.807,
@@ -250,6 +273,7 @@ default_optics = {
 
 optics_matching_points = {
         'Aramis': 'SARUN18.START',
+        'Aramis Pre-Undulator': 'SARUN18.START',
         'Athos Post-Undulator': 'SATUN22.MQUA080.START',
         'Athos Pre-Undulator': 'SATDI01.MQUA250.START',
         'SASE2': None,
@@ -298,6 +322,7 @@ _pre_athos_pvs += ['SATMA01-DBPM%03i:%s1' % (num, dim) for num, dim in itertools
 
 beamline_bpm_pvs = {
         'Aramis': _aramis_pvs,
+        'Aramis Pre-Undulator': _aramis_pvs,
         'Athos Pre-Undulator': _pre_athos_pvs,
         }
 

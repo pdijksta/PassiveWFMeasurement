@@ -79,7 +79,7 @@ def subplot_factory(ny, nx, grid=True, title_fs=None, label_fs=None):
     _sciy = sciy
     _scix = scix
 
-    def subplot(x, grid=grid, title=None, xlabel=None, ylabel=None, sciy=False, scix=False, sharex=None, sharey=None, **kwargs):
+    def subplot(x, grid=grid, title=None, xlabel=None, ylabel=None, sciy=False, scix=False, sharex=None, sharey=None, title_fs=title_fs, **kwargs):
         sp = plt.subplot(ny, nx, x, sharex=sharex, sharey=sharey, **kwargs)
         if grid:
             sp.grid(True)

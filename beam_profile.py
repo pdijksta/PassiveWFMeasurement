@@ -5,6 +5,8 @@ from .gaussfit import GaussFit
 from . import blmeas
 from . import config
 
+trapz = np.trapezoid if hasattr(np, 'trapezoid') else np.trapz
+
 def _mean(xx, yy):
     s1 = np.sum(xx*yy)
     s2 = np.sum(yy)
@@ -225,7 +227,7 @@ class Profile:
 
     @property
     def integral(self):
-        return np.trapezoid(self._yy, self._xx)
+        return trapz(self._yy, self._xx)
 
     def smoothen(self, gauss_sigma, extend=True):
         if gauss_sigma is None or gauss_sigma == 0:
@@ -342,9 +344,9 @@ class ScreenDistribution(Profile):
             x = np.concatenate([x, [x[-1] + diff]])
             y = np.concatenate([y, [0.]])
 
-        factor = np.abs(self.total_charge /np.trapezoid(y, x))
+        factor = np.abs(self.total_charge/trapz(y, x))
         #try:
-        #    integral = np.trapezoid(y*factor, x)
+        #    integral = trapz(y*factor, x)
         #    print('total_charge', self.total_charge, 'factor', factor, 'integral', integral, 'label', kwargs['label'])
         #except:
         #    pass

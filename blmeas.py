@@ -11,6 +11,8 @@ from . import config
 from . import data_loader
 from . import h5_storage
 
+trapz = np.trapezoid if hasattr(np, 'trapezoid') else np.trapz
+
 def tilt_reconstruction2(profile1, profile2):
     # Algorithm by H. Loos, as described in Schmidt et al., Benchmarking coherent radiation spectroscopy as a tool for high-resolution bunch shape reconstruction at free-electron lasers,PRAB 23, 062801 (2020) https://doi.org/10.1103/PhysRevAccelBeams.23.062801
     assert profile1.total_charge == profile2.total_charge
@@ -261,7 +263,7 @@ def analyze_blmeas(file_or_dict, force_charge=False, force_cal=False, title=None
     outp['energy_eV'] = energy_eV
     _ii = processed_data['Current profile_image_0']
     _tt = processed_data['Good region time axis_image_0']
-    charge0 = np.abs(np.trapezoid(_ii, _tt*1e-15))
+    charge0 = np.abs(trapz(_ii, _tt*1e-15))
     outp['charge0'] = charge0
     if force_charge:
         charge = forced_charge

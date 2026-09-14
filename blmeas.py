@@ -591,11 +591,13 @@ def get_projections(images, x_axis, y_axis, charge, streaking_direction):
     zc_data.init_screen_distributions(streaking_direction)
 
     if streaking_direction == 'Y':
+        axis = y_axis
         projections = zc_data.image_data.sum(axis=2)
     elif streaking_direction == 'X':
+        axis = x_axis
         projections = zc_data.image_data.sum(axis=1)
     example_image = image_analysis.Image(images_reshaped[len(images_reshaped)//2], x_axis, y_axis, charge=charge)
-    return projections, example_image
+    return axis, projections, example_image
 
 def analyze_zero_crossing(phases_deg, projections, centroids, tds_freq, example_image):
 
@@ -736,9 +738,9 @@ class LongitudinalBeamMeasurement:
                 y_axis = y_axis[::-1]
                 images = images[...,::-1,:]
 
-            projections, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'])
+            axis, projections, example_image = get_projections(images, x_axis, y_axis, charge, self.data['input']['streaking_direction'])
 
-            profiles = [beam_profile.AnyProfile(x_axis, proj) for proj in projections]
+            profiles = [beam_profile.AnyProfile(axis, proj) for proj in projections]
             means = [p.mean() for p in profiles]
             ref_ctr = np.argsort(means)[len(means)//2]
             deltas = np.array([p.cross_correlate_shift(profiles[ref_ctr]) for p in profiles])+means[ref_ctr]

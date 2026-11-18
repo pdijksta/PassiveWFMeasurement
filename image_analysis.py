@@ -189,6 +189,106 @@ class Image(LogMsgBase):
             new_image = func(prof.x[0], prof.x[-1])
         return new_image
 
+    @staticmethod
+    def _pad_axis(axis, extent, mode):
+        """
+        Returns (n_before, n_after, new_axis) for zero-padding one axis.
+        mode='pixels': extent is the total number of pixels (int).
+        mode='axis': extent is either a total width (scalar, padded symmetrically)
+                     or a (min, max) tuple in units of the axis.
+        The axis is extended with the pixel spacing at the respective edge.
+        Padding is never negative, i.e. the image is never cropped.
+        """
+        if extent is None:
+            return 0, 0, axis
+        d_before = axis[1] - axis[0]
+        d_after = axis[-1] - axis[-2]
+        if mode == 'pixels':
+            n_total = max(int(extent) - len(axis), 0)
+            n_before = n_total // 2
+            n_after = n_total - n_before
+        elif mode == 'axis':
+            if np.ndim(extent) == 0:
+                center = (axis[0] + axis[-1])/2
+                ext_min, ext_max = center - extent/2, center + extent/2
+            else:
+                ext_min, ext_max = extent
+            n_before = max(int(np.ceil((axis[0] - ext_min)/d_before - 1e-9)), 0)
+            n_after = max(int(np.ceil((ext_max - axis[-1])/d_after - 1e-9)), 0)
+        else:
+            raise ValueError('mode must be "pixels" or "axis", not %s' % mode)
+        new_axis = np.concatenate([
+            axis[0] - d_before*np.arange(n_before, 0, -1),
+            axis,
+            axis[-1] + d_after*np.arange(1, n_after+1),
+            ])
+        return n_before, n_after, new_axis
+
+    def zero_pad(self, x_extent=None, y_extent=None, mode='pixels'):
+        """
+        Add zero-padding to the image such that it matches a specified extent.
+        mode='pixels': x_extent / y_extent are the total number of pixels.
+                       Padding is split symmetrically (extra pixel on the high side).
+        mode='axis': x_extent / y_extent are given in units of x_axis / y_axis,
+                     either as total width (scalar, centered around the current axis center)
+                     or as (min, max) tuple.
+        None means no padding in that dimension. The image is never cropped.
+        """
+        nx0, nx1, new_x = self._pad_axis(self.x_axis, x_extent, mode)
+        ny0, ny1, new_y = self._pad_axis(self.y_axis, y_extent, mode)
+        new_image = np.pad(self.image, ((ny0, ny1), (nx0, nx1)), mode='constant', constant_values=0)
+        return self.child(new_image, new_x, new_y)
+
+    def set_extent(self, x_extent=None, y_extent=None, mode='pixels'):
+        """
+        Crop (using cut / cutY) or zero-pad (using zero_pad) the image such that it matches a specified extent.
+        Arguments as in zero_pad:
+        mode='pixels': x_extent / y_extent are the total number of pixels.
+                       Cropping and padding are symmetric (extra pixel removed / added on the high side).
+        mode='axis': x_extent / y_extent are given in units of x_axis / y_axis,
+                     either as total width (scalar, centered around the current axis center)
+                     or as (min, max) tuple. A (min, max) range may lead to cropping on one side
+                     and padding on the other side.
+        None means no change in that dimension.
+        """
+        if mode not in ('pixels', 'axis'):
+            raise ValueError('mode must be "pixels" or "axis", not %s' % mode)
+        new_image = self
+        for dim, extent in (('X', x_extent), ('Y', y_extent)):
+            if extent is None:
+                continue
+            if dim == 'X':
+                axis = new_image.x_axis
+                cut_func = lambda img, a, b: img.cut(a, b)
+                pad_key = 'x_extent'
+            else:
+                axis = new_image.y_axis
+                cut_func = lambda img, a, b: img.cutY(a, b)
+                pad_key = 'y_extent'
+
+            if mode == 'pixels':
+                n_target = int(extent)
+                if n_target < len(axis):
+                    start = (len(axis) - n_target)//2
+                    new_image = cut_func(new_image, axis[start], axis[start+n_target-1])
+                elif n_target > len(axis):
+                    new_image = new_image.zero_pad(mode='pixels', **{pad_key: n_target})
+            elif mode == 'axis':
+                if np.ndim(extent) == 0:
+                    center = (axis[0] + axis[-1])/2
+                    ext_min, ext_max = center - extent/2, center + extent/2
+                else:
+                    ext_min, ext_max = extent
+                if ext_min > axis[0] or ext_max < axis[-1]:
+                    new_image = cut_func(new_image, ext_min, ext_max)
+                # Only pad on sides that were not cropped
+                cut_axis = new_image.x_axis if dim == 'X' else new_image.y_axis
+                pad_min = ext_min if ext_min < axis[0] else cut_axis[0]
+                pad_max = ext_max if ext_max > axis[-1] else cut_axis[-1]
+                # zero_pad does nothing if no padding is required
+                new_image = new_image.zero_pad(mode='axis', **{pad_key: (pad_min, pad_max)})
+        return new_image
+
     def reshape_x(self, new_length):
         """
         If new length is larger than current length
